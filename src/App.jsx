@@ -17486,6 +17486,11 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
           ohneZusage={offeneSpielerNamen(viewEv)}
           abgesagt={neinSpielerNamen(viewEv)}
           intGroups={isHelper?[]:intGruppenVon((local.teams||[]).find(tm=>tm.id===viewEv.tid))}
+          onAusrichtung={isHelper?null:(k=>{
+            const ev2={...viewEv,spielLevel:k};
+            save({...local,events:local.events.map(e=>e.id===viewEv.id?ev2:e)});
+            setViewEv(prev=>({...prev,spielLevel:k}));
+          })}
           canEdit={!isHelper}
           profiles={local.playerProfiles||[]}
           pastLineups={(local.events||[]).filter(e=>e.tid===viewEv.tid&&e.id!==viewEv.id&&e.lineup&&[...(e.lineup.T||[]),...(e.lineup.A||[]),...(e.lineup.M||[]),...(e.lineup.S||[]),...(e.lineup.E||[])].length>0).map(e=>e.lineup)}
@@ -23065,7 +23070,7 @@ function recommendLineup(present, profiles, pastLineups, friendWeight=1){
   const friends=fp.sort((x,y)=>(y.must-x.must)).slice(0,4);
   return {lineup,bench,formation,pairs,friends,count:n};
 }
-function LineupBoard({ ev, present, canEdit, onChange, pub=undefined, onPubChange=undefined, profiles=[], pastLineups=[], betreuer=[], staffNamen=[], ohneZusage=[], abgesagt=[], intGroups=[] }){
+function LineupBoard({ ev, present, canEdit, onChange, pub=undefined, onPubChange=undefined, profiles=[], pastLineups=[], betreuer=[], staffNamen=[], ohneZusage=[], abgesagt=[], intGroups=[], onAusrichtung=null }){
   const { tr } = useT();
   const LINE_LABELS = {T:tr("lnTor"),A:tr("lnAbwehr"),M:tr("lnMittelfeld"),S:tr("lnAngriff"),E:tr("lnErsatz")};
   // Mehrere Mannschaften je Termin (Turnier: G1, G2 ...). Alt gespeicherte
@@ -23095,6 +23100,10 @@ function LineupBoard({ ev, present, canEdit, onChange, pub=undefined, onPubChang
     .sort((x,y)=>(statusVon(x)==="ja"?0:1)-(statusVon(y)==="ja"?0:1)||String(x).localeCompare(String(y),"de"));
   const [tip,setTip]=useState(null);
   const [hinweis,setHinweis]=useState("");
+  // Vorschlag fuer dieses Spiel - wird bewusst NICHT sofort angewendet.
+  // Der Trainer sieht ihn samt Begruendung und uebernimmt ihn oder nicht.
+  const [vorschlag,setVorschlag]=useState(null);
+  const ausrichtung = ev.spielLevel || "misch";
   const [friendW,setFriendW]=useState(1);   // 0=aus, 1=normal, 2=stark – pro Aufstellung wählbar
   // Immer genau eine Mannschaft offen: so ist klar, wohin die Bank einsortiert.
   const [offen,setOffen]=useState(teams[0]?.id||"t1");
@@ -23165,6 +23174,57 @@ function LineupBoard({ ev, present, canEdit, onChange, pub=undefined, onPubChang
     });
     sichern(neu); setOffen(neu[0].id); setTip(null);
   };
+  // Wie oft stand das Kind in den letzten Spielen in der Startelf? Wer selten
+  // dran war, kommt innerhalb seiner Gruppe zuerst - sonst spielt immer
+  // dieselbe Handvoll.
+  const einsaetzeVon = (()=>{
+    const z={}; (pastLineups||[]).slice(0,5).forEach(lu=>{
+      ["T","A","M","S"].forEach(k=>(lu[k]||[]).forEach(n=>{ z[_kl(n)]=(z[_kl(n)]||0)+1; })); });
+    return n=>z[_kl(n)]||0;
+  })();
+  // Empfehlung fuer dieses eine Spiel: Wen aufstellen? Je nach Ausrichtung
+  // zuerst aus der Leistungs- oder aus der Entwicklungsgruppe, innerhalb der
+  // Gruppe die mit den wenigsten Einsaetzen zuletzt.
+  const empfehlung = () => {
+    const verfuegbar=(present||[]).filter(n=>!_beSet.has(_kl(n)));
+    if(verfuegbar.length===0){ setHinweis("Noch keine Zusagen – sobald welche da sind, kommt hier ein Vorschlag."); return; }
+    const soll=Math.max(3,Math.min(11, Number(ev.sollPlayers)||Math.min(verfuegbar.length,7)));
+    const grpId=n=>{ const g=intGruppeDesKindes(n,profiles,intGroups); return g?g.id:null; };
+    const ids=(intGroups||[]).map(g=>g.id);
+    const reihe = ausrichtung==="entw" ? [...ids].reverse() : ausrichtung==="stark" ? ids : null;
+    let auswahl, warum;
+    if(!reihe||!ids.length){
+      auswahl=[...verfuegbar].sort((a,b)=>einsaetzeVon(a)-einsaetzeVon(b)).slice(0,soll);
+      warum=`Gemischt: ${auswahl.length} von ${verfuegbar.length} Zusagen – zuerst die, die zuletzt am wenigsten gespielt haben.`;
+    } else {
+      const topf=[...reihe, null];
+      auswahl=[]; const ausGruppe={};
+      for(const gid of topf){
+        if(auswahl.length>=soll) break;
+        const leute=verfuegbar.filter(n=>grpId(n)===gid&&!auswahl.includes(n))
+          .sort((a,b)=>einsaetzeVon(a)-einsaetzeVon(b)||String(a).localeCompare(String(b),"de"));
+        const nimm=leute.slice(0,soll-auswahl.length);
+        if(nimm.length){ auswahl=[...auswahl,...nimm];
+          ausGruppe[gid||"ohne"]=nimm.length; }
+      }
+      const teile=Object.entries(ausGruppe).map(([gid,n])=>{
+        const g=(intGroups||[]).find(x=>x.id===gid); return `${n}× ${g?g.name:"ohne Gruppe"}`; });
+      warum=`${ausrichtung==="stark"?"Leistung zuerst":"Entwicklung zuerst"}: ${auswahl.length} von ${verfuegbar.length} Zusagen – ${teile.join(", ")}.`
+        +` Innerhalb der Gruppe standen die mit den wenigsten Einsätzen zuletzt vorn.`;
+    }
+    const rec=recommendLineup(auswahl, profiles, pastLineups, friendW);
+    const bank=verfuegbar.filter(n=>!auswahl.includes(n));
+    setVorschlag({ lineup:rec.lineup, formation:rec.formation, bank:[...(rec.bench||[]),...bank], warum });
+    setTip(null); setHinweis("");
+  };
+  const vorschlagUebernehmen = () => {
+    if(!vorschlag) return;
+    const ziel=offen||teams[0]?.id;
+    sichern(teams.map(t=>t.id===ziel
+      ? {...t, T:vorschlag.lineup.T||[], A:vorschlag.lineup.A||[], M:vorschlag.lineup.M||[], S:vorschlag.lineup.S||[], E:vorschlag.bank}
+      : t));
+    setVorschlag(null);
+  };
   const autoFill = () => {
     const frei=(present||[]).filter(n=>!teams.some(t=>t.id!==offen&&spielerVon(t).includes(n)));
     const rec=recommendLineup(frei,profiles,pastLineups,friendW);
@@ -23175,8 +23235,6 @@ function LineupBoard({ ev, present, canEdit, onChange, pub=undefined, onPubChang
     <div style={{marginTop:14,paddingTop:14,borderTop:"1px solid #f1f5f9"}}>
       <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
         <span style={{fontWeight:800,fontSize:14,color:"#0f172a"}}>{tr("luTitle")} <span style={{fontWeight:600,fontSize:12,color:"#64748b"}}>({placed.length})</span></span>
-        {canEdit&&(intGroups||[]).length>1&&<button onClick={nachGruppen} title="Je Leistungsgruppe eine Mannschaft aufstellen"
-          style={{marginLeft:"auto",padding:"6px 12px",borderRadius:9,border:"1.5px solid #c7d2fe",background:"#eef2ff",color:"#4338ca",fontWeight:800,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>🎯 Nach Gruppen</button>}
         {canEdit&&(present||[]).length>0&&<button onClick={autoFill} style={{marginLeft:"auto",padding:"6px 12px",borderRadius:9,border:"none",background:"#16a34a",color:"#fff",fontWeight:800,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>🤖 {tr("luSuggest")}</button>}
       </div>
       {canEdit&&(present||[]).length>0&&(
@@ -23185,6 +23243,67 @@ function LineupBoard({ ev, present, canEdit, onChange, pub=undefined, onPubChang
           {[[0,tr("luOff")],[1,tr("luNormal")],[2,tr("luStrong")]].map(([v,l])=>(
             <button key={v} onClick={()=>setFriendW(v)} style={{padding:"4px 11px",borderRadius:99,border:`1.5px solid ${friendW===v?"#16a34a":"#e2e8f0"}`,background:friendW===v?"#16a34a14":"#fff",color:friendW===v?"#15803d":"#64748b",fontWeight:700,fontSize:11.5,cursor:"pointer",fontFamily:"inherit"}}>{l}</button>
           ))}
+        </div>
+      )}
+      {/* Ausrichtung dieses Spiels - reine Trainer-Einstellung. Sie steuert
+          nur, wen die Empfehlung zuerst vorschlaegt. */}
+      {canEdit&&(intGroups||[]).length>1&&(
+        <div style={{background:"#f8fafc",border:"1.5px solid #e2e8f0",borderRadius:12,padding:"9px 11px",marginBottom:10}}>
+          <div style={{display:"flex",alignItems:"center",gap:7,flexWrap:"wrap",marginBottom:7}}>
+            <span style={{fontSize:10.5,fontWeight:800,color:"#64748b",letterSpacing:.3}}>AUSRICHTUNG</span>
+            {[["stark","⚡ Leistung"],["misch","⚖️ Gemischt"],["entw","🌱 Entwicklung"]].map(([k,l])=>{
+              const an=ausrichtung===k;
+              return (
+              <button key={k} onClick={()=>{ onAusrichtung&&onAusrichtung(k); setVorschlag(null); }}
+                style={{padding:"5px 10px",borderRadius:99,border:`1.5px solid ${an?"#4338ca":"#e2e8f0"}`,background:an?"#eef2ff":"#fff",
+                  color:an?"#4338ca":"#64748b",fontWeight:800,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>{l}</button>
+              ); })}
+          </div>
+          <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+            <button onClick={empfehlung}
+              style={{padding:"8px 12px",minHeight:38,borderRadius:10,border:"none",background:"#4338ca",color:"#fff",fontWeight:800,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>
+              🎯 Empfehlung für dieses Spiel
+            </button>
+            <button onClick={nachGruppen} title="Je Leistungsgruppe eine Mannschaft aufstellen"
+              style={{padding:"8px 12px",minHeight:38,borderRadius:10,border:"1.5px solid #c7d2fe",background:"#eef2ff",color:"#4338ca",fontWeight:800,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>
+              🎯 Nach Gruppen aufteilen
+            </button>
+          </div>
+          <div style={{fontSize:10.5,color:"#94a3b8",marginTop:6,lineHeight:1.45}}>
+            Nur für euch – Eltern, Kinder und Gegner sehen davon nichts. Die Empfehlung ist ein Vorschlag; aufgestellt wird erst, wenn ihr sie übernehmt.
+          </div>
+        </div>
+      )}
+
+      {/* Der Vorschlag steht erst mal nur da - uebernommen wird per Tipp. */}
+      {canEdit&&vorschlag&&(
+        <div style={{background:"#eef2ff",border:"1.5px solid #c7d2fe",borderRadius:12,padding:"10px 12px",marginBottom:10}}>
+          <div style={{fontSize:13,fontWeight:800,color:"#3730a3",marginBottom:3}}>🎯 Vorschlag{vorschlag.formation?` · Formation ${vorschlag.formation}`:""}</div>
+          <div style={{fontSize:11.5,color:"#4338ca",lineHeight:1.5,marginBottom:7}}>{vorschlag.warum}</div>
+          {LINEUP_LINES.filter(([k])=>k!=="E").map(([k,label])=>{
+            const leute=vorschlag.lineup[k]||[]; if(!leute.length) return null;
+            return (
+              <div key={k} style={{display:"flex",gap:6,fontSize:12,marginBottom:3}}>
+                <span style={{width:70,flexShrink:0,fontWeight:800,color:lineColors[k]}}>{(LINE_LABELS[k]||label).toUpperCase()}</span>
+                <span style={{flex:1,minWidth:0,color:"#1e1b4b",fontWeight:600}}>{leute.join(", ")}</span>
+              </div>
+            ); })}
+          {vorschlag.bank.length>0&&(
+            <div style={{display:"flex",gap:6,fontSize:12,marginTop:3}}>
+              <span style={{width:70,flexShrink:0,fontWeight:800,color:"#64748b"}}>ERSATZBANK</span>
+              <span style={{flex:1,minWidth:0,color:"#475569"}}>{vorschlag.bank.join(", ")}</span>
+            </div>
+          )}
+          <div style={{display:"flex",gap:7,marginTop:10}}>
+            <button onClick={vorschlagUebernehmen}
+              style={{flex:1,padding:"10px",minHeight:42,borderRadius:10,border:"none",background:"#4338ca",color:"#fff",fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>
+              ✓ Übernehmen{teams.length>1&&offenT?` in „${offenT.name}“`:""}
+            </button>
+            <button onClick={()=>setVorschlag(null)}
+              style={{padding:"10px 14px",minHeight:42,borderRadius:10,border:"1.5px solid #c7d2fe",background:"#fff",color:"#4338ca",fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>
+              Verwerfen
+            </button>
+          </div>
         </div>
       )}
       {canEdit&&hinweis&&(
