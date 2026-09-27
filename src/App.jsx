@@ -17014,7 +17014,8 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
         {tab==="changelog"  &&<ChangelogView cl={myClub}/>}
         {tab==="assistent"&&!isHelper&&(
           <TrainerAssistent data={local} save={save} fire={fire} cl={myClub} session={session}
-            myTids={myTids} onClose={()=>setTab("events")}/>
+            myTids={myTids} intGroups={intGruppenVon((local.teams||[]).find(tm=>tm.id===myTids[0]))}
+            onClose={()=>setTab("events")}/>
         )}
         {tab==="teams"      &&isAdmin&&<TeamHub data={local} myTids={myTids} save={save} fire={fire} cl={myClub} session={session} isAdmin={isAdmin} initialSubTab="manage"/>}
         {tab==="overview"  &&isAdmin&&<><VereinsCockpit data={local} cid={cid} cl={myClub} save={save} fire={fire} session={session}/><AllTeamsOverview data={local} cid={cid} cl={myClub} onSelectTeam={tid=>{ const team=(local.teams||[]).find(x=>x.id===tid); if(team) fire("Team: "+team.name); }}/></>}

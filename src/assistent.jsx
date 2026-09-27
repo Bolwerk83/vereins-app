@@ -6,8 +6,9 @@
 // sehen davon nichts.
 // ----------------------------------------------------------------
 import React, { useState, useRef, useEffect } from "react";
-import { THEMEN, TRICKS, antwortAuf, taktText, naechsteFaelligkeit, fragenZu, rechneErgebnis } from "./assistent.js";
-import { generateTrainingPlan } from "./domain.js";
+import { THEMEN, TRICKS, antwortAuf, taktText, naechsteFaelligkeit, fragenZu, rechneErgebnis, EINTEILUNG_FRAGEN, rechneEinteilung } from "./assistent.js";
+import { generateTrainingPlan, skillAxesFor } from "./domain.js";
+import { skillsMean } from "./logic.js";
 import { uid, TH, now } from "./ui.jsx";
 
 const catOf = c => ({warmup:"Aufwärmen",technik:"Technik",taktik:"Taktik",kondition:"Athletik",spielform:"Spielform",spezial:"Abschluss"}[c]||"Übung");
@@ -31,7 +32,7 @@ function TrickBild({ trick }){
   );
 }
 
-export default function TrainerAssistent({ data, save, fire, cl, session, myTids, onClose }){
+export default function TrainerAssistent({ data, save, fire, cl, session, myTids, intGroups=[], onClose }){
   const t = TH(cl);
   const cid = (data.teams||[]).find(tm=>myTids.includes(tm.id))?.cid;
   const meineId = session?.id || session?.name || "trainer";
@@ -45,6 +46,9 @@ export default function TrainerAssistent({ data, save, fire, cl, session, myTids
     text:"Moin! Ich bin euer Trainer-Assistent. Schreib mir, woran es gerade hakt – zum Beispiel „wir müssen das Zusammenspiel verbessern“, „wir kriegen zu viele Gegentore“ oder „zeig mir Tricks“." }]);
   const [frage,setFrage] = useState("");
   const [tab,setTab] = useState("chat");
+  const [eAnt,setEAnt] = useState({});        // Antworten zur Einteilung
+  const [eErg,setEErg] = useState(null);      // berechneter Vorschlag
+  const [eZuord,setEZuord] = useState({});    // vom Trainer geänderte Zuordnung
   const endeRef = useRef(null);
   useEffect(()=>{ try{ endeRef.current?.scrollIntoView({behavior:"smooth",block:"end"}); }catch{} },[verlauf.length]);
 
@@ -152,6 +156,40 @@ export default function TrainerAssistent({ data, save, fire, cl, session, myTids
     else { navigator.clipboard?.writeText(txt); fire("Vorlage kopiert ✓"); }
   };
 
+  // Zahlen je Kind zusammentragen: gepflegte Skills, Entwicklung aus dem
+  // Verlauf und die Beteiligung der letzten drei Monate.
+  const kinderDaten = () => {
+    const axes = skillAxesFor(cl?.sport||"fussball");
+    const seit = (()=>{ const d=new Date(); d.setDate(d.getDate()-90); return d.toISOString().slice(0,10); })();
+    const evs = (data.events||[]).filter(e=>e.cid===cid&&e.tid===tid&&e.date>=seit&&e.date<=now());
+    return (data.playerProfiles||[]).filter(p=>p.mainTid===tid&&!p.archived).map(p=>{
+      const schnitt = p.skills&&Object.keys(p.skills).length ? skillsMean(p.skills, axes) : null;
+      const hist = (p.skillHistory||[]).slice(-4);
+      const trend = hist.length>=2 ? Number((hist[hist.length-1].avg-hist[0].avg).toFixed(2)) : null;
+      let ja=0, nein=0;
+      evs.forEach(e=>{ const v=(e.votes||{})[p.name]; const val=(typeof v==="object"&&v)?v.val:v;
+        if(val==="yes") ja++; else if(val==="no") nein++; });
+      const quote = (ja+nein)>0 ? ja/(ja+nein) : null;
+      return { id:p.id, name:p.name, schnitt, trend, quote, aktuell:p.intGrp||"" };
+    });
+  };
+
+  const einteilungRechnen = (ant) => {
+    const kinder = kinderDaten();
+    if(kinder.length<4){ fire("Dafür braucht es mindestens vier Kinder im Kader"); return; }
+    const erg = rechneEinteilung({ kinder, gruppen:intGroups, worauf:ant.worauf, schnitt:ant.schnitt });
+    setEErg(erg);
+    setEZuord(Object.fromEntries(erg.vorschlag.map(v=>[v.id, v.gruppe?v.gruppe.id:""])));
+  };
+
+  const einteilungUebernehmen = () => {
+    if(!eErg) return;
+    save({...data, playerProfiles:(data.playerProfiles||[]).map(p=>
+      (p.id in eZuord) ? {...p, intGrp:eZuord[p.id]} : p)});
+    fire("Einteilung übernommen – änderbar bleibt sie jederzeit");
+    setEErg(null); setEAnt({});
+  };
+
   const Knopf = ({onClick,children,haupt=false}) => (
     <button onClick={onClick} style={{padding:"8px 11px",minHeight:38,borderRadius:10,
       border:haupt?"none":"1.5px solid #ddd6fe", background:haupt?"#4338ca":"#faf5ff",
@@ -170,7 +208,7 @@ export default function TrainerAssistent({ data, save, fire, cl, session, myTids
           <button onClick={onClose} aria-label="Schließen" style={{width:36,height:36,borderRadius:10,border:"none",background:"#f1f5f9",color:"#475569",fontSize:16,cursor:"pointer",fontFamily:"inherit"}}>✕</button>
         </div>
         <div style={{display:"flex",gap:6,padding:"8px 14px",borderBottom:"1px solid #f1f5f9",overflowX:"auto"}}>
-          {[["chat","💬 Gespräch"],["aufgaben",`🔁 Aufgaben${aufgaben.length?` (${aufgaben.length})`:""}`],["entwuerfe",`📋 Meine Entwürfe${meineTrainings.length?` (${meineTrainings.length})`:""}`]].map(([k,l])=>(
+          {[["chat","💬 Gespräch"],["einteilung","🎯 Einteilung"],["aufgaben",`🔁 Aufgaben${aufgaben.length?` (${aufgaben.length})`:""}`],["entwuerfe",`📋 Meine Entwürfe${meineTrainings.length?` (${meineTrainings.length})`:""}`]].map(([k,l])=>(
             <button key={k} onClick={()=>setTab(k)} style={{flexShrink:0,padding:"7px 12px",borderRadius:99,
               border:`1.5px solid ${tab===k?"#4338ca":"#e2e8f0"}`,background:tab===k?"#eef2ff":"#fff",
               color:tab===k?"#4338ca":"#64748b",fontWeight:800,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>{l}</button>
@@ -323,6 +361,90 @@ export default function TrainerAssistent({ data, save, fire, cl, session, myTids
           </div>
         </div>
         </>)}
+
+        {tab==="einteilung"&&(
+          <div style={{flex:1,overflowY:"auto",padding:"14px"}}>
+            <div style={{fontSize:11.5,color:"#3730a3",background:"#eef2ff",border:"1px solid #c7d2fe",borderRadius:10,padding:"9px 11px",lineHeight:1.55,marginBottom:12}}>
+              🔒 Wir überlegen hier gemeinsam, wer in welche Leistungsgruppe passt. Ich rechne einen Vorschlag – <b>entscheiden musst du</b>.
+              Jede Zuordnung lässt sich vor dem Übernehmen ändern, und ändern kannst du sie später sowieso jederzeit.
+            </div>
+            {intGroups.length<2
+              ? <p style={{fontSize:13,color:"#64748b",lineHeight:1.6}}>Dafür brauchst du zuerst Leistungsgruppen: Team → Spieler → ganz unten „🎯 Leistungsgruppen“.</p>
+              : !eErg ? (
+              <>
+                {EINTEILUNG_FRAGEN.map(f=>(
+                  <div key={f.id} style={{marginBottom:14}}>
+                    <div style={{fontSize:13.5,fontWeight:800,color:"#0f172a",marginBottom:8}}>{f.text}</div>
+                    <div style={{display:"flex",flexDirection:"column",gap:6}}>
+                      {f.opt.map(o=>{ const an=eAnt[f.id]===o.id;
+                        return (
+                        <button key={o.id} onClick={()=>setEAnt(a=>({...a,[f.id]:o.id}))}
+                          style={{textAlign:"left",padding:"11px 12px",minHeight:44,borderRadius:11,
+                            border:`1.5px solid ${an?"#4338ca":"#ddd6fe"}`,background:an?"#eef2ff":"#faf5ff",
+                            color:"#4c1d95",fontWeight:an?800:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>
+                          {an?"● ":"○ "}{o.label}
+                        </button>
+                        ); })}
+                    </div>
+                  </div>
+                ))}
+                <button disabled={!eAnt.worauf||!eAnt.schnitt} onClick={()=>einteilungRechnen(eAnt)}
+                  style={{width:"100%",padding:"13px",minHeight:48,borderRadius:12,border:"none",
+                    background:(eAnt.worauf&&eAnt.schnitt)?"#4338ca":"#e2e8f0",color:(eAnt.worauf&&eAnt.schnitt)?"#fff":"#94a3b8",
+                    fontWeight:800,fontSize:14,cursor:(eAnt.worauf&&eAnt.schnitt)?"pointer":"default",fontFamily:"inherit"}}>
+                  🧮 Vorschlag rechnen
+                </button>
+              </>
+            ) : (
+              <>
+                {eErg.basisDuenn&&(
+                  <div style={{fontSize:11.5,color:"#92400e",background:"#fffbeb",border:"1px solid #fde68a",borderRadius:10,padding:"9px 11px",lineHeight:1.5,marginBottom:10}}>
+                    Achtung: Nur bei {eErg.mitSkill} von {eErg.gesamt} Kindern sind Stärken gepflegt. Der Vorschlag stützt sich dann vor allem auf die Beteiligung –
+                    schau ihn besonders kritisch an.
+                  </div>
+                )}
+                <div style={{background:"#f8fafc",border:"1px solid #e2e8f0",borderRadius:10,padding:"9px 11px",marginBottom:11}}>
+                  <div style={{fontSize:10.5,fontWeight:800,color:"#64748b",letterSpacing:.3,marginBottom:5}}>SO KOMMT DAS ZUSTANDE</div>
+                  {eErg.rechenweg.map((r,j)=><div key={j} style={{fontSize:11.5,color:"#475569",lineHeight:1.5,marginBottom:3}}>• {r}</div>)}
+                </div>
+                {eErg.vorschlag.map(v=>(
+                  <div key={v.id} style={{background:"#fff",border:"1.5px solid #e2e8f0",borderRadius:12,padding:"9px 11px",marginBottom:7}}>
+                    <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:5}}>
+                      <span style={{flex:1,minWidth:0,fontWeight:800,fontSize:13.5,color:"#0f172a",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{v.name}</span>
+                      {v.aktuell&&v.aktuell!==eZuord[v.id]&&(
+                        <span style={{fontSize:10.5,color:"#94a3b8"}}>bisher {(intGroups.find(g=>g.id===v.aktuell)||{}).name||"–"}</span>
+                      )}
+                    </div>
+                    <div style={{fontSize:11.5,color:"#64748b",marginBottom:7}}>{v.teile.join(" · ")}</div>
+                    <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>
+                      {intGroups.map(g=>{ const an=eZuord[v.id]===g.id;
+                        return (
+                        <button key={g.id} onClick={()=>setEZuord(z=>({...z,[v.id]:an?"":g.id}))}
+                          style={{padding:"6px 11px",minHeight:34,borderRadius:9,border:`1.5px solid ${an?g.col:"#e2e8f0"}`,
+                            background:an?g.col:"#fff",color:an?"#fff":"#94a3b8",fontWeight:800,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>
+                          {g.name}
+                        </button>
+                        ); })}
+                    </div>
+                  </div>
+                ))}
+                <div style={{display:"flex",gap:7,marginTop:12}}>
+                  <button onClick={einteilungUebernehmen}
+                    style={{flex:1,padding:"13px",minHeight:48,borderRadius:12,border:"none",background:"#4338ca",color:"#fff",fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>
+                    ✓ So übernehmen
+                  </button>
+                  <button onClick={()=>{ setEErg(null); }}
+                    style={{padding:"13px 16px",minHeight:48,borderRadius:12,border:"1.5px solid #ddd6fe",background:"#fff",color:"#4338ca",fontWeight:800,fontSize:13.5,cursor:"pointer",fontFamily:"inherit"}}>
+                    Zurück
+                  </button>
+                </div>
+                <p style={{fontSize:11,color:"#94a3b8",marginTop:9,lineHeight:1.5}}>
+                  Nichts wird gespeichert, solange du nicht „So übernehmen“ tippst.
+                </p>
+              </>
+            )}
+          </div>
+        )}
 
         {tab==="aufgaben"&&(
           <div style={{flex:1,overflowY:"auto",padding:"14px"}}>

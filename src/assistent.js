@@ -399,6 +399,80 @@ export const rechneErgebnis = (themaId, antworten={}) => {
 };
 
 // ----------------------------------------------------------------
+// Einteilung in Leistungsgruppen besprechen. Der Assistent rechnet einen
+// nachvollziehbaren Vorschlag - entschieden wird er vom Trainer. Deshalb
+// steht bei jedem Kind, WORAUS sich der Wert ergibt, und jede Zuordnung
+// lässt sich vor dem Übernehmen noch ändern.
+// ----------------------------------------------------------------
+export const EINTEILUNG_FRAGEN = [
+  { id:"worauf", text:"Worauf soll ich vor allem schauen?", opt:[
+    { id:"staerke",     label:"Aktuelle Stärke",            gew:{staerke:.60, entwicklung:.20, dabei:.20} },
+    { id:"entwicklung", label:"Entwicklung der letzten Monate", gew:{staerke:.30, entwicklung:.50, dabei:.20} },
+    { id:"dabei",       label:"Zuverlässigkeit im Training", gew:{staerke:.35, entwicklung:.15, dabei:.50} },
+  ]},
+  { id:"schnitt", text:"Wie groß soll die stärkste Gruppe sein?", opt:[
+    { id:"drittel", label:"Etwa gleich große Gruppen" },
+    { id:"haelfte", label:"Die stärkste Hälfte zusammen" },
+    { id:"abstand", label:"Dort trennen, wo der Abstand am größten ist" },
+  ]},
+];
+
+const runde1 = x => Math.round(x*10)/10;
+
+// kinder: [{id,name,schnitt(0-5|null),trend(-1..1|null),quote(0..1|null)}]
+export const rechneEinteilung = ({ kinder=[], gruppen=[], worauf="staerke", schnitt="drittel" }) => {
+  const gew = (EINTEILUNG_FRAGEN[0].opt.find(o=>o.id===worauf)||EINTEILUNG_FRAGEN[0].opt[0]).gew;
+  const mitSkill = kinder.filter(k=>typeof k.schnitt==="number");
+  const basisDuenn = mitSkill.length < Math.ceil(kinder.length/2);
+
+  const bewertet = kinder.map(k=>{
+    // Jede Zutat auf 0..1, fehlende Angaben zählen neutral (0,5) - so
+    // rutscht niemand nach unten, nur weil nichts gepflegt ist.
+    const sStaerke     = typeof k.schnitt==="number" ? Math.min(1,Math.max(0,k.schnitt/5)) : .5;
+    const sEntwicklung = typeof k.trend==="number"   ? Math.min(1,Math.max(0,(k.trend+1)/2)) : .5;
+    const sDabei       = typeof k.quote==="number"   ? Math.min(1,Math.max(0,k.quote)) : .5;
+    const wert = sStaerke*gew.staerke + sEntwicklung*gew.entwicklung + sDabei*gew.dabei;
+    const teile = [
+      typeof k.schnitt==="number" ? `Stärke ${runde1(k.schnitt)}/5` : "Stärke nicht gepflegt",
+      typeof k.trend==="number"   ? `Entwicklung ${k.trend>0?"+":""}${runde1(k.trend)}` : null,
+      typeof k.quote==="number"   ? `${Math.round(k.quote*100)} % dabei` : null,
+    ].filter(Boolean);
+    return { ...k, wert, teile };
+  }).sort((a,b)=>b.wert-a.wert || String(a.name).localeCompare(String(b.name),"de"));
+
+  // Schnittpunkte bestimmen: gleich große Gruppen, obere Hälfte, oder dort
+  // trennen, wo zwischen zwei Kindern der größte Abstand liegt.
+  const n = bewertet.length, g = Math.max(1, gruppen.length);
+  let grenzen;
+  if(schnitt==="haelfte" && g>=2){
+    const erste = Math.round(n/2);
+    const restG = g-1, restN = n-erste;
+    grenzen = [erste, ...Array.from({length:restG-1},(_,i)=>erste+Math.round(restN*(i+1)/restG))];
+  } else if(schnitt==="abstand" && g>=2 && n>g){
+    const luecken = bewertet.slice(0,-1).map((k,i)=>({ i:i+1, d:k.wert-bewertet[i+1].wert }))
+      .sort((a,b)=>b.d-a.d).slice(0,g-1).map(x=>x.i).sort((a,b)=>a-b);
+    grenzen = luecken;
+  } else {
+    grenzen = Array.from({length:g-1},(_,i)=>Math.round(n*(i+1)/g));
+  }
+  const gruppeVon = (ix) => {
+    let gi=0; for(const gr of grenzen){ if(ix>=gr) gi++; }
+    return gruppen[Math.min(gi,g-1)] || null;
+  };
+  const vorschlag = bewertet.map((k,ix)=>({ ...k, gruppe: gruppeVon(ix) }));
+
+  const verteilung = gruppen.map(gr=>({ gruppe:gr, n:vorschlag.filter(v=>v.gruppe&&v.gruppe.id===gr.id).length }));
+  const rechenweg = [
+    `Gewichtung: Stärke ${Math.round(gew.staerke*100)} %, Entwicklung ${Math.round(gew.entwicklung*100)} %, Beteiligung ${Math.round(gew.dabei*100)} %`,
+    schnitt==="haelfte" ? "Schnitt: die stärkste Hälfte bildet die erste Gruppe"
+      : schnitt==="abstand" ? "Schnitt: getrennt wird dort, wo zwischen zwei Kindern der größte Abstand liegt"
+      : "Schnitt: etwa gleich große Gruppen",
+    verteilung.map(v=>`${v.gruppe.name}: ${v.n}`).join(" · "),
+  ];
+  return { vorschlag, verteilung, rechenweg, basisDuenn, mitSkill:mitSkill.length, gesamt:kinder.length };
+};
+
+// ----------------------------------------------------------------
 // Erkennung: Welches Thema meint der Trainer? Bewusst schlicht und
 // nachvollziehbar - Treffer je Stichwort, das beste Thema gewinnt.
 // ----------------------------------------------------------------
