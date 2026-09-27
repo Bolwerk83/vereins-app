@@ -89,6 +89,56 @@ await page.waitForTimeout(1200);
   if(a&&new Date(a.bis)>new Date(a.faellig)) ok("Der Zeitraum ist begrenzt – die Aufgabe läuft nicht ewig");
   else fail("Kein sinnvoller Zeitraum"); }
 
+// ===== 2b) Geführte Fragen: Antwortknöpfe statt Tippen =====
+{ if(await klick("🧮 Fragen beantworten")) ok("Es gibt einen geführten Weg: „🧮 Fragen beantworten“");
+  else fail("Kein geführter Weg angeboten");
+  await page.waitForTimeout(800);
+  b=await body();
+  if(/FRAGE 1 VON 4/.test(b)) ok("Die erste von vier Fragen steht da");
+  else fail("Keine Fragen: "+b.slice(-400).replace(/\n/g," | "));
+  if(/Wo geht der Ball meistens verloren/.test(b)) ok("Und sie passt zum Thema");
+  else fail("Frage passt nicht zum Thema");
+  // vier Antworten per Knopf
+  const antworten=["Sie spielen gar nicht erst ab","Mehr als 16","75 Minuten","Halle"];
+  for(const a2 of antworten){
+    const g=await klick("^"+a2.replace(/[.*+?^${}()|[\]\\]/g,"\\$&"));
+    if(!g) fail("Antwort nicht anklickbar: "+a2);
+    await page.waitForTimeout(700);
+  }
+  ok("Alle vier Fragen lassen sich per Knopfdruck beantworten");
+  b=await body();
+  if(/🧮 Ergebnis/.test(b)) ok("Danach kommt ein Ergebnis");
+  else fail("Kein Ergebnis: "+b.slice(-500).replace(/\n/g," | "));
+  if(/SO KOMMT DAS ZUSTANDE/.test(b)) ok("Mit offenem Rechenweg");
+  else fail("Kein Rechenweg");
+  if(/3 Stationen im Wechsel/.test(b)) ok("Der Rechenweg nutzt die Antwort „mehr als 16“: 3 Stationen");
+  else fail("Gruppenzahl nicht berechnet: "+b.slice(-500).replace(/\n/g," | "));
+  if(/60 Minuten echte Übungszeit/.test(b)) ok("Und rechnet aus 75 Minuten 60 Minuten echte Übungszeit");
+  else fail("Zeit nicht gerechnet");
+  if(/20 × 12 m/.test(b)) ok("Die Halle führt zu kleineren Feldern (20 × 12 m)");
+  else fail("Ort nicht berücksichtigt");
+  if(/DAS WÜRDE ICH MACHEN/.test(b)) ok("Dazu drei konkrete Maßnahmen");
+  else fail("Keine Maßnahmen"); }
+
+// ===== 2c) Gleiche Antworten, gleiches Ergebnis =====
+{ const vorher=await page.evaluate(()=>{ const t=document.body.innerText; const i=t.lastIndexOf("SO KOMMT DAS ZUSTANDE");
+    return t.slice(i,i+320); });
+  await klick("🧮 Fragen beantworten"); await page.waitForTimeout(700);
+  for(const a2 of ["Sie spielen gar nicht erst ab","Mehr als 16","75 Minuten","Halle"]){
+    await klick("^"+a2.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")); await page.waitForTimeout(600); }
+  const nachher=await page.evaluate(()=>{ const t=document.body.innerText; const i=t.lastIndexOf("SO KOMMT DAS ZUSTANDE");
+    return t.slice(i,i+320); });
+  if(vorher&&vorher===nachher) ok("Dieselben Antworten ergeben dasselbe Ergebnis – nachvollziehbar wie ein Taschenrechner");
+  else fail("Ergebnis schwankt bei gleichen Antworten"); }
+
+// ===== 2d) Einheit aus dem Ergebnis =====
+{ if(await klick("⚽ Passende Einheit bauen")) ok("Aus dem Ergebnis lässt sich direkt die Einheit bauen");
+  else fail("Kein Knopf zur Einheit");
+  await page.waitForTimeout(1300);
+  b=await body();
+  if(/Vorschlag für eine Einheit/.test(b)) ok("Und sie kommt");
+  else fail("Keine Einheit aus dem Ergebnis"); }
+
 // ===== 3) Training bauen =====
 if(await klick("⚽ Training vorschlagen")) ok("„Training vorschlagen“ ist anklickbar"); else fail("Kein Trainings-Knopf");
 await page.waitForTimeout(1200);

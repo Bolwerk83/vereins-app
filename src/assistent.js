@@ -192,6 +192,213 @@ export const TRICKS = [
 ];
 
 // ----------------------------------------------------------------
+// Geführter Teil: Statt frei zu formulieren, beantwortet der Trainer ein
+// paar Fragen per Knopfdruck - daraus wird gerechnet. Gleiche Antworten
+// ergeben immer dasselbe Ergebnis, und der Rechenweg steht dabei.
+// Drei Fragen stellt die App immer (Anzahl, Dauer, Ort), davor kommt die
+// Frage, die zum Thema gehört.
+// ----------------------------------------------------------------
+const FRAGE_ANZAHL = { id:"anzahl", text:"Wie viele Kinder sind im Training?", opt:[
+  { id:"klein",  label:"Bis 10" },
+  { id:"mittel", label:"11 bis 16" },
+  { id:"gross",  label:"Mehr als 16" },
+]};
+const FRAGE_DAUER = { id:"dauer", text:"Wie lange dauert die Einheit?", opt:[
+  { id:"45", label:"45 Minuten" },
+  { id:"60", label:"60 Minuten" },
+  { id:"75", label:"75 Minuten" },
+  { id:"90", label:"90 Minuten" },
+]};
+const FRAGE_ORT = { id:"ort", text:"Wo trainiert ihr?", opt:[
+  { id:"platz",   label:"Ganzer Platz" },
+  { id:"halb",    label:"Halbes Feld" },
+  { id:"halle",   label:"Halle" },
+]};
+
+// Themen-Frage: die eine Frage, die das Ergebnis wirklich dreht.
+export const THEMA_FRAGE = {
+  zusammenspiel:{ id:"wo", text:"Wo geht der Ball meistens verloren?", opt:[
+    { id:"annahme", label:"Schon bei der Ballannahme", focus:"technik",
+      folge:"Dann ist es kein Passproblem – die erste Berührung muss sitzen.",
+      massnahmen:["Ballannahme mit der zweiten Berührung in den freien Raum – 10 Minuten in jeder Einheit.",
+                  "Zuspiele immer aus der Bewegung, nie aus dem Stand.",
+                  "Vor der Annahme über die Schulter schauen lassen – ein Wort genügt: „Schulter!“"] },
+    { id:"abspiel", label:"Beim Abspiel – Pässe kommen nicht an", focus:"technik",
+      folge:"Passtechnik und Passhärte sind das Thema, nicht die Spielidee.",
+      massnahmen:["Passen auf kurze Distanz mit fester Innenseite – lieber zu fest als zu lasch.",
+                  "Immer auf den richtigen Fuß passen: den, der vom Gegner weg zeigt.",
+                  "Pässe nur flach – hohe Bälle in der Jugend sind verlorene Bälle."] },
+    { id:"nie", label:"Sie spielen gar nicht erst ab", focus:"spielform",
+      folge:"Ein Wahrnehmungsproblem: Sie sehen den Mitspieler nicht, sie wollen ihn nicht übersehen.",
+      massnahmen:["Kleine Felder, viele Ballkontakte: 4 gegen 4, Tor zählt doppelt nach drei Pässen.",
+                  "Anbieten trainieren – wer keinen Ball hat, bewegt sich aus dem Deckungsschatten.",
+                  "Den Pass loben, nicht das Tor. Drei Wochen konsequent, dann kippt es."] },
+  ]},
+  abschluss:{ id:"wann", text:"Woran scheitert der Abschluss?", opt:[
+    { id:"technik", label:"Sie treffen den Ball nicht sauber", focus:"torschuss",
+      folge:"Schusstechnik ohne Druck aufbauen, dann erst Tempo dazu.",
+      massnahmen:["Ruhige Abschlüsse aus 8–10 Metern, Standbein neben den Ball.",
+                  "Innenseite vor Spann – Genauigkeit schlägt Härte in der Jugend.",
+                  "Jedes Kind mindestens 15 Abschlüsse je Einheit."] },
+    { id:"hektik", label:"Sie hetzen und schließen zu früh ab", focus:"torschuss",
+      folge:"Nicht die Technik ist das Problem, sondern die Ruhe vor dem Tor.",
+      massnahmen:["Abschluss immer mit Torwart – nie ins leere Tor.",
+                  "Eine Vorgabe: erst hinschauen, dann schießen. Blick zum Tor vor dem Schuss.",
+                  "Nach jedem Schuss nachsetzen – die Hälfte der Tore fällt aus Abprallern."] },
+    { id:"chancen", label:"Wir kommen kaum zu Chancen", focus:"spielform",
+      folge:"Das ist kein Abschluss-, sondern ein Spielaufbau-Thema.",
+      massnahmen:["Spielformen mit Überzahl im Angriff (4 gegen 3) – so entstehen Abschlüsse.",
+                  "Flügel bespielen statt durch die Mitte drängen.",
+                  "Nach Balleroberung sofort nach vorn – drei Sekunden Umschaltfenster."] },
+  ]},
+  verteidigen:{ id:"wie", text:"Wie fallen die Gegentore?", opt:[
+    { id:"konter", label:"Nach eigenem Ballverlust – Konter", focus:"taktik",
+      folge:"Das Umschalten nach hinten ist die Baustelle, nicht das Verteidigen selbst.",
+      massnahmen:["Nach Ballverlust sofort einer zum Ball, die anderen zurück – als feste Regel.",
+                  "Im Training Spielformen mit Umschalt-Pfiff: auf Zuruf wechselt der Ballbesitz.",
+                  "Nicht alle nach vorn: einer bleibt immer hinten, auch beim eigenen Angriff."] },
+    { id:"zweikampf", label:"Wir verlieren die Zweikämpfe", focus:"taktik",
+      folge:"Stellung und Abstand sind wichtiger als Tempo oder Kraft.",
+      massnahmen:["Eine Armlänge Abstand, seitlich stehen, zur Außenlinie lenken.",
+                  "1 gegen 1 defensiv üben – ohne Grätsche, nur Stellungsspiel.",
+                  "Geduld belohnen: wer abwartet und den Ball erobert, wird gelobt."] },
+    { id:"standard", label:"Bei Ecken und Freistößen", focus:"taktik",
+      folge:"Standards sind reine Absprache – das lässt sich in zwei Einheiten lösen.",
+      massnahmen:["Feste Zuordnung: jedes Kind kennt seinen Gegenspieler.",
+                  "Einer am kurzen Pfosten, einer am langen – immer dieselben.",
+                  "Nach dem Klären sofort herausrücken, geschlossen."] },
+  ]},
+  technik:{ id:"stand", text:"Wie sicher sind sie am Ball?", opt:[
+    { id:"anfang", label:"Noch sehr wacklig", focus:"technik",
+      folge:"Erst Ballgefühl, noch keine Finten – sonst frustriert es nur.",
+      massnahmen:["Jedes Kind ein Ball, freies Dribbeln mit Richtungswechsel auf Zuruf.",
+                  "Ballführung mit beiden Füßen, langsam und sauber statt schnell und wild.",
+                  "Keine Warteschlangen – niemand steht länger als zehn Sekunden."] },
+    { id:"solide", label:"Solide, aber wenig Mut", focus:"technik",
+      folge:"Sie können mehr, als sie sich trauen. Das löst man über Erfolgserlebnisse.",
+      massnahmen:["Trick der Woche: 3 Minuten zu Beginn, zwei Wochen derselbe Trick.",
+                  "1 gegen 1 mit kleinen Toren – dort darf jeder alles probieren.",
+                  "Fehlversuche ausdrücklich loben, sonst probiert es beim nächsten Mal keiner."] },
+    { id:"gut", label:"Technisch schon stark", focus:"spielform",
+      folge:"Technik unter Druck ist der nächste Schritt – im freien Spiel bringt sie sonst nichts.",
+      massnahmen:["Enge Felder mit Gegnerdruck – Technik nur mit Zeitdruck trainieren.",
+                  "Zwei-Kontakt-Regel in Spielformen.",
+                  "Finten gezielt gegen echte Gegner, nicht gegen Hütchen."] },
+  ]},
+  kondition:{ id:"was", text:"Was fehlt konkret?", opt:[
+    { id:"puste", label:"Nach 20 Minuten ist die Luft raus", focus:"kondition",
+      folge:"Grundlagen fehlen – im Kinderfußball baut man die über Spielformen auf, nicht über Läufe.",
+      massnahmen:["Viele kleine Spiele mit kurzen Pausen statt Dauerlauf.",
+                  "Feldgröße vergrößern – längere Wege bringen die Ausdauer von selbst.",
+                  "Nie als Strafe laufen lassen."] },
+    { id:"antritt", label:"Sie kommen nicht in die Zweikämpfe", focus:"kondition",
+      folge:"Antritt und Richtungswechsel, nicht Ausdauer.",
+      massnahmen:["Kurze Sprints über 5–10 Meter mit Richtungswechsel, immer mit Ball.",
+                  "Reaktionsstarts auf Zuruf oder Signal.",
+                  "Volle Pausen dazwischen – sonst wird daraus Ausdauertraining."] },
+    { id:"koord", label:"Sie wirken unkoordiniert", focus:"kondition",
+      folge:"Oft Wachstum. Dann hilft Koordination, nicht mehr Belastung.",
+      massnahmen:["Jedes Aufwärmen 5 Minuten Hüpfen, Landen, Richtungswechsel.",
+                  "Technik vor Tempo, solange es hakt.",
+                  "Geduld – das gibt sich meist nach wenigen Wochen von selbst."] },
+  ]},
+  torwart:{ id:"tw", text:"Was ist die Situation im Tor?", opt:[
+    { id:"keiner", label:"Niemand will ins Tor", focus:"technik",
+      folge:"Normal in diesem Alter. Reihum lösen statt überreden.",
+      massnahmen:["Feste Rotation: jede Einheit ein anderes Kind, jeder kommt dran.",
+                  "Torwartspiel als Spiel verpacken – Fangen, Werfen, Reaktion.",
+                  "Nach Gegentoren zuerst loben, was gut war."] },
+    { id:"einer", label:"Einer macht es immer", focus:"technik",
+      folge:"Riskant: Er verliert die Feldspieler-Ausbildung, und bei Ausfall steht ihr ohne da.",
+      massnahmen:["Auch der Stamm-Torwart spielt jede Einheit die Hälfte im Feld.",
+                  "Zwei weitere Kinder aufbauen – eines reicht nicht als Reserve.",
+                  "Torwart als Mitspieler trainieren: mit dem Fuß anspielbar sein."] },
+    { id:"technik", label:"Technisch unsicher", focus:"technik",
+      folge:"Fangen vor Abwehren – in dieser Reihenfolge.",
+      massnahmen:["Sicher fangen üben, erst danach abklatschen und hechten.",
+                  "Grundstellung: einen Schritt aus dem Tor, Gewicht auf den Fußballen.",
+                  "Bälle flach und mittelhoch – hohe Bälle erst viel später."] },
+  ]},
+  teamgeist:{ id:"lage", text:"Woran merkst du es am stärksten?", opt:[
+    { id:"koepfe", label:"Bei Rückstand hängen die Köpfe", focus:"spielform",
+      folge:"Es fehlt ein Erfolgsmaß, das unabhängig vom Ergebnis ist.",
+      massnahmen:["Ein Mannschaftsziel pro Spiel, das nichts mit dem Ergebnis zu tun hat.",
+                  "Nach dem Spiel zuerst drei gute Dinge – nie am Spieltag analysieren.",
+                  "Bei 0:4 das Ziel wechseln: „Wir wollen noch ein Tor machen.“"] },
+    { id:"starke", label:"Die Stärkeren verlieren die Lust", focus:"spielform",
+      folge:"Das ist der Punkt, an dem Mannschaften auseinanderbrechen. Hier hilft die Einteilung in Leistungsgruppen.",
+      massnahmen:["Zwei Mannschaften melden statt einer gemischten – stark gegen stark.",
+                  "Im Training Aufgaben mit unterschiedlichem Anspruch an denselben Stationen.",
+                  "Den Stärkeren Verantwortung geben: Übungen vormachen, Gruppen anleiten."] },
+    { id:"streit", label:"Es gibt Streit untereinander", focus:"spielform",
+      folge:"Meist wenige Kinder und ein wiederkehrendes Muster – nicht die ganze Mannschaft.",
+      massnahmen:["Mannschaften im Training regelmäßig neu mischen – feste Lager auflösen.",
+                  "Streit sofort und kurz klären, nie vor der Gruppe ausbreiten.",
+                  "Gemeinsame Aufgaben außerhalb des Spielfelds – Aufbau, Material, Kiosk."] },
+  ]},
+  eltern:{ id:"was", text:"Worum geht es gerade?", opt:[
+    { id:"spielzeit", label:"Unzufriedenheit mit der Spielzeit", focus:null,
+      folge:"Fast immer fehlende Information, nicht fehlendes Verständnis.",
+      massnahmen:["Die Regel einmal klar sagen und danach nur noch darauf verweisen.",
+                  "Spielzeit grob mitschreiben – mit Zahlen endet jede Diskussion schnell.",
+                  "Einzelgespräch statt Gruppenchat."] },
+    { id:"rand", label:"Coaching vom Spielfeldrand", focus:null,
+      folge:"Die Kinder hören dann zwei Stimmen und keine davon richtig.",
+      massnahmen:["Freundlich, aber verbindlich vereinbaren: Coaching nur vom Trainerteam.",
+                  "Eltern eine Aufgabe geben – wer hilft, ruft weniger.",
+                  "Einmal pro Saison ansprechen, nicht bei jedem Spiel."] },
+    { id:"info", label:"Zu wenig Information", focus:null,
+      folge:"Einfach zu lösen und mit der größten Wirkung.",
+      massnahmen:["1× pro Woche zwei Sätze in die Gruppe: was lief, was kommt.",
+                  "Auch Gutes melden, nicht nur Absagen und Mängel.",
+                  "Termine früh einstellen – Planbarkeit nimmt den meisten Druck."] },
+  ]},
+};
+
+// Die Fragen zu einem Thema: Themen-Frage zuerst, dann die drei festen.
+export const fragenZu = (themaId) => {
+  const tf = THEMA_FRAGE[themaId];
+  return [ ...(tf?[tf]:[]), FRAGE_ANZAHL, FRAGE_DAUER, FRAGE_ORT ];
+};
+
+// Der "Taschenrechner": aus den Antworten wird ein Ergebnis - immer
+// dasselbe bei denselben Antworten, mit offenem Rechenweg.
+export const rechneErgebnis = (themaId, antworten={}) => {
+  const thema = THEMEN.find(t=>t.id===themaId);
+  const tf = THEMA_FRAGE[themaId];
+  const wahl = tf ? (tf.opt.find(o=>o.id===antworten[tf.id]) || null) : null;
+  const anzahl = antworten.anzahl || "mittel";
+  const dauer  = Number(antworten.dauer||60);
+  const ort    = antworten.ort || "platz";
+
+  const focus = (wahl && wahl.focus) || thema?.focus || "auto";
+  // Gruppen: bei vielen Kindern Stationsbetrieb, sonst eine Gruppe.
+  const gruppen = anzahl==="gross" ? 3 : anzahl==="mittel" ? 2 : 1;
+  // In der Halle und auf dem halben Feld bleibt weniger Platz - kürzere
+  // Wege, kleinere Felder, dafür mehr Wiederholungen.
+  const feld = ort==="halle" ? "20 × 12 m" : ort==="halb" ? "30 × 20 m" : "40 × 25 m";
+  const spielform = anzahl==="gross" ? "3 gegen 3 auf zwei Feldern"
+                  : anzahl==="mittel" ? "4 gegen 4" : "3 gegen 3";
+  // Netto-Zeit: Ankommen und Abschluss kosten immer etwas.
+  const netto = Math.max(30, dauer - (dauer>=75?15:10));
+
+  const rechenweg = [
+    wahl && `„${wahl.label}“ → ${wahl.folge}`,
+    `${anzahl==="gross"?"Mehr als 16 Kinder":anzahl==="mittel"?"11 bis 16 Kinder":"Bis 10 Kinder"} → ${gruppen===1?"eine Gruppe, jeder viele Ballkontakte":`${gruppen} Stationen im Wechsel`}`,
+    `${dauer} Minuten → ${netto} Minuten echte Übungszeit (Ankommen und Abschlussspiel abgezogen)`,
+    `${ort==="halle"?"Halle":ort==="halb"?"Halbes Feld":"Ganzer Platz"} → Felder ${feld}, Abschlussspiel ${spielform}`,
+  ].filter(Boolean);
+
+  return {
+    themaId, thema, wahl, focus, gruppen, feld, spielform, dauer, netto,
+    diagnose: wahl ? wahl.folge : (thema?.kern||""),
+    massnahmen: (wahl && wahl.massnahmen) || (thema?.tipps||[]).slice(0,3),
+    rechenweg,
+    trainingsParam: { focus, targetMin:dauer },
+  };
+};
+
+// ----------------------------------------------------------------
 // Erkennung: Welches Thema meint der Trainer? Bewusst schlicht und
 // nachvollziehbar - Treffer je Stichwort, das beste Thema gewinnt.
 // ----------------------------------------------------------------

@@ -6,7 +6,7 @@
 // sehen davon nichts.
 // ----------------------------------------------------------------
 import React, { useState, useRef, useEffect } from "react";
-import { THEMEN, TRICKS, antwortAuf, taktText, naechsteFaelligkeit } from "./assistent.js";
+import { THEMEN, TRICKS, antwortAuf, taktText, naechsteFaelligkeit, fragenZu, rechneErgebnis } from "./assistent.js";
 import { generateTrainingPlan } from "./domain.js";
 import { uid, TH, now } from "./ui.jsx";
 
@@ -59,10 +59,32 @@ export default function TrainerAssistent({ data, save, fire, cl, session, myTids
   };
 
   // Training aus der Übungssammlung bauen - passend zum Schwerpunkt des Themas.
-  const trainingBauen = (thema) => {
-    const uebungen = generateTrainingPlan({ ageKey, targetMin:75, focus:thema.focus||"auto" });
-    setVerlauf(v=>[...v, { von:"assi", art:"training", thema, uebungen,
+  const trainingBauen = (thema, param=null) => {
+    const uebungen = generateTrainingPlan({ ageKey,
+      targetMin: param?.targetMin || 75,
+      focus: param?.focus || thema.focus || "auto" });
+    setVerlauf(v=>[...v, { von:"assi", art:"training", thema, uebungen, param,
       text:`Vorschlag für eine Einheit mit Schwerpunkt „${thema.titel}“ (${uebungen.reduce((s,e)=>s+(e.duration||0),0)} Minuten):` }]);
+  };
+
+  // Geführter Teil: Fragen mit Antwortknöpfen, daraus wird gerechnet.
+  const starteFragen = (thema) => {
+    setVerlauf(v=>[...v, { von:"assi", art:"frage", themaId:thema.id, ix:0, antworten:{} }]);
+  };
+  const antworte = (idx, frageId, optId) => {
+    setVerlauf(v=>{
+      const m = v[idx]; if(!m||m.art!=="frage") return v;
+      const antworten = {...m.antworten, [frageId]:optId};
+      const fragen = fragenZu(m.themaId);
+      const naechst = m.ix+1;
+      const kopf = v.slice(0,idx);
+      const rest = v.slice(idx+1);
+      if(naechst < fragen.length)
+        return [...kopf, {...m, ix:naechst, antworten}, ...rest];
+      const erg = rechneErgebnis(m.themaId, antworten);
+      return [...kopf, {...m, ix:naechst, antworten, fertig:true}, ...rest,
+        { von:"assi", art:"ergebnis", erg }];
+    });
   };
 
   const nurFuerMich = (thema, uebungen) => {
@@ -171,7 +193,8 @@ export default function TrainerAssistent({ data, save, fire, cl, session, myTids
                       {m.thema.tipps.map((x,j)=><li key={j} style={{fontSize:12.5,lineHeight:1.5}}>{x}</li>)}
                     </ul>
                     <div style={{display:"flex",gap:6,flexWrap:"wrap",marginTop:11}}>
-                      {m.thema.focus&&<Knopf haupt onClick={()=>trainingBauen(m.thema)}>⚽ Training vorschlagen</Knopf>}
+                      <Knopf haupt onClick={()=>starteFragen(m.thema)}>🧮 Fragen beantworten</Knopf>
+                      {m.thema.focus&&<Knopf onClick={()=>trainingBauen(m.thema)}>⚽ Training vorschlagen</Knopf>}
                       {m.thema.aufgabe&&<Knopf onClick={()=>aufgabeAnlegen(m.thema)}>🔁 {taktText(m.thema.aufgabe)}</Knopf>}
                       <Knopf onClick={()=>alsWhatsApp(m.thema)}>📤 Eltern-Text</Knopf>
                     </div>
@@ -199,6 +222,58 @@ export default function TrainerAssistent({ data, save, fire, cl, session, myTids
                     </div>
                   </>
                 )}
+
+                {m.art==="frage"&&(()=>{
+                  const fragen=fragenZu(m.themaId);
+                  const f=fragen[Math.min(m.ix,fragen.length-1)];
+                  if(m.fertig) return (
+                    <div style={{marginTop:8,display:"flex",flexDirection:"column",gap:4}}>
+                      {fragen.map(q=>{
+                        const o=q.opt.find(x=>x.id===m.antworten[q.id]);
+                        return o?<div key={q.id} style={{fontSize:12,color:"#475569"}}>✓ {q.text} <b style={{color:"#0f172a"}}>{o.label}</b></div>:null;
+                      })}
+                    </div>
+                  );
+                  return (
+                    <div style={{marginTop:2}}>
+                      <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:6}}>FRAGE {m.ix+1} VON {fragen.length}</div>
+                      <div style={{fontSize:13.5,fontWeight:800,color:"#0f172a",marginBottom:9}}>{f.text}</div>
+                      <div style={{display:"flex",flexDirection:"column",gap:6}}>
+                        {f.opt.map(o=>(
+                          <button key={o.id} onClick={()=>antworte(i,f.id,o.id)}
+                            style={{textAlign:"left",padding:"11px 12px",minHeight:44,borderRadius:11,border:"1.5px solid #ddd6fe",
+                              background:"#faf5ff",color:"#4c1d95",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>
+                            {o.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                {m.art==="ergebnis"&&(()=>{ const e=m.erg; return (
+                  <div>
+                    <div style={{fontWeight:900,fontSize:14,color:"#0f172a",marginBottom:5}}>🧮 Ergebnis</div>
+                    <div style={{fontSize:13,lineHeight:1.55,marginBottom:9}}>{e.diagnose}</div>
+                    <div style={{background:"#f8fafc",border:"1px solid #e2e8f0",borderRadius:10,padding:"9px 11px",marginBottom:10}}>
+                      <div style={{fontSize:10.5,fontWeight:800,color:"#64748b",letterSpacing:.3,marginBottom:5}}>SO KOMMT DAS ZUSTANDE</div>
+                      {e.rechenweg.map((r,j)=>(
+                        <div key={j} style={{fontSize:11.5,color:"#475569",lineHeight:1.5,marginBottom:3}}>• {r}</div>
+                      ))}
+                    </div>
+                    <div style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.3,marginBottom:5}}>DAS WÜRDE ICH MACHEN</div>
+                    <ol style={{margin:"0 0 10px",paddingLeft:18,display:"flex",flexDirection:"column",gap:6}}>
+                      {e.massnahmen.map((x,j)=><li key={j} style={{fontSize:12.5,lineHeight:1.5}}>{x}</li>)}
+                    </ol>
+                    <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+                      <Knopf haupt onClick={()=>trainingBauen(e.thema||THEMEN.find(t=>t.id===e.themaId), e.trainingsParam)}>
+                        ⚽ Passende Einheit bauen ({e.dauer}′)
+                      </Knopf>
+                      {(e.thema||{}).aufgabe&&<Knopf onClick={()=>aufgabeAnlegen(e.thema)}>🔁 {taktText(e.thema.aufgabe)}</Knopf>}
+                      <Knopf onClick={()=>alsWhatsApp(e.thema||THEMEN.find(t=>t.id===e.themaId))}>📤 Eltern-Text</Knopf>
+                    </div>
+                  </div>
+                ); })()}
 
                 {m.art==="tricks"&&(
                   <div style={{display:"flex",flexDirection:"column",gap:12,marginTop:10}}>
@@ -229,7 +304,7 @@ export default function TrainerAssistent({ data, save, fire, cl, session, myTids
         <div style={{padding:"10px 14px 14px",borderTop:"1px solid #f1f5f9"}}>
           <div style={{display:"flex",gap:5,overflowX:"auto",paddingBottom:8}}>
             {THEMEN.slice(0,5).map(th=>(
-              <button key={th.id} onClick={()=>fragen(th.worte[0])} style={{flexShrink:0,padding:"6px 11px",borderRadius:99,
+              <button key={th.id} onClick={()=>{ setVerlauf(v=>[...v,{von:"ich",text:th.titel}]); starteFragen(th); }} style={{flexShrink:0,padding:"6px 11px",borderRadius:99,
                 border:"1.5px solid #e2e8f0",background:"#fff",color:"#475569",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>
                 {th.icon} {th.titel.split(" ")[0].replace("&","")}
               </button>
