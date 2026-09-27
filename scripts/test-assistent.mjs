@@ -1,4 +1,4 @@
-// E2E-Test: Trainer-Assistent (intern, ohne fremden Dienst).
+// E2E-Test: "Co", der Co-Trainer (intern, ohne fremden Dienst).
 //   1. Erreichbar über „Mehr“ – nur für Trainer, nicht für Helfer.
 //   2. Auf „wir müssen das Zusammenspiel verbessern“ kommt das passende
 //      Thema mit konkreten Tipps.
@@ -25,13 +25,13 @@ const klick=(re)=>page.evaluate(r=>{
   const b=[...document.querySelectorAll("button")].find(x=>new RegExp(r).test((x.innerText||"").replace(/\s+/g," ").trim()));
   if(!b||b.disabled) return false; b.click(); return true; }, re instanceof RegExp?re.source:re);
 const dismiss=async()=>{ for(let k=0;k<12;k++){ const done=await page.evaluate(()=>{
-  const fx=[...document.querySelectorAll("div")].filter(d=>getComputedStyle(d).position==="fixed"&&d.querySelector("button")&&d.innerText.length>30&&!/Trainer-Assistent/.test(d.innerText||""));
+  const fx=[...document.querySelectorAll("div")].filter(d=>getComputedStyle(d).position==="fixed"&&d.querySelector("button")&&d.innerText.length>30&&!/Co – dein Co-Trainer|Co · dein Co-Trainer/.test(d.innerText||""));
   for(const f of fx){ const b=[...f.querySelectorAll("button")].find(x=>/geht|Los|Verstanden|Alles klar|Fertig|Jetzt nicht|Weiter →|Überspringen|Start/i.test(x.innerText)); if(b){ b.click(); return false; } }
   return true; }); await page.waitForTimeout(400); if(done) break; } };
 const oeffneAssistent = async () => {
   await page.evaluate(()=>{ const b=[...document.querySelectorAll("button")].find(x=>/^(Mehr|=)$/.test((x.innerText||"").trim())); b&&b.click(); });
   await page.waitForTimeout(900);
-  const auf=await page.evaluate(()=>{ const b=[...document.querySelectorAll("button,div,a")].find(x=>/Trainer-Assistent/.test((x.innerText||"").trim())&&(x.innerText||"").length<40);
+  const auf=await page.evaluate(()=>{ const b=[...document.querySelectorAll("button,div,a")].find(x=>/Co – dein Co-Trainer|Co · dein Co-Trainer/.test((x.innerText||"").trim())&&(x.innerText||"").length<40);
     if(!b) return false; b.click(); return true; });
   await page.waitForTimeout(1200); return auf;
 };
@@ -63,7 +63,7 @@ const trId = await page.evaluate(()=>{ const d=JSON.parse(localStorage.getItem("
 await page.reload({waitUntil:"networkidle"}); await page.waitForTimeout(2800); await dismiss();
 
 // ===== 1) Erreichbar =====
-if(await oeffneAssistent()) ok("Über „Mehr“ ist der Trainer-Assistent erreichbar");
+if(await oeffneAssistent()) ok("Über „Mehr“ ist Co erreichbar");
 else { fail("Nicht erreichbar: "+(await body()).slice(0,300).replace(/\n/g," | ")); process.exit(1); }
 let b=await body();
 if(/Intern für das Trainerteam/.test(b)) ok("Er weist sich als internes Werkzeug aus");
@@ -195,7 +195,7 @@ await page.goto("http://127.0.0.1:4343/", { waitUntil:"networkidle" }); await pa
 { await page.evaluate(()=>{ const b2=[...document.querySelectorAll("button")].find(x=>/^(Mehr|=)$/.test((x.innerText||"").trim())); b2&&b2.click(); });
   await page.waitForTimeout(900);
   const b2=await body();
-  if(!/Trainer-Assistent/.test(b2)) ok("Helfer bekommen den Assistenten nicht angeboten");
+  if(!/Co – dein Co-Trainer|Co · dein Co-Trainer/.test(b2)) ok("Helfer bekommen den Assistenten nicht angeboten");
   else fail("Helfer sieht den Assistenten"); }
 
 if(errors.length){ console.log("JS-FEHLER:"); [...new Set(errors)].forEach(e=>console.log(" -",e.slice(0,150))); }

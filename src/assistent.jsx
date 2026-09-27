@@ -1,5 +1,5 @@
 // ----------------------------------------------------------------
-// Trainer-Assistent: ein interner Gesprächspartner für das Trainerteam.
+// "Co" - der Co-Trainer: ein interner Gesprächspartner für das Trainerteam.
 // Er antwortet aus der eigenen Wissensbasis (assistent.js) und baut
 // Trainings aus der vorhandenen Übungssammlung. Kein fremder Dienst.
 // Alles, was hier entsteht, bleibt beim Trainerteam - Eltern und Kinder
@@ -43,7 +43,7 @@ export default function TrainerAssistent({ data, save, fire, cl, session, myTids
     : String(team?.cat||"").toLowerCase().includes("bambini") ? "bambini" : "all";
 
   const [verlauf,setVerlauf] = useState([{ von:"assi", art:"hallo",
-    text:"Moin! Ich bin euer Trainer-Assistent. Schreib mir, woran es gerade hakt – zum Beispiel „wir müssen das Zusammenspiel verbessern“, „wir kriegen zu viele Gegentore“ oder „zeig mir Tricks“." }]);
+    text:"Moin, ich bin Co – euer Co-Trainer. Schreib mir, woran es gerade hakt – zum Beispiel „wir müssen das Zusammenspiel verbessern“, „wir kriegen zu viele Gegentore“ oder „zeig mir Tricks“." }]);
   const [frage,setFrage] = useState("");
   const [tab,setTab] = useState("chat");
   const [eAnt,setEAnt] = useState({});        // Antworten zur Einteilung
@@ -202,7 +202,7 @@ export default function TrainerAssistent({ data, save, fire, cl, session, myTids
         <div style={{padding:"14px 16px 10px",borderBottom:"1px solid #f1f5f9",display:"flex",alignItems:"center",gap:10}}>
           <span style={{fontSize:22}}>🧠</span>
           <div style={{flex:1,minWidth:0}}>
-            <div style={{fontWeight:900,fontSize:16,color:"#0f172a"}}>Trainer-Assistent</div>
+            <div style={{fontWeight:900,fontSize:16,color:"#0f172a"}}>Co <span style={{fontWeight:600,fontSize:12,color:"#64748b"}}>· dein Co-Trainer</span></div>
             <div style={{fontSize:11,color:"#64748b"}}>Intern für das Trainerteam · {team?.name||"Mannschaft"}</div>
           </div>
           <button onClick={onClose} aria-label="Schließen" style={{width:36,height:36,borderRadius:10,border:"none",background:"#f1f5f9",color:"#475569",fontSize:16,cursor:"pointer",fontFamily:"inherit"}}>✕</button>

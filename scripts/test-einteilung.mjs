@@ -1,5 +1,5 @@
 // E2E-Test: Einteilung in Leistungsgruppen mit dem Assistenten besprechen.
-//   1. Eigener Reiter „🎯 Einteilung“ im Trainer-Assistenten.
+//   1. Eigener Reiter „🎯 Einteilung“ bei Co.
 //   2. Zwei Fragen: worauf schauen, wo trennen.
 //   3. Der Vorschlag nennt je Kind die Begründung (Stärke, Entwicklung,
 //      Beteiligung) und den Rechenweg.
@@ -25,13 +25,13 @@ const klick=(re)=>page.evaluate(r=>{
   const b=[...document.querySelectorAll("button")].find(x=>new RegExp(r).test((x.innerText||"").replace(/\s+/g," ").trim()));
   if(!b||b.disabled) return false; b.click(); return true; }, re instanceof RegExp?re.source:re);
 const dismiss=async()=>{ for(let k=0;k<12;k++){ const done=await page.evaluate(()=>{
-  const fx=[...document.querySelectorAll("div")].filter(d=>getComputedStyle(d).position==="fixed"&&d.querySelector("button")&&d.innerText.length>30&&!/Trainer-Assistent/.test(d.innerText||""));
+  const fx=[...document.querySelectorAll("div")].filter(d=>getComputedStyle(d).position==="fixed"&&d.querySelector("button")&&d.innerText.length>30&&!/Co – dein Co-Trainer|Co · dein Co-Trainer/.test(d.innerText||""));
   for(const f of fx){ const b=[...f.querySelectorAll("button")].find(x=>/geht|Los|Verstanden|Alles klar|Fertig|Jetzt nicht|Weiter →|Überspringen|Start/i.test(x.innerText)); if(b){ b.click(); return false; } }
   return true; }); await page.waitForTimeout(400); if(done) break; } };
 const oeffne = async () => {
   await page.evaluate(()=>{ const b=[...document.querySelectorAll("button")].find(x=>/^(Mehr|=)$/.test((x.innerText||"").trim())); b&&b.click(); });
   await page.waitForTimeout(900);
-  await page.evaluate(()=>{ const b=[...document.querySelectorAll("button,div,a")].find(x=>/Trainer-Assistent/.test((x.innerText||"").trim())&&(x.innerText||"").length<40); b&&b.click(); });
+  await page.evaluate(()=>{ const b=[...document.querySelectorAll("button,div,a")].find(x=>/Co – dein Co-Trainer|Co · dein Co-Trainer/.test((x.innerText||"").trim())&&(x.innerText||"").length<40); b&&b.click(); });
   await page.waitForTimeout(1300);
   await klick("🎯 Einteilung"); await page.waitForTimeout(800);
 };

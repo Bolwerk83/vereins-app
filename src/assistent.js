@@ -1,5 +1,5 @@
 // ----------------------------------------------------------------
-// Wissensbasis des Trainer-Assistenten. Reine Daten + Erkennung, keine
+// Wissensbasis von "Co", dem Co-Trainer. Reine Daten + Erkennung, keine
 // Oberfläche. Bewusst offline: die Antworten kommen aus dieser Datei und
 // aus der Übungssammlung (drills.js) - kein fremder Dienst, keine Kosten.
 // Später lässt sich hier eine echte KI dazuschalten, ohne dass die

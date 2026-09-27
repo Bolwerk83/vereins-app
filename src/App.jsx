@@ -2459,7 +2459,7 @@ function BottomNav({ tab, setTab, isAdmin, isHelper, isParent=false, parentStats
         { id:"waitlist",   label:"Warteliste",         icon:"WL", hidden: isHelper },
         { id:"saisoncheck",label:"📝 Saison-Check",     icon:"SC", hidden: isHelper||isAdmin||mods.saison===false },
         { id:"module",     label:"🧩 Module",           icon:"MO", hidden: isHelper },
-        { id:"assistent",  label:"🧠 Trainer-Assistent", icon:"KI", hidden: isHelper },
+        { id:"assistent",  label:"🧠 Co – dein Co-Trainer", icon:"KI", hidden: isHelper },
         { id:"changelog",  label:"📈 Entwicklung",       icon:"CL" },
       ].filter(x=>!x.hidden),
     },
