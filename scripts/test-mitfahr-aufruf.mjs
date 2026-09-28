@@ -111,6 +111,8 @@ if(/Wer hat noch einen Platz frei/.test(t)) ok("Überschrift spricht die Eltern 
 else fail("Keine ansprechende Überschrift: "+t.slice(0,120));
 if(t.includes("SV Adler")&&/Adler-Arena/.test(t)) ok("Termin und Ort stehen drin");
 else fail("Termin/Ort fehlen: "+t.slice(0,200));
+if(/(So|Mo|Di|Mi|Do|Fr|Sa), \d\d\.\d\d\.\d{4}/.test(t)) ok("Das Datum steht mit Leerzeichen nach dem Wochentag („So, 13.09.2026“)");
+else fail("Termin/Ort fehlen: "+t.slice(0,200));
 { const v1=daten.sucht1.split(" ")[0], v2=daten.sucht2.split(" ")[0];
   if(t.includes("• "+v1)&&t.includes("• "+v2)) ok(`Beide Suchenden stehen mit Vornamen drin (${v1}, ${v2})`);
   else fail("Suchende fehlen: "+t.slice(0,300));

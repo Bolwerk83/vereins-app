@@ -245,7 +245,7 @@ export const validTrainerPw = pw => typeof pw==="string" && pw.trim().length>=6 
 export const now   = () => new Date().toISOString().slice(0,10);
 export const addD  = (iso,n) => { const d=new Date(iso+"T12:00:00"); d.setDate(d.getDate()+n); return d.toISOString().slice(0,10); };
 export const addW  = (iso,n) => addD(iso,n*7);
-export const fmtD  = iso => { const d=new Date(iso+"T12:00:00"); return `${["So","Mo","Di","Mi","Do","Fr","Sa"][d.getDay()]},${String(d.getDate()).padStart(2,"0")}.${String(d.getMonth()+1).padStart(2,"0")}.${d.getFullYear()}`; };
+export const fmtD  = iso => { const d=new Date(iso+"T12:00:00"); return `${["So","Mo","Di","Mi","Do","Fr","Sa"][d.getDay()]}, ${String(d.getDate()).padStart(2,"0")}.${String(d.getMonth()+1).padStart(2,"0")}.${d.getFullYear()}`; };
 
 // ----------------------------------------------------------------
 // Standort & Umkreis (Offline-Schätzung über die 2-stellige PLZ-Leitregion).
