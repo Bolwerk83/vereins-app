@@ -17288,7 +17288,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
             sah nicht, wer zu- oder abgesagt hat. Die Rueckmeldungen kommen
             deshalb immer zuerst, die Turnier-Planung schliesst darunter an. */}
         {viewEv.type==="turnier"&&(
-          <VoteOverview ev={viewEv} players={local.players} playerProfiles={local.playerProfiles||[]} teams={local.teams} myTids={myTids} cl={myClub}
+          <VoteOverview ev={viewEv} {...gruppenProps(viewEv, local, save, fire, jaSpielerNamen(viewEv))} players={local.players} playerProfiles={local.playerProfiles||[]} teams={local.teams} myTids={myTids} cl={myClub}
             readOnly={isHelper} trainerNames={trainerNames} helperNames={helperNames} allEvents={local.events} allTeams={local.teams}
             myKids={isHelper?[]:(((local.trainers||[]).find(x=>x.id===session?.id)?.childNames)||"").split(",").map(x=>x.trim()).filter(Boolean)}
             staff={staffNeed(viewEv,{ perStaff:myClub?.clubSettings?.playersPerStaff||6, trainers:(local.trainers||[]).filter(trn=>(trn.tids||[]).includes(viewEv.tid)&&isActive(trn)).length, squad:(local.playerProfiles||[]).filter(pp=>pp.mainTid===viewEv.tid&&!pp.archived).length, yesPlayers:jaSpieler(viewEv) })}
@@ -17355,7 +17355,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
               {viewEv.note&&<div style={{background:"#fffbeb",border:"1.5px solid #fde68a",borderRadius:12,padding:"10px 13px",fontSize:13,color:"#92400e",fontWeight:500}}>{viewEv.note}</div>}
               <div style={{textAlign:"center",fontSize:12.5,color:"#64748b",padding:"6px"}}>Info-Termin – keine Abstimmung, keine Anwesenheits-Auswertung.</div>
             </div>
-          : <VoteOverview ev={viewEv} players={local.players} playerProfiles={local.playerProfiles||[]} teams={local.teams} myTids={myTids} cl={myClub}
+          : <VoteOverview ev={viewEv} {...gruppenProps(viewEv, local, save, fire, jaSpielerNamen(viewEv))} players={local.players} playerProfiles={local.playerProfiles||[]} teams={local.teams} myTids={myTids} cl={myClub}
               readOnly={isHelper} trainerNames={trainerNames} helperNames={helperNames} allEvents={local.events} allTeams={local.teams}
               myKids={isHelper?[]:(((local.trainers||[]).find(x=>x.id===session?.id)?.childNames)||"").split(",").map(x=>x.trim()).filter(Boolean)}
               staff={staffNeed(viewEv,{ perStaff:myClub?.clubSettings?.playersPerStaff||6, trainers:(local.trainers||[]).filter(trn=>(trn.tids||[]).includes(viewEv.tid)&&isActive(trn)).length, squad:(local.playerProfiles||[]).filter(pp=>pp.mainTid===viewEv.tid&&!pp.archived).length, yesPlayers:jaSpieler(viewEv) })}
@@ -17493,6 +17493,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
         {!isHelper&&<AttendanceCheckoff ev={viewEv}
           teamPlayers={squadOf(viewEv.tid)} teamPlusAus={squadPlusOf(viewEv.tid)}
           trainerNames={trainerNames} helperNames={helperNames} allEvents={local.events} allTeams={local.teams}
+          {...gruppenProps(viewEv, local, save, fire, jaSpielerNamen(viewEv))}
           onSetVote={(name,val,grund)=>{
             const nv={...(viewEv.votes||{}),[name]:{val,ts:new Date().toISOString(),byTrainer:true,role:"player",...(String(grund||"").trim()?{reason:String(grund).trim()}:{})}};
             save({...local,events:local.events.map(e=>e.id===viewEv.id?{...e,votes:nv}:e)});
@@ -18582,11 +18583,16 @@ const bringtMit = (ev, name) => {
   return uniq.length>3 ? uniq.slice(0,3).join(", ")+" +"+(uniq.length-3) : uniq.join(", ");
 };
 
-function AttendanceCheckoff({ ev, teamPlayers=[], teamPlusAus=null, onSetPresent=()=>{}, onSetGuests=()=>{}, trainerNames=[], helperNames=[], onSetVote=null }){
+function AttendanceCheckoff({ ev, teamPlayers=[], teamPlusAus=null, onSetPresent=()=>{}, onSetGuests=()=>{}, trainerNames=[], helperNames=[], onSetVote=null,
+                             gruppen=[], leibchen=null, onGruppe=null, grpVon=null }){
   const [guestName,setGuestName]=useState("");
   // Absage-Grund nachtragen: die Eltern haben angerufen, aber nichts eingetragen.
   const [grundFuer,setGrundFuer]=useState(null);   // Name oder null
   const [grundText,setGrundText]=useState("");
+  // Leistungsgruppe direkt beim Abhaken umstellen: am Platz sieht man, wer
+  // heute wie drauf ist - dann soll man ihn nicht erst auf der Team-Seite
+  // suchen muessen.
+  const [grpFuer,setGrpFuer]=useState(null);       // Name oder null
   const ABSAGE_GRUND=["Krank","Urlaub","Schule","Verletzt","Wettkampf","Familie"];
   const present=ev.present||{};
   const guests=ev.guests||[];
@@ -18659,6 +18665,13 @@ function AttendanceCheckoff({ ev, teamPlayers=[], teamPlusAus=null, onSetPresent
                         style={{fontSize:10.5,fontWeight:700,color:"#dc2626",background:"#fee2e2",border:"none",borderRadius:6,padding:"3px 7px",cursor:"pointer",fontFamily:"inherit"}}>abgesagt{(typeof raw==="object"&&raw?.reason)?"":" ✎"}</button>
                     : <span style={{fontSize:10.5,fontWeight:700,color:"#dc2626",background:"#fee2e2",borderRadius:6,padding:"2px 7px"}}>abgesagt</span>)}
                   {noShow&&<span style={{fontSize:10.5,fontWeight:800,color:"#9a3412",background:"#ffedd5",borderRadius:6,padding:"2px 7px"}}>No-Show</span>}
+                  {/* Welches Leibchen zieht das Kind heute an? Kommt aus
+                      derselben Einteilung, die unten im Spielchen steht. */}
+                  {(()=>{ const lb=leibchen&&leibchen[name]; if(!lb) return null;
+                    if(lb.bank) return <span title={`${lb.titel} – wechselt ein`} style={{fontSize:10.5,fontWeight:800,color:"#64748b",background:"#f1f5f9",borderRadius:6,padding:"2px 7px",whiteSpace:"nowrap"}}>🎽 Bank</span>;
+                    return <span title={`Spielchen: ${lb.titel} – Mannschaft ${lb.leib.name}`}
+                      style={{display:"inline-flex",alignItems:"center",gap:4,fontSize:10.5,fontWeight:800,color:"#fff",background:lb.leib.col,borderRadius:6,padding:"2px 7px",whiteSpace:"nowrap"}}>🎽 {lb.leib.name}</span>;
+                  })()}
                   {/* Ohne Stimme: Trainer kann direkt zu-/absagen (z.B. nach Telefonat) */}
                   {onSetVote&&!val&&(
                     <span style={{display:"flex",gap:4,flexShrink:0}} onClick={e=>e.stopPropagation()}>
@@ -18667,6 +18680,43 @@ function AttendanceCheckoff({ ev, teamPlayers=[], teamPlusAus=null, onSetPresent
                     </span>
                   )}
                 </div>
+                {/* Leistungsgruppe direkt hier umstellen - ein Tipp auf den
+                    Chip, ein Tipp auf die Gruppe. Kein Umweg über die
+                    Team-Seite, während man auf dem Platz steht. */}
+                {onGruppe&&gruppen.length>0&&teamPlayers.includes(name)&&(()=>{
+                  const gid=grpVon?grpVon(name):null; const g=gruppen.find(x=>x.id===gid);
+                  return (
+                    <div onClick={e=>e.stopPropagation()} style={{marginTop:7,display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
+                      <button onClick={()=>setGrpFuer(v=>v===name?null:name)}
+                        title={g?`Leistungsgruppe: ${g.name} – antippen zum Ändern`:"Leistungsgruppe wählen"}
+                        style={{display:"flex",alignItems:"center",gap:5,height:30,padding:"0 11px",borderRadius:99,
+                          cursor:"pointer",fontFamily:"inherit",fontSize:11.5,fontWeight:800,
+                          background:g?g.col:"#fff", color:g?"#fff":"#64748b",
+                          border:g?`1.5px solid ${g.col}`:"1.5px dashed #cbd5e1"}}>
+                        <span style={{width:8,height:8,borderRadius:99,background:g?"#fff":"#cbd5e1",flexShrink:0}}/>
+                        {g?g.name:"Gruppe?"}
+                      </button>
+                      {grpFuer===name&&(
+                        <span style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
+                          {gruppen.map(x=>(
+                            <button key={x.id} onClick={()=>{ onGruppe(name,x.id); setGrpFuer(null); }}
+                              style={{height:30,padding:"0 11px",borderRadius:99,cursor:"pointer",fontFamily:"inherit",
+                                fontSize:11.5,fontWeight:800,border:`1.5px solid ${x.col}`,
+                                background:gid===x.id?x.col:"#fff", color:gid===x.id?"#fff":x.col}}>{x.name}</button>
+                          ))}
+                          <button onClick={()=>{ onGruppe(name,""); setGrpFuer(null); }}
+                            style={{height:30,padding:"0 11px",borderRadius:99,cursor:"pointer",fontFamily:"inherit",
+                              fontSize:11.5,fontWeight:700,border:"1.5px solid #e2e8f0",background:"#fff",color:"#94a3b8"}}>keine</button>
+                        </span>
+                      )}
+                      {grpFuer===name&&ev.spielFest&&(
+                        <span style={{fontSize:10.5,color:"#b45309",fontWeight:700,width:"100%"}}>
+                          Das Spielchen ist festgehalten – die neue Gruppe greift erst nach „↩ Zurücksetzen“.
+                        </span>
+                      )}
+                    </div>
+                  );
+                })()}
                 {/* Wie kommt das Kind hin? Eigene Zeile ueber die volle Breite -
                     sonst wird der Text abgeschnitten. Nur bei Terminen mit
                     Fahrgemeinschaft und nur bei Zusagen. */}
@@ -18743,7 +18793,7 @@ function AttendanceCheckoff({ ev, teamPlayers=[], teamPlusAus=null, onSetPresent
   );
 }
 
-function VoteOverview({ev,players,playerProfiles=[],teams,myTids,cl,onSetDeadline,onSetPresent=()=>{},onSetGuests=()=>{},onSetVote=null,onVotePatch=null,myKids=[],staff=null,readOnly=false,trainerNames=[],helperNames=[]}) {
+function VoteOverview({ev,players,playerProfiles=[],teams,myTids,cl,onSetDeadline,onSetPresent=()=>{},onSetGuests=()=>{},onSetVote=null,onVotePatch=null,myKids=[],staff=null,readOnly=false,trainerNames=[],helperNames=[],gruppen=[],leibchen=null,onGruppe=null,grpVon=null}) {
   const p = cl?.pri||"#16a34a";
   const isGameEv = ["heimspiel","auswarts","freundschaft","turnier"].includes(ev.type);
   const present = ev.present||{};
@@ -19115,7 +19165,7 @@ function VoteOverview({ev,players,playerProfiles=[],teams,myTids,cl,onSetDeadlin
         </div>
       </>}
 
-      {!readOnly&&<AttendanceCheckoff ev={ev} teamPlayers={teamPlayers} teamPlusAus={teamPlusAus} onSetPresent={onSetPresent} onSetGuests={onSetGuests} trainerNames={trainerNames} helperNames={helperNames} onSetVote={onSetVote}/>}
+      {!readOnly&&<AttendanceCheckoff ev={ev} teamPlayers={teamPlayers} teamPlusAus={teamPlusAus} onSetPresent={onSetPresent} onSetGuests={onSetGuests} trainerNames={trainerNames} helperNames={helperNames} onSetVote={onSetVote} gruppen={gruppen} leibchen={leibchen} onGruppe={onGruppe} grpVon={grpVon}/>}
 
       {/* "Noch nicht abgestimmt" nur ohne Abhak-Liste - dort stehen Offene mit ✓/✕ drin */}
       {readOnly&&missing.length>0&&<>
@@ -23374,6 +23424,57 @@ function recommendLineup(present, profiles, pastLineups, friendWeight=1){
   const friends=fp.sort((x,y)=>(y.must-x.must)).slice(0,4);
   return {lineup,bench,formation,pairs,friends,count:n};
 }
+// Der aktuelle Stand des Spielchens: festgehaltene Einteilung hat Vorrang,
+// sonst wird frisch gerechnet. EINE Stelle - so zeigt die Anwesenheitsliste
+// genau die Leibchen, die auch im Spielchen stehen.
+const spielchenStand = (ev, gruppen=[], profiles=[], jaNamen=[], cat="") => {
+  if(!ev || ev.type!=="training" || jaNamen.length<4) return null;
+  const groesse=Number(ev.spielGr)||spielGrStandard(cat);
+  const fest=ev.spielFest&&Array.isArray(ev.spielFest.paarungen)&&ev.spielFest.paarungen.length?ev.spielFest:null;
+  const paarungen = fest
+    ? fest.paarungen.map(p=>({ ...p,
+        gruppe:(gruppen.find(g=>g.id===p.grpId)||{name:p.titel,col:"#64748b"}),
+        a:{ ...p.a, leib:(LEIBCHEN.find(l=>l.id===p.a.leib)||LEIBCHEN[0]) },
+        b:{ ...p.b, leib:(LEIBCHEN.find(l=>l.id===p.b.leib)||LEIBCHEN[1]) } }))
+    : spielchenPaarungen(gruppen, profiles, jaNamen, groesse,
+        String(ev.id||"")+String(ev.date||"")+String(ev.spielMix||"")).paarungen;
+  if(!paarungen.length) return null;
+  return { paarungen, fest, groesse };
+};
+// Wer traegt heute welches Leibchen? Name -> { leib, titel, bank }.
+const spielchenLeibchen = (stand) => {
+  const map={};
+  (stand?.paarungen||[]).forEach(p=>{
+    p.a.namen.forEach(n=>{ map[n]={ leib:p.a.leib, titel:p.titel }; });
+    p.b.namen.forEach(n=>{ map[n]={ leib:p.b.leib, titel:p.titel }; });
+    (p.bank||[]).forEach(n=>{ map[n]={ leib:null, titel:p.titel, bank:true }; });
+  });
+  return map;
+};
+// Alles, was die Anwesenheitsliste ueber Leistungsgruppen und Leibchen
+// wissen muss - an EINER Stelle, damit die Abhak-Liste in der Orga und in
+// den Rueckmeldungen dasselbe zeigt.
+const gruppenProps = (ev, local, save, fire, jaNamen=[]) => {
+  const team=(local.teams||[]).find(tm=>tm.id===ev.tid);
+  const istTraining = ev.type==="training";
+  const gruppen = istTraining ? intGruppenVon(team) : [];
+  const profiles = local.playerProfiles||[];
+  const prof = name => profiles.find(x=>(x.name||"").toLowerCase()===String(name).toLowerCase())||null;
+  return {
+    gruppen,
+    grpVon: name=>{ const p=prof(name); return p&&p.intGrp?p.intGrp:null; },
+    leibchen: istTraining
+      ? spielchenLeibchen(spielchenStand(ev, gruppen, profiles, jaNamen, team?.cat||""))
+      : null,
+    onGruppe: !istTraining ? null : (name,gid)=>{
+      const p=prof(name);
+      if(!p){ fire("Für "+String(name).split(" ")[0]+" gibt es kein Profil – die Gruppe steht auf der Team-Seite."); return; }
+      save({...local, playerProfiles: profiles.map(x=>x.id===p.id?{...x, intGrp:gid||""}:x)});
+      const g=gruppen.find(x=>x.id===gid);
+      fire(g?`${String(name).split(" ")[0]}: ${g.name}`:`${String(name).split(" ")[0]}: keine Gruppe`);
+    },
+  };
+};
 // Spielchen im Training: je Gruppe eine Paarung - Leistung gegen Leistung,
 // Entwicklung gegen Entwicklung. Dargestellt wie die Aufstellung im Spiel,
 // mit Linien passend zur Spielform.
@@ -23385,17 +23486,11 @@ function SpielchenTeams({ ev, gruppen=[], profiles=[], jaNamen=[], titel="", cat
   // Ohne eigene Wahl richtet sich die Spielform nach der Altersklasse.
   const standard=spielGrStandard(cat);
   const groesse=Number(ev.spielGr)||standard;
-  if(jaNamen.length<4) return null;
   // Festgehaltene Einteilung hat Vorrang - sonst wird frisch gerechnet.
-  const fest=ev.spielFest&&Array.isArray(ev.spielFest.paarungen)&&ev.spielFest.paarungen.length?ev.spielFest:null;
+  const stand=spielchenStand(ev, gruppen, profiles, jaNamen, cat);
+  if(!stand) return null;
+  const { paarungen, fest } = stand;
   const frisch=spielchenPaarungen(gruppen, profiles, jaNamen, groesse, String(ev.id||"")+String(ev.date||"")+String(ev.spielMix||""));
-  const paarungen = fest
-    ? fest.paarungen.map(p=>({ ...p,
-        gruppe:(gruppen.find(g=>g.id===p.grpId)||{name:p.titel,col:"#64748b"}),
-        a:{ ...p.a, leib:(LEIBCHEN.find(l=>l.id===p.a.leib)||LEIBCHEN[0]) },
-        b:{ ...p.b, leib:(LEIBCHEN.find(l=>l.id===p.b.leib)||LEIBCHEN[1]) } }))
-    : frisch.paarungen;
-  if(!paarungen.length) return null;
   // Haben sich die Zusagen seit dem Festhalten geaendert?
   const festNamen=fest?paarungen.flatMap(p=>[...p.a.namen,...p.b.namen,...p.bank]):[];
   const dazu=fest?jaNamen.filter(n=>!festNamen.includes(n)):[];
