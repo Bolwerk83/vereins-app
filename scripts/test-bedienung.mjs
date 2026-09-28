@@ -49,6 +49,8 @@ if(/Ansehen/.test(b)) ok("Künftiger Termin: Hauptknopf heißt „Ansehen“"); 
     localStorage.setItem("vereinsapp_v14", JSON.stringify(d)); return true; });
   if(wurde){
     await page.reload({waitUntil:"networkidle"}); await page.waitForTimeout(2600); await dismiss();
+    // Vergangene Termine stehen zugeklappt - erst aufklappen, dann schauen.
+    await clickTxt("vergangene Termine anzeigen"); await page.waitForTimeout(900);
     const hat=await page.evaluate(()=>!![...document.querySelectorAll("button")].find(x=>/✅ Anwesenheit/.test(x.innerText||"")));
     if(hat) ok("Am Termintag/danach führt derselbe Knopf direkt zur Anwesenheit");
     else fail("Knopf wechselt nicht zur Anwesenheit");
@@ -58,21 +60,18 @@ if(/Ansehen/.test(b)) ok("Künftiger Termin: Hauptknopf heißt „Ansehen“"); 
 await clickTxt("✏️ Bearbeiten"); await page.waitForTimeout(1400);
 b=await body();
 if(/Termin bearbeiten/.test(b)) ok("Bearbeiten öffnet sich"); else fail("Bearbeiten öffnet nicht: "+b.slice(0,150).replace(/\n/g," | "));
-await clickTxt("Weiter"); await page.waitForTimeout(600);
-await clickTxt("Weiter"); await page.waitForTimeout(800);
-{ const felder=await page.evaluate(()=>[...document.querySelectorAll("input")].map(i=>({t:i.type,v:i.value})));
-  const titel=felder.find(x=>x.t==="text"&&x.v.length>3);
-  const zeit=felder.find(x=>x.t==="time"&&x.v);
-  const datum=felder.find(x=>x.t==="date"&&x.v);
-  if(titel) ok("Titel ist vorausgefüllt: „"+titel.v+"“"); else fail("Titel leer");
-  if(zeit) ok("Uhrzeit ist vorausgefüllt: "+zeit.v); else fail("Uhrzeit leer");
-  if(datum) ok("Datum ist vorausgefüllt: "+datum.v); else fail("Datum leer");
-  const ort=felder.filter(x=>x.t==="text"&&x.v).length;
-  if(ort>=2) ok("Auch der Ort steht schon drin"); else fail("Ort fehlt"); }
+// Bearbeiten ist eine Übersicht: alles steht schon drin, geändert wird
+// gezielt über „Ändern ›“ - kein Durchklicken durch einen Assistenten.
+{ const u=await page.evaluate(()=>{ const t=document.body.innerText; const i=t.indexOf("ÜBERSICHT");
+    return i<0?t.slice(0,900):t.slice(i,i+900); });
+  const wert=k=>{ const m=u.match(new RegExp(k+"\\n([^\\n]+)")); return m?m[1].trim():""; };
+  const titel=wert("TITEL"), zeit=wert("DATUM & UHRZEIT"), ort=wert("ORT");
+  if(titel.length>3&&!/^–/.test(titel)) ok("Titel ist vorausgefüllt: „"+titel+"“"); else fail("Titel leer: "+u.slice(0,200).replace(/\n/g," | "));
+  if(/\d\d:\d\d/.test(zeit)) ok("Uhrzeit ist vorausgefüllt: "+zeit); else fail("Uhrzeit leer: "+zeit);
+  if(/\d\d\.\d\d\.\d{4}/.test(zeit)) ok("Datum ist vorausgefüllt: "+zeit); else fail("Datum leer: "+zeit);
+  if(ort.length>3&&!/^–/.test(ort)) ok("Auch der Ort steht schon drin: "+ort); else fail("Ort fehlt: "+ort); }
 // Ohne Änderung speichern -> Termin bleibt wie er war, keine Hilfsfelder im Speicher
-await clickTxt("Weiter"); await page.waitForTimeout(600);
-await clickTxt("Weiter|Speichern|Fertig"); await page.waitForTimeout(600);
-await clickTxt("Speichern|Fertig|Termin aktualisieren"); await page.waitForTimeout(1600);
+await clickTxt("^Speichern$"); await page.waitForTimeout(1600);
 { const sauber=await page.evaluate(()=>{
     const roh=localStorage.getItem("vereinsapp_v14")||"";
     return { hilf: /_coTids|_serie|_editSeries/.test(roh), titel: /Abschlusstraining|Training/.test(roh) };
