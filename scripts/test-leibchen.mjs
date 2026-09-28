@@ -105,33 +105,31 @@ await page.waitForTimeout(800);
 let b=await body();
 if(/Zuteilen kannst du oben an der Spielerkarte/.test(b)) ok("Sie erklärt, dass zugeteilt oben wird – der lange Zuteil-Block ist weg");
 else fail("Kein Hinweis auf die Karte: "+b.slice(-500).replace(/\n/g," | "));
-if(/LEIBCHEN/.test(b)) ok("Jede Gruppe hat eine Leibchenfarbe");
-else fail("Kein Leibchen");
+if(/MANNSCHAFT 1/.test(b)&&/MANNSCHAFT 2/.test(b)) ok("Jede Gruppe hat zwei Leibchenfarben – eine je Mannschaft");
+else fail("Keine zwei Leibchen: "+b.slice(-500).replace(/\n/g," | "));
 if(/OHNE GRUPPE \(12\)/.test(b)) ok("Und sie zeigt, wer noch keiner Gruppe zugeteilt ist (12)");
 else fail("Keine Ohne-Gruppe-Liste: "+(b.match(/OHNE GRUPPE[^\n]*/)||[""])[0]);
-{ const geklickt=await page.evaluate(()=>{ const b2=[...document.querySelectorAll('button[aria-label="Leibchen Gelb"]')][0];
+{ const geklickt=await page.evaluate(()=>{ const b2=[...document.querySelectorAll('button[aria-label="Mannschaft 2 Gelb"]')][0];
     if(!b2) return false; b2.click(); return true; });
   await page.waitForTimeout(1100);
   const g=await page.evaluate(()=>{ const d=JSON.parse(localStorage.getItem("vereinsapp_v14")||"null");
     const t=(d.teams||[]).find(x=>x.id==="demo_f1"); return (t&&t.intGroups&&t.intGroups[0])||null; });
-  if(geklickt&&g&&g.leib==="gelb") ok("Die Leibchenfarbe lässt sich wechseln (Gelb) und wird gespeichert");
+  if(geklickt&&g&&g.leibB==="gelb") ok("Die zweite Mannschaft bekommt ihre eigene Farbe (Gelb) – gespeichert");
   else fail("Leibchen nicht gespeichert: "+JSON.stringify(g)); }
 
-// ===== 4+5) Mannschaften im Training =====
-// 13 Zusagen: Leistung 5, Reserve 6, Entwicklung 2.
-// Erwartung bei 5+1: Leistung holt sich EINEN aus der Reserve nach oben,
-// steht dann bei 6. Reserve hat danach 5 und holt aus Entwicklung auf 6.
-// Entwicklung bleibt übrig -> keine dritte Mannschaft mit 6.
-// Vor allem: KEIN Leistungsspieler darf in der Reserve auftauchen.
+// ===== 4+5) Spielchen im Training =====
+// 13 Zusagen: Leistung 6, Entwicklung 6, einer ohne Gruppe.
+// Erwartung: Leistung spielt gegen sich selbst (3 gegen 3),
+// Entwicklung ebenso. Niemand wechselt die Gruppe.
 const trId = await page.evaluate(k=>{
   const d=JSON.parse(localStorage.getItem("vereinsapp_v14")||"null");
   const p=v=>String(v).padStart(2,"0"); const x=new Date(Date.now()+2*86400000);
-  const zu={}; k.slice(0,5).forEach(n=>zu[n]="g1"); k.slice(5,11).forEach(n=>zu[n]="g2"); k.slice(11,13).forEach(n=>zu[n]="g3");
+  const zu={}; k.slice(0,6).forEach(n=>zu[n]="g1"); k.slice(6,12).forEach(n=>zu[n]="g3");
   (d.playerProfiles||[]).filter(q=>q.mainTid==="demo_f1").forEach(q=>{ q.intGrp=zu[q.name]||""; });
   const ev=(d.events||[]).filter(e=>e.cid==="demo"&&e.tid==="demo_f1")[0];
   const ts=new Date().toISOString();
   Object.assign(ev,{ type:"training", date:`${x.getFullYear()}-${p(x.getMonth()+1)}-${p(x.getDate())}`, time:"17:30",
-    endTime:"19:00", title:"Training", loc:"Platz", note:"", deadline:null, extraPolls:[], duties:[], spielGr:6,
+    endTime:"19:00", title:"Training", loc:"Platz", note:"", deadline:null, extraPolls:[], duties:[],
     votes:Object.fromEntries(k.map(n=>[n,{val:"yes",ts,role:"player"}])) });
   (d.events||[]).filter(e=>e.cid==="demo"&&e.id!==ev.id).forEach(e=>{
     const y=new Date(Date.now()+12*86400000); e.date=`${y.getFullYear()}-${p(y.getMonth()+1)}-${p(y.getDate())}`; });
@@ -140,53 +138,67 @@ const trId = await page.evaluate(k=>{
 await page.reload({waitUntil:"networkidle"}); await page.waitForTimeout(2800); await dismiss();
 await page.evaluate(()=>{ const b=[...document.querySelectorAll("button")].find(x=>/^(Ansehen|✅ Anwesenheit)$/.test((x.innerText||"").trim())); b&&b.click(); });
 await page.waitForTimeout(1700);
+const block=()=>page.evaluate(()=>{ const t=document.body.innerText; const i=t.indexOf("🎽");
+  if(i<0) return "";
+  const rest=t.slice(i); const e=rest.indexOf("Spieler dabei");
+  return e<0?rest.slice(0,1200):rest.slice(0,e); });
 b=await body();
-if(/Mannschaften fürs Spielchen/.test(b)) ok("Im Training stehen die Mannschaften");
-else fail("Keine Mannschaften: "+b.slice(0,400).replace(/\n/g," | "));
-if(/SPIELFORM/.test(b)&&/5\+1/.test(b)) ok("Die Spielform lässt sich wählen (4+1 bis 7+1)");
-else fail("Keine Spielform-Auswahl");
-if(/Aus den 13 Zusagen/.test(b)) ok("Aus den 13 Zusagen gebildet");
-else fail("Zusagen nicht Grundlage");
-if(/Nach unten wird niemand geschoben/.test(b)) ok("Die Regel steht dabei: es wird nur aufgerückt");
-else fail("Regel nicht erklärt");
-
-// Der Block als Text - daraus lesen wir die Mannschaften
-const block=()=>page.evaluate(()=>{ const t=document.body.innerText; const i=t.indexOf("Mannschaften fürs Spielchen");
-  return i<0?"":t.slice(i,i+900); });
+if(/Spielchen/.test(b)) ok("Im Training steht das Spielchen");
+else fail("Kein Spielchen: "+b.slice(0,400).replace(/\n/g," | "));
 { const bl=await block();
-  const teil=(name)=>{ const i=bl.indexOf(name); if(i<0) return ""; 
-    const rest=bl.slice(i+name.length); const e=rest.search(/\n(Leistung|Reserve|Entwicklung)\n/);
-    return e<0?rest.slice(0,300):rest.slice(0,e); };
-  const leistung=teil("Leistung"), reserve=teil("Reserve");
-  // Kein Kind aus der Leistungsgruppe darf im Reserve-Block stehen
-  const leistungsKinder=kader.slice(0,5);
-  const abgestiegen=leistungsKinder.filter(n=>reserve.includes(n));
-  if(abgestiegen.length===0) ok("Kein Kind aus der Leistungsgruppe steht bei der Reserve – kein Abstieg");
-  else fail("Abstieg passiert: "+abgestiegen.join(", "));
-  // Genau einer rückt aus der Reserve in die Leistung auf
-  const reserveKinder=kader.slice(5,11);
-  const aufgerueckt=reserveKinder.filter(n=>leistung.includes(n));
-  if(aufgerueckt.length===1) ok(`Genau einer rückt aus der Reserve auf: ${aufgerueckt[0]}`);
-  else fail("Falsche Zahl aufgerückt: "+aufgerueckt.length);
-  if(/rückt auf/.test(bl)) ok("Und ist als „rückt auf“ gekennzeichnet");
-  else fail("Keine Kennzeichnung"); }
+  if(/Jede Gruppe spielt gegen sich selbst/.test(bl)) ok("Die Regel steht dabei: jede Gruppe spielt gegen sich selbst");
+  else fail("Regel fehlt: "+bl.slice(0,300).replace(/\n/g," | "));
+  // Zwei Paarungen: Leistung und Entwicklung
+  const pLeistung=(bl.match(/Leistung/g)||[]).length;
+  if(/Leistung/.test(bl)&&/Entwicklung/.test(bl)) ok("Es gibt eine Paarung für Leistung und eine für Entwicklung");
+  else fail("Nicht beide Paarungen: "+bl.slice(0,400).replace(/\n/g," | "));
+  if(/3 gegen 3/.test(bl)) ok("Jede Gruppe teilt sich in zwei Mannschaften (3 gegen 3)");
+  else fail("Keine Zweiteilung: "+(bl.match(/\d+ gegen \d+/g)||[]).join(", "));
+  { const ungleich=(bl.match(/(\d+) gegen (\d+)/g)||[]).filter(x=>{ const m=x.match(/(\d+) gegen (\d+)/); return m[1]!==m[2]; });
+    if(ungleich.length===0) ok("Beide Seiten sind immer gleich groß");
+    else fail("Ungleiche Seiten: "+ungleich.join(", ")); }
+  { const ohneTW=/ohne Torwart/.test(bl), hatTorZeile=/\nTOR\n/.test(bl);
+    if(!(ohneTW&&hatTorZeile)) ok("Kein Widerspruch zwischen „ohne Torwart“ und einer Tor-Linie");
+    else fail("„ohne Torwart“, aber eine Tor-Linie steht da"); }
+  if(/vs/.test(bl)) ok("Die beiden Seiten stehen sich gegenüber");
+  else fail("Kein Gegenüber"); }
+// Die Seiten tragen verschiedene Leibchen
+{ const farben=await page.evaluate(()=>{ const t=document.body.innerText; const i=t.indexOf("🎽");
+    const bl=t.slice(i,i+1200);
+    return ["Rot","Blau","Grün","Gelb","Orange","Schwarz"].filter(f=>new RegExp("\\n"+f+"\\n").test(bl)); });
+  if(farben.length>=2) ok("Die Mannschaften tragen unterschiedliche Leibchen: "+farben.join(", "));
+  else fail("Keine zwei Leibchen: "+JSON.stringify(farben)); }
+// Aufstellung wie im Spiel: Linien statt bloßer Namensliste
 { const bl=await block();
-  if(/AUSWECHSEL/.test(bl)) ok("Wer übrig ist, steht als Auswechselspieler dabei");
-  else fail("Keine Auswechselspieler: "+bl.slice(0,400).replace(/\n/g," | "));
-  if(/zum Auswechseln/.test(bl)) ok("Und unten steht, wie viele es sind");
-  else fail("Keine Zusammenfassung"); }
-
-// Spielform wechseln: 4+1 ergibt kleinere Mannschaften
-{ if(await klick("^4\\+1$")) ok("Die Spielform lässt sich umstellen"); else fail("4+1 nicht klickbar");
+  if(/ABWEHR|MITTELFELD|ANGRIFF|TOR/.test(bl)) ok("Dargestellt wie die Aufstellung im Spiel – mit Linien");
+  else fail("Keine Linien: "+bl.slice(0,400).replace(/\n/g," | ")); }
+// Kein Gruppenwechsel
+{ const bl=await block();
+  const leistungsKinder=kader.slice(0,6);
+  const iL=bl.indexOf("Leistung"), iE=bl.indexOf("Entwicklung");
+  const entwBlock = iE<0 ? "" : (iE>iL ? bl.slice(iE) : bl.slice(iE, iL));
+  const verirrt=leistungsKinder.filter(n=>entwBlock.includes(n));
+  if(verirrt.length===0) ok("Kein Kind aus der Leistungsgruppe taucht bei Entwicklung auf");
+  else fail("Gruppe gewechselt: "+verirrt.join(", ")+" || "+entwBlock.slice(0,220).replace(/\n/g," | ")); }
+// Spielform passend zur Jugend
+{ const bl=await block();
+  if(/passend zur F-Jugend/.test(bl)) ok("Ohne eigene Wahl richtet sich die Spielform nach der Altersklasse (F-Jugend)");
+  else fail("Keine Altersklasse berücksichtigt: "+bl.slice(0,300).replace(/\n/g," | ")); }
+// Spielform wirkt
+{ if(await klick("^4\\+1 / 5$")) ok("Die Spielform lässt sich umstellen"); else fail("4+1 nicht klickbar");
   await page.waitForTimeout(1300);
   const ev=await page.evaluate(x=>{ const d=JSON.parse(localStorage.getItem("vereinsapp_v14")||"null");
     return (d.events||[]).find(e=>e.id===x)||null; }, trId);
   if(ev&&ev.spielGr===5) ok("Die Wahl ist am Termin gespeichert");
-  else fail("Spielform nicht gespeichert: "+(ev&&ev.spielGr));
-  const bl=await block();
-  // 13 Kinder bei 4+1 (5 je Mannschaft): zwei volle Mannschaften, 3 wechseln ein
-  if(/2 × 4\+1/.test(bl)&&/3 zum Auswechseln/.test(bl)) ok("Bei 4+1: zwei volle Mannschaften und drei zum Auswechseln");
-  else fail("Falsche Aufteilung bei 4+1: "+(bl.match(/\d+ × \d\+1[^\n]*/)||[""])[0]); }
+  else fail("Spielform nicht gespeichert: "+(ev&&ev.spielGr)); }
+// Gleiche Einteilung beim erneuten Öffnen
+{ const vorher=await block();
+  await page.reload({waitUntil:"networkidle"}); await page.waitForTimeout(2800); await dismiss();
+  await page.evaluate(()=>{ const b2=[...document.querySelectorAll("button")].find(x=>/^(Ansehen|✅ Anwesenheit)$/.test((x.innerText||"").trim())); b2&&b2.click(); });
+  await page.waitForTimeout(1700);
+  const nachher=await block();
+  if(vorher&&vorher===nachher) ok("Beim erneuten Öffnen steht dieselbe Einteilung da");
+  else fail("Einteilung springt bei jedem Öffnen"); }
 
 if(errors.length){ console.log("JS-FEHLER:"); [...new Set(errors)].forEach(e=>console.log(" -",e.slice(0,150))); }
 console.log(errors.length||fails.length?`ERGEBNIS: ${fails.length} Fehlschläge, ${errors.length} JS-Fehler`:"ERGEBNIS: ALLES OK");

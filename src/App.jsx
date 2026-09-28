@@ -11015,7 +11015,9 @@ function PlayersTab({ data,myTids,save,fire,cl,session }) {
         const ohne=kader.filter(p=>!p.intGrp||!gruppen.some(g=>g.id===p.intGrp));
         const setGruppen=liste=>save({...data, teams:(data.teams||[]).map(tm=>tm.id===selTid?{...tm,intGroups:liste}:tm)});
         const umbenennen=(gid,name)=>setGruppen(gruppen.map(g=>g.id===gid?{...g,name:String(name||"").trim()||g.name}:g));
-        const setLeibchen=(gid,l)=>setGruppen(gruppen.map(g=>g.id===gid?{...g,leib:l.id,col:l.col}:g));
+        // Seite A faerbt zugleich die Gruppe (Punkt am Spieler, Übersicht).
+        const setLeibchen=(gid,feld,l)=>setGruppen(gruppen.map(g=>g.id===gid
+          ? {...g, [feld]:l.id, ...(feld==="leibA"?{leib:l.id, col:l.col}:{})} : g));
         const dazu=()=>{ const l=LEIBCHEN[gruppen.length%LEIBCHEN.length];
           setGruppen([...gruppen,{id:"g"+Date.now().toString(36),name:`Gruppe ${gruppen.length+1}`,leib:l.id,col:l.col}]); };
         const weg=g=>{ if(inGrp(g).length>0&&typeof window!=="undefined"&&window.confirm&&
@@ -11059,15 +11061,21 @@ function PlayersTab({ data,myTids,save,fire,cl,session }) {
                       <span style={{fontSize:11,fontWeight:800,color:"#fff",background:g.col,borderRadius:99,padding:"1px 7px"}}>{leute.length}</span>
                       {gruppen.length>1&&<span onClick={()=>weg(g)} title="Gruppe entfernen" style={{color:"#dc2626",fontWeight:800,fontSize:13,cursor:"pointer"}}>×</span>}
                     </div>
-                    <div style={{display:"flex",alignItems:"center",gap:5,marginBottom:7,flexWrap:"wrap"}}>
-                      <span style={{fontSize:10.5,fontWeight:800,color:"#64748b",letterSpacing:.3}}>LEIBCHEN</span>
-                      {LEIBCHEN.map(l=>(
-                        <button key={l.id} onClick={()=>setLeibchen(g.id,l)} title={l.name} aria-label={"Leibchen "+l.name}
-                          style={{width:22,height:22,borderRadius:99,cursor:"pointer",background:l.col,
-                            border:g.leib===l.id?"3px solid #0f172a":"1.5px solid #e2e8f0",fontFamily:"inherit"}}/>
-                      ))}
-                      <span style={{fontSize:11.5,fontWeight:700,color:g.col}}>{(LEIBCHEN.find(l=>l.id===g.leib)||{}).name||""}</span>
-                    </div>
+                    {/* Zwei Leibchen: die Gruppe spielt im Training gegen sich
+                        selbst, und genau diese beiden Seiten unterscheidet die Farbe. */}
+                    {[["leibA","Mannschaft 1"],["leibB","Mannschaft 2"]].map(([feld,beschr],si)=>{
+                      const aktiv=g[feld]||(si===0?(g.leib||LEIBCHEN[0].id):LEIBCHEN[1].id);
+                      return (
+                      <div key={feld} style={{display:"flex",alignItems:"center",gap:5,marginBottom:5,flexWrap:"wrap"}}>
+                        <span style={{fontSize:10.5,fontWeight:800,color:"#64748b",letterSpacing:.3,width:84,flexShrink:0}}>{beschr.toUpperCase()}</span>
+                        {LEIBCHEN.map(l=>(
+                          <button key={l.id} onClick={()=>setLeibchen(g.id,feld,l)} title={l.name} aria-label={beschr+" "+l.name}
+                            style={{width:22,height:22,borderRadius:99,cursor:"pointer",background:l.col,
+                              border:aktiv===l.id?"3px solid #0f172a":"1.5px solid #e2e8f0",fontFamily:"inherit"}}/>
+                        ))}
+                        <span style={{fontSize:11.5,fontWeight:700,color:(LEIBCHEN.find(l=>l.id===aktiv)||{}).col}}>{(LEIBCHEN.find(l=>l.id===aktiv)||{}).name||""}</span>
+                      </div>
+                      ); })}
                     <div style={{display:"flex",flexWrap:"wrap",gap:4}}>
                       {leute.length===0
                         ? <span style={{fontSize:11.5,color:"#94a3b8"}}>noch niemand zugeteilt</span>
@@ -17193,6 +17201,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
             profiles={local.playerProfiles||[]}
             jaNamen={jaSpielerNamen(viewEv)}
             titel={evDisplayTitle(viewEv)}
+            cat={((local.teams||[]).find(tm=>tm.id===viewEv.tid)||{}).cat||""}
             fire={fire}
             onGroesse={g=>{
               const ev2={...viewEv,spielGr:g};
@@ -23134,65 +23143,112 @@ const INT_GRUPPEN_STD = [
   {id:"g3",name:"Entwicklung",col:"#16a34a", leib:"gruen"},
 ];
 const intGruppenVon = team => (Array.isArray(team&&team.intGroups)&&team.intGroups.length) ? team.intGroups : INT_GRUPPEN_STD;
-// Mannschaften fuers Spielchen. Grundregel: Es wird NUR nach oben
-// aufgeruckt. Wer in der Leistungsgruppe steht, landet nie in einer
-// schwaecheren Mannschaft - das waere ein Abstieg, und den will niemand.
-// Jede Mannschaft hat eine feste Groesse (z. B. 5+1 = 6). Wer uebrig
-// bleibt, ist Auswechselspieler SEINER Mannschaft.
-const leibchenTeams = (gruppen=[], profiles=[], jaNamen=[], groesse=6) => {
+// Spielchen im Training: JEDE Leistungsgruppe spielt in sich selbst -
+// Leistung gegen Leistung, Entwicklung gegen Entwicklung. Die Gruppe wird
+// dafuer in zwei Mannschaften geteilt, und genau die unterscheiden die
+// Leibchen. Gespielt wird Futsal-nah: ein Torwart ist moeglich, aber
+// keine Pflicht.
+const _linienVon = (name, profiles) => {
+  const p=(profiles||[]).find(x=>(x.name||"").toLowerCase()===String(name).toLowerCase());
+  const alle=[p&&p.position, ...((p&&p.posAlt)||[])].filter(Boolean);
+  const zu = x => /tor|keeper/i.test(x) ? "T"
+    : /abwehr|vert|innen|aussen|defen|libero/i.test(x) ? "A"
+    : /mittel|\bmf\b|sechs|acht|zehn|spielmach/i.test(x) ? "M"
+    : /sturm|stür|angriff|fluegel|flügel/i.test(x) ? "S" : null;
+  return alle.map(zu).filter(Boolean);
+};
+// Gleichbleibende "Zufalls"-Reihenfolge je Termin: beim erneuten Oeffnen
+// steht dieselbe Einteilung da, aber von Training zu Training eine andere.
+const _mischen = (liste, saat) => {
+  let z=0; String(saat||"").split("").forEach(c=>{ z=(z*31+c.charCodeAt(0))>>>0; });
+  const a=[...liste];
+  for(let i=a.length-1;i>0;i--){ z=(z*1103515245+12345)>>>0; const j=z%(i+1); [a[i],a[j]]=[a[j],a[i]]; }
+  return a;
+};
+// Eine Mannschaft auf Linien stellen - passend zur Spielform. Ohne Torwart
+// geht auch: der Platz wandert dann ins Mittelfeld.
+const stelleAuf = (namen, profiles, mitTorwart) => {
+  const n=namen.length;
+  const basis=LINEUP_SHAPE[Math.max(3,Math.min(11,n))]||LINEUP_SHAPE[6];
+  const shape={...basis};
+  if(!mitTorwart && shape.T){ shape.M+=shape.T; shape.T=0; }
+  const linien={T:[],A:[],M:[],S:[]};
+  const offen=[...namen];
+  // Erst die, die auf der Linie zu Hause sind (Hauptposition vor Nebenposition).
+  ["T","A","M","S"].forEach(k=>{
+    for(let rang=0; rang<3 && linien[k].length<shape[k]; rang++){
+      for(let i=offen.length-1;i>=0;i--){
+        if(linien[k].length>=shape[k]) break;
+        const l=_linienVon(offen[i],profiles);
+        if(l[rang]===k){ linien[k].push(offen[i]); offen.splice(i,1); }
+      }
+    }
+  });
+  // Rest auffuellen, damit niemand uebrig bleibt.
+  ["A","M","S","T"].forEach(k=>{ while(linien[k].length<shape[k] && offen.length) linien[k].push(offen.shift()); });
+  while(offen.length) linien.M.push(offen.shift());
+  return linien;
+};
+// Zwei moeglichst gleich starke Haelften: nach Linien sortiert abwechselnd
+// verteilen, damit beide Seiten Abwehr, Mittelfeld und Sturm haben.
+const _teileZwei = (namen, profiles, saat) => {
+  const topf={T:[],A:[],M:[],S:[],X:[]};
+  _mischen(namen,saat).forEach(n=>{ const l=_linienVon(n,profiles)[0]||"X"; topf[l].push(n); });
+  const a=[],b=[]; let wechsel=0;
+  ["T","A","M","S","X"].forEach(k=>{ topf[k].forEach(n=>{ (wechsel++%2===0?a:b).push(n); }); });
+  // Groessenunterschied ausgleichen
+  while(a.length-b.length>1) b.push(a.pop());
+  while(b.length-a.length>1) a.push(b.pop());
+  return [a,b];
+};
+// Paarungen fuer das Spielchen. Jede Gruppe mit genug Zusagen spielt gegen
+// sich selbst; wer ohne Gruppe ist, wird zusammengewuerfelt.
+// Spielform nach Altersklasse - so wie die Jugend auch im Spiel antritt.
+const spielGrStandard = (cat) => {
+  const c=String(cat||"").toLowerCase();
+  if(/bambini/.test(c)) return 3;                       // 3 gegen 3, ohne Torwart
+  if(/\bg-?jugend|\bg\b/.test(c)) return 4;             // 3+1
+  if(/\bf-?jugend|\bf\b/.test(c)) return 6;             // 5+1
+  if(/\be-?jugend|\be\b/.test(c)) return 7;             // 6+1
+  if(/\bd-?jugend|\bd\b/.test(c)) return 9;             // 8+1
+  return 6;
+};
+const spielchenPaarungen = (gruppen=[], profiles=[], jaNamen=[], groesse=6, saat="") => {
   const prof = n => (profiles||[]).find(p=>(p.name||"").toLowerCase()===String(n).toLowerCase())||null;
   const grpVon = n => { const p=prof(n); return p&&p.intGrp ? p.intGrp : null; };
-  const posVon = n => { const p=prof(n); return [p&&p.position, ...((p&&p.posAlt)||[])].filter(Boolean); };
-  const istTor = x => /tor|keeper/i.test(String(x||""));
-  const passt = (n, gesucht) => { if(!gesucht) return 0;
-    const liste=posVon(n); const ix=liste.findIndex(x=>x===gesucht);
-    return ix<0 ? 0 : (ix===0 ? 3 : 2); };
-  // Welche Position fehlt dieser Mannschaft am dringendsten?
-  const fehlt = (namen) => {
-    if(!namen.some(n=>posVon(n).some(istTor))) return "Torwart";
-    const zaehl={}; namen.forEach(n=>{ const p=posVon(n)[0]; if(p) zaehl[p]=(zaehl[p]||0)+1; });
-    return ["Innenverteidiger","Zentrales Mittelfeld","Stürmer"].sort((a,b)=>(zaehl[a]||0)-(zaehl[b]||0))[0];
+  const hatTor = liste => liste.some(n=>_linienVon(n,profiles).includes("T"));
+  const paarungen=[]; const rest=[];
+
+  const bauen=(titel, gruppe, leute, ix) => {
+    if(leute.length<4){ rest.push(...leute); return; }   // zu wenige fuer ein Spiel
+    const [a,b]=_teileZwei(leute, profiles, saat+titel);
+    // Beide Seiten gleich gross - wer uebrig ist, wechselt ein. Lieber
+    // 3 gegen 3 mit einem Auswechselspieler als 4 gegen 3.
+    const proSeite=Math.min(groesse, Math.min(a.length,b.length));
+    const aStart=a.slice(0,proSeite), bStart=b.slice(0,proSeite);
+    const bank=[...a.slice(proSeite), ...b.slice(proSeite)];
+    const farben=(()=>{
+      const wahl=x=>LEIBCHEN.find(l=>l.id===x);
+      const la=wahl(gruppe&&gruppe.leibA)||wahl(gruppe&&gruppe.leib)||LEIBCHEN[ix*2%LEIBCHEN.length];
+      let lb=wahl(gruppe&&gruppe.leibB)||LEIBCHEN.find(l=>l.id!==la.id&&(ix*2+1)%LEIBCHEN.length===LEIBCHEN.indexOf(l));
+      if(!lb||lb.id===la.id) lb=LEIBCHEN.find(l=>l.id!==la.id);
+      return [la,lb];
+    })();
+    // Torwart nur, wenn BEIDE Seiten einen stellen koennen - sonst spielen
+    // beide ohne. Alles andere waere unfair.
+    const mitTW = hatTor(aStart) && hatTor(bStart);
+    paarungen.push({
+      titel, gruppe,
+      a:{ leib:farben[0], namen:aStart, linien:stelleAuf(aStart, profiles, mitTW) },
+      b:{ leib:farben[1], namen:bStart, linien:stelleAuf(bStart, profiles, mitTW) },
+      bank, torwart: mitTW,
+    });
   };
 
-  const frei={}; gruppen.forEach(g=>{ frei[g.id]=jaNamen.filter(n=>grpVon(n)===g.id); });
+  gruppen.forEach((g,ix)=>bauen(g.name, g, jaNamen.filter(n=>grpVon(n)===g.id), ix));
   const ohne=jaNamen.filter(n=>!grpVon(n)||!gruppen.some(g=>g.id===grpVon(n)));
-  const teams=[]; const hinweise=[];
-  // So viele VOLLE Mannschaften, wie die Zusagen hergeben - hoechstens eine
-  // je Gruppe. Was uebrig bleibt, sind Auswechselspieler, keine Rumpfelf.
-  const anzahl=Math.max(1, Math.min(gruppen.length, Math.floor(jaNamen.length/groesse)));
-
-  gruppen.slice(0,anzahl).forEach((g,gi)=>{
-    const eigene=frei[g.id].slice(); frei[g.id]=[];
-    const start=eigene.slice(0,groesse).map(n=>({name:n}));
-    const bank =eigene.slice(groesse).map(n=>({name:n}));
-    // Auffuellen ausschliesslich aus SCHWAECHEREN Gruppen - nie von oben.
-    let li=gi+1;
-    while(start.length<groesse && li<gruppen.length){
-      const topf=frei[gruppen[li].id];
-      if(!topf.length){ li++; continue; }
-      const gesucht=fehlt(start.map(x=>x.name));
-      const best=topf.map(n=>({n, s:passt(n,gesucht)}))
-        .sort((a,b)=>b.s-a.s || String(a.n).localeCompare(String(b.n),"de"))[0];
-      frei[gruppen[li].id]=topf.filter(x=>x!==best.n);
-      start.push({name:best.n, auf:true, von:gruppen[li].id});
-      hinweise.push(`${best.n} rückt aus ${gruppen[li].name} auf${best.s?` – ${gesucht} fehlte`:""}`);
-    }
-    while(start.length<groesse && ohne.length){
-      const n=ohne.shift(); start.push({name:n, auf:true, von:null});
-      hinweise.push(`${n} füllt ${g.name} auf (keiner Gruppe zugeteilt)`);
-    }
-    teams.push({ gruppe:g, start, bank });
-  });
-
-  // Alles, was jetzt noch uebrig ist (auch ganze Gruppen ohne eigene
-  // Mannschaft), wechselt ein - moeglichst in der eigenen Mannschaft.
-  const uebrig=[...gruppen.flatMap(g=>(frei[g.id]||[]).map(n=>({name:n, grp:g.id}))), ...ohne.map(n=>({name:n, grp:null}))];
-  uebrig.forEach(u=>{
-    if(!teams.length) return;
-    const eigen=teams.find(t=>t.gruppe.id===u.grp);
-    (eigen || teams[teams.length-1]).bank.push({name:u.name});
-  });
-  return { teams, hinweise, groesse };
+  if(ohne.length+rest.length>0) bauen("Gemischt", null, [...ohne,...rest], gruppen.length);
+  return { paarungen, groesse };
 };
 const intGruppeDesKindes = (name, profiles, gruppen) => {
   const p=(profiles||[]).find(x=>(x.name||"").toLowerCase()===String(name).toLowerCase());
@@ -23257,26 +23313,51 @@ function recommendLineup(present, profiles, pastLineups, friendWeight=1){
   const friends=fp.sort((x,y)=>(y.must-x.must)).slice(0,4);
   return {lineup,bench,formation,pairs,friends,count:n};
 }
-// Mannschaften fuers Spielchen im Training. Die Leistungsgruppen sind die
-// Mannschaften; aufgefuellt wird nur nach oben, der Rest sitzt auf der
-// Bank seiner eigenen Mannschaft.
-function SpielchenTeams({ ev, gruppen=[], profiles=[], jaNamen=[], titel="", fire, onGroesse }){
-  const GROESSEN=[[5,"4+1"],[6,"5+1"],[7,"6+1"],[8,"7+1"]];
-  const groesse=Number(ev.spielGr)||6;
-  if(!gruppen.length||jaNamen.length<4) return null;
-  const {teams,hinweise}=leibchenTeams(gruppen, profiles, jaNamen, groesse);
-  if(!teams.length) return null;
-  const bankGesamt=teams.reduce((n,t)=>n+t.bank.length,0);
-  const txt=[`🎽 Mannschaften – ${titel}`,``,
-    ...teams.map(t=>`${t.gruppe.name} (${t.start.length}): ${t.start.map(x=>String(x.name).split(" ")[0]).join(", ")}`
-      +(t.bank.length?`\n   Auswechsel: ${t.bank.map(x=>String(x.name).split(" ")[0]).join(", ")}`:"")),
-  ].join("\n");
+// Spielchen im Training: je Gruppe eine Paarung - Leistung gegen Leistung,
+// Entwicklung gegen Entwicklung. Dargestellt wie die Aufstellung im Spiel,
+// mit Linien passend zur Spielform.
+function SpielchenTeams({ ev, gruppen=[], profiles=[], jaNamen=[], titel="", cat="", fire, onGroesse }){
+  const GROESSEN=[[3,"3 gegen 3"],[4,"3+1 / 4"],[5,"4+1 / 5"],[6,"5+1 / 6"],[7,"6+1 / 7"],[9,"8+1 / 9"]];
+  // Ohne eigene Wahl richtet sich die Spielform nach der Altersklasse.
+  const standard=spielGrStandard(cat);
+  const groesse=Number(ev.spielGr)||standard;
+  if(jaNamen.length<4) return null;
+  const {paarungen}=spielchenPaarungen(gruppen, profiles, jaNamen, groesse, String(ev.id||"")+String(ev.date||""));
+  if(!paarungen.length) return null;
+  const LINIEN=[["T","Tor"],["A","Abwehr"],["M","Mittelfeld"],["S","Angriff"]];
+  const farbe={T:"#d97706",A:"#2563eb",M:"#16a34a",S:"#dc2626"};
+  const kurz=n=>String(n).split(" ")[0];
+  const txt=[`🎽 Spielchen – ${titel}`,``,
+    ...paarungen.map(p=>[`${p.titel}: ${p.a.leib.name} gegen ${p.b.leib.name}`,
+      `  ${p.a.leib.name}: ${p.a.namen.map(kurz).join(", ")}`,
+      `  ${p.b.leib.name}: ${p.b.namen.map(kurz).join(", ")}`,
+      p.bank.length?`  Auswechsel: ${p.bank.map(kurz).join(", ")}`:""].filter(Boolean).join("\n")),
+  ].join("\n\n");
+
+  const Seite=({s})=>(
+    <div style={{flex:1,minWidth:0,background:"#fff",border:`1.5px solid ${s.leib.col}`,borderRadius:11,padding:"8px 9px"}}>
+      <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:6}}>
+        <span style={{width:12,height:12,borderRadius:99,background:s.leib.col,flexShrink:0}}/>
+        <span style={{fontWeight:900,fontSize:12.5,color:s.leib.col,flex:1}}>{s.leib.name}</span>
+        <span style={{fontSize:10.5,fontWeight:800,color:"#94a3b8"}}>{s.namen.length}</span>
+      </div>
+      {LINIEN.filter(([k])=>(s.linien[k]||[]).length>0).map(([k,l])=>(
+        <div key={k} style={{display:"flex",gap:6,marginBottom:3}}>
+          <span style={{width:58,flexShrink:0,fontSize:9.5,fontWeight:800,color:farbe[k],letterSpacing:.2,paddingTop:2}}>{l.toUpperCase()}</span>
+          <span style={{flex:1,minWidth:0,fontSize:11.5,fontWeight:700,color:"#0f172a",lineHeight:1.45}}>
+            {(s.linien[k]||[]).join(", ")}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+
   return (
     <div style={{marginTop:16,paddingTop:14,borderTop:"1px solid #f1f5f9"}}>
       <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
         <span style={{fontSize:18}}>🎽</span>
-        <span style={{fontWeight:800,fontSize:15,color:"#0f172a",flex:1}}>Mannschaften fürs Spielchen</span>
-        <button onClick={()=>{ if(navigator.share){ navigator.share({title:"Mannschaften",text:txt}).catch(()=>{}); }
+        <span style={{fontWeight:800,fontSize:15,color:"#0f172a",flex:1}}>Spielchen</span>
+        <button onClick={()=>{ if(navigator.share){ navigator.share({title:"Spielchen",text:txt}).catch(()=>{}); }
             else { navigator.clipboard?.writeText(txt); fire&&fire("Kopiert ✓"); } }}
           style={{padding:"6px 11px",borderRadius:9,border:"1.5px solid #e2e8f0",background:"#fff",color:"#475569",fontWeight:800,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>Teilen</button>
       </div>
@@ -23284,53 +23365,36 @@ function SpielchenTeams({ ev, gruppen=[], profiles=[], jaNamen=[], titel="", fir
         <span style={{fontSize:10.5,fontWeight:800,color:"#64748b",letterSpacing:.3}}>SPIELFORM</span>
         {GROESSEN.map(([n,l])=>(
           <button key={n} onClick={()=>onGroesse&&onGroesse(n)}
-            style={{padding:"5px 11px",minHeight:32,borderRadius:99,border:`1.5px solid ${groesse===n?"#0f172a":"#e2e8f0"}`,
+            style={{padding:"5px 10px",minHeight:32,borderRadius:99,border:`1.5px solid ${groesse===n?"#0f172a":"#e2e8f0"}`,
               background:groesse===n?"#0f172a":"#fff",color:groesse===n?"#fff":"#64748b",
-              fontWeight:800,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>{l}</button>
+              fontWeight:800,fontSize:11.5,cursor:"pointer",fontFamily:"inherit"}}>{l}{n===standard?" ·":""}</button>
         ))}
+        {!ev.spielGr&&<span style={{fontSize:10.5,color:"#94a3b8"}}>· passend zur {cat||"Jugend"}</span>}
       </div>
       <div style={{fontSize:11.5,color:"#64748b",lineHeight:1.5,marginBottom:9}}>
-        Aus den {jaNamen.length} Zusagen. Fehlt jemand, rückt aus der nächstschwächeren Gruppe jemand <b>auf</b> – mit passender Position.
-        Nach unten wird niemand geschoben. Wer übrig ist, wechselt in seiner Mannschaft ein.
+        Aus den {jaNamen.length} Zusagen. Jede Gruppe spielt gegen sich selbst – die Leibchen unterscheiden die beiden Mannschaften.
+        Ein Torwart wird aufgestellt, wenn jemand dabei ist, der ins Tor kann; sonst wird Futsal ohne gespielt.
       </div>
-      <div style={{display:"flex",flexDirection:"column",gap:7}}>
-        {teams.map(t=>(
-          <div key={t.gruppe.id} style={{border:`1.5px solid ${t.gruppe.col}`,background:t.gruppe.col+"0c",borderRadius:12,padding:"8px 10px"}}>
-            <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:6}}>
-              <span style={{width:13,height:13,borderRadius:99,background:t.gruppe.col,flexShrink:0}}/>
-              <span style={{fontWeight:900,fontSize:13,color:t.gruppe.col,flex:1}}>{t.gruppe.name}</span>
-              {t.start.length<groesse&&<span style={{fontSize:10.5,fontWeight:800,color:"#b45309"}}>nur {t.start.length} – es fehlen {groesse-t.start.length}</span>}
-              <span style={{fontSize:11,fontWeight:800,color:"#fff",background:t.gruppe.col,borderRadius:99,padding:"1px 7px"}}>{t.start.length}</span>
+      <div style={{display:"flex",flexDirection:"column",gap:10}}>
+        {paarungen.map((p,i)=>(
+          <div key={p.titel+i} style={{background:"#f8fafc",border:"1.5px solid #e2e8f0",borderRadius:13,padding:"9px 10px"}}>
+            <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:7}}>
+              <span style={{fontWeight:900,fontSize:13,color:"#0f172a",flex:1}}>{p.titel}</span>
+              <span style={{fontSize:11,fontWeight:800,color:"#64748b"}}>{p.a.namen.length} gegen {p.b.namen.length}</span>
+              {!p.torwart&&<span title="Futsal: ohne Torwart" style={{fontSize:10,fontWeight:800,color:"#7c3aed",background:"#f3e8ff",borderRadius:6,padding:"2px 6px"}}>ohne Torwart</span>}
             </div>
-            <div style={{display:"flex",flexWrap:"wrap",gap:4}}>
-              {t.start.map(x=>(
-                <span key={x.name} style={{display:"flex",alignItems:"center",gap:4,background:"#fff",
-                  border:x.auf?`1.5px dashed ${t.gruppe.col}`:"1px solid #e2e8f0",borderRadius:99,padding:"3px 9px 3px 3px"}}>
-                  <Av name={x.name} sz={18}/>
-                  <span style={{fontSize:11.5,fontWeight:700,color:"#0f172a"}}>{x.name}</span>
-                  {x.auf&&<span style={{fontSize:9.5,fontWeight:800,color:t.gruppe.col}}>rückt auf</span>}
-                </span>
-              ))}
+            <div style={{display:"flex",gap:7,alignItems:"stretch"}}>
+              <Seite s={p.a}/>
+              <div style={{display:"flex",alignItems:"center",fontSize:10.5,fontWeight:900,color:"#94a3b8"}}>vs</div>
+              <Seite s={p.b}/>
             </div>
-            {t.bank.length>0&&(
-              <div style={{marginTop:6,paddingTop:6,borderTop:`1px dashed ${t.gruppe.col}55`}}>
-                <span style={{fontSize:10,fontWeight:800,color:"#64748b",letterSpacing:.3,marginRight:6}}>AUSWECHSEL</span>
-                {t.bank.map(x=>(
-                  <span key={x.name} style={{display:"inline-flex",alignItems:"center",gap:4,background:"#fff",
-                    border:"1px solid #e2e8f0",borderRadius:99,padding:"2px 8px 2px 2px",marginRight:4,marginTop:3}}>
-                    <Av name={x.name} sz={16}/>
-                    <span style={{fontSize:11,fontWeight:700,color:"#475569"}}>{x.name}</span>
-                  </span>
-                ))}
+            {p.bank.length>0&&(
+              <div style={{marginTop:7,paddingTop:6,borderTop:"1px dashed #e2e8f0",fontSize:11,color:"#64748b"}}>
+                <b style={{fontSize:10,letterSpacing:.3,color:"#94a3b8"}}>AUSWECHSEL</b> {p.bank.join(", ")}
               </div>
             )}
           </div>
         ))}
-      </div>
-      <div style={{fontSize:11,color:"#64748b",marginTop:8,lineHeight:1.5}}>
-        {teams.length} × {GROESSEN.find(g=>g[0]===groesse)?.[1]||groesse}
-        {bankGesamt>0?` · ${bankGesamt} zum Auswechseln`:""}
-        {hinweise.slice(0,3).map((h,j)=><div key={j}>• {h}</div>)}
       </div>
     </div>
   );
