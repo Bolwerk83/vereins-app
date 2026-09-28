@@ -35,6 +35,27 @@ const oeffneAssistent = async () => {
     if(!b) return false; b.click(); return true; });
   await page.waitForTimeout(1200); return auf;
 };
+// Co stellt bis zu zehn Fragen und laesst die weg, die er nicht braucht.
+// Deshalb wird nicht mehr stur eine feste Liste abgeklickt, sondern
+// durchgefragt, bis das Ergebnis steht - mit festen Wunsch-Antworten, damit
+// das Ergebnis vorhersagbar bleibt.
+const WUNSCH=["Sie spielen gar nicht erst ab","Alle laufen zum Ball","Alle bleiben erst einmal stehen",
+  "Mehr als 16","75 Minuten","Halle","Drei oder mehr","Vier oder mehr \\(Minitore\\)",
+  "In zwei bis vier Wochen","F- oder E-Jugend","Für jedes Kind einen","Alle sollen besser werden"];
+const durchfragen = async () => {
+  let schritte=0;
+  while(schritte<12){
+    if(await page.evaluate(()=>/🧮 Ergebnis/.test(document.body.innerText))) break;
+    let geklickt=false;
+    for(const w of WUNSCH){ if(await klick("^"+w+"$")){ geklickt=true; break; } }
+    if(!geklickt) geklickt=await page.evaluate(()=>{
+      const bs=[...document.querySelectorAll("button")].filter(x=>getComputedStyle(x).color==="rgb(76, 29, 149)");
+      if(!bs.length) return false; bs[0].click(); return true; });
+    if(!geklickt) break;
+    schritte++; await page.waitForTimeout(650);
+  }
+  return schritte;
+};
 const fragen = async (txt) => {
   await page.evaluate(t=>{ const i=[...document.querySelectorAll("input")].find(x=>/Woran hakt/.test(x.placeholder||""));
     if(!i) return; const set=Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype,"value").set;
@@ -59,6 +80,9 @@ const trId = await page.evaluate(()=>{ const d=JSON.parse(localStorage.getItem("
   const p=v=>String(v).padStart(2,"0"); const x=new Date(Date.now()+3*86400000);
   const ev=(d.events||[]).filter(e=>e.cid==="demo"&&e.tid==="demo_f1")[0];
   ev.type="training"; ev.date=`${x.getFullYear()}-${p(x.getMonth()+1)}-${p(x.getDate())}`; ev.trainingPlan=null;
+  // Co fragt nur, was er nicht schon weiß. Für diesen Test soll er Anzahl
+  // und Dauer WIRKLICH fragen - also nichts dazu in den Daten lassen.
+  (d.events||[]).filter(e=>e.tid==="demo_f1"&&e.type==="training").forEach(e=>{ e.votes={}; e.endTime=""; });
   localStorage.setItem("vereinsapp_v14", JSON.stringify(d)); return ev.id; });
 await page.reload({waitUntil:"networkidle"}); await page.waitForTimeout(2800); await dismiss();
 
@@ -94,18 +118,15 @@ await page.waitForTimeout(1200);
   else fail("Kein geführter Weg angeboten");
   await page.waitForTimeout(800);
   b=await body();
-  if(/FRAGE 1 VON 5/.test(b)) ok("Die erste von fünf Fragen steht da");
+  if(/FRAGE 1/.test(b)) ok("Die erste Frage steht da");
   else fail("Keine Fragen: "+b.slice(-400).replace(/\n/g," | "));
   if(/Wo geht der Ball meistens verloren/.test(b)) ok("Und sie passt zum Thema");
   else fail("Frage passt nicht zum Thema");
-  // vier Antworten per Knopf
-  const antworten=["Sie spielen gar nicht erst ab","Alle laufen zum Ball","Mehr als 16","75 Minuten","Halle"];
-  for(const a2 of antworten){
-    const g=await klick("^"+a2.replace(/[.*+?^${}()|[\]\\]/g,"\\$&"));
-    if(!g) fail("Antwort nicht anklickbar: "+a2);
-    await page.waitForTimeout(700);
-  }
-  ok("Alle fünf Fragen lassen sich per Knopfdruck beantworten");
+  if(/Ich frage höchstens zehnmal/.test(b)) ok("Co sagt vorweg, dass er höchstens zehnmal fragt");
+  else fail("Kein Hinweis auf die Obergrenze: "+b.slice(-400).replace(/\n/g," | "));
+  const schritte=await durchfragen();
+  if(schritte>=5&&schritte<=10) ok(`Alle ${schritte} Fragen lassen sich per Knopfdruck beantworten`);
+  else fail("Unerwartete Zahl von Fragen: "+schritte);
   b=await body();
   if(/🧮 Ergebnis/.test(b)) ok("Danach kommt ein Ergebnis");
   else fail("Kein Ergebnis: "+b.slice(-500).replace(/\n/g," | "));
@@ -128,8 +149,7 @@ await page.waitForTimeout(1200);
 { const vorher=await page.evaluate(()=>{ const t=document.body.innerText; const i=t.lastIndexOf("SO KOMMT DAS ZUSTANDE");
     return t.slice(i,i+320); });
   await klick("🧮 Fragen beantworten"); await page.waitForTimeout(700);
-  for(const a2 of ["Sie spielen gar nicht erst ab","Alle laufen zum Ball","Mehr als 16","75 Minuten","Halle"]){
-    await klick("^"+a2.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")); await page.waitForTimeout(600); }
+  await durchfragen();
   const nachher=await page.evaluate(()=>{ const t=document.body.innerText; const i=t.lastIndexOf("SO KOMMT DAS ZUSTANDE");
     return t.slice(i,i+320); });
   if(vorher&&vorher===nachher) ok("Dieselben Antworten ergeben dasselbe Ergebnis – nachvollziehbar wie ein Taschenrechner");

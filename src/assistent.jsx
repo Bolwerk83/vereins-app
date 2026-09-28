@@ -42,6 +42,33 @@ export default function TrainerAssistent({ data, save, fire, cl, session, myTids
     : String(team?.cat||"").toLowerCase().includes("f-") ? "f"
     : String(team?.cat||"").toLowerCase().includes("bambini") ? "bambini" : "all";
 
+  // Was Co schon aus der App weiß - danach fragt er nicht mehr. Kadergröße,
+  // Dauer der Einheit, Altersklasse und Anzahl der Betreuer stehen hier
+  // ohnehin; gefragt wird nur, was er nicht selbst herausfinden kann.
+  const coCtx = React.useMemo(()=>{
+    const heute = now();
+    const kader = new Set([
+      ...((data.playerProfiles||[]).filter(p=>p.mainTid===tid&&!p.archived).map(p=>p.name)),
+      ...(((data.players||{})[tid])||[]) ].filter(Boolean));
+    const trainings = (data.events||[]).filter(e=>e.tid===tid&&e.type==="training")
+      .sort((a,b)=>String(a.date||"").localeCompare(String(b.date||"")));
+    const zusagen = trainings.filter(e=>e.date<heute).slice(-6)
+      .map(e=>Object.entries(e.votes||{}).filter(([n,v])=>kader.has(n)&&(typeof v==="object"?v.val:v)==="yes").length)
+      .filter(n=>n>0);
+    const anzahlN = zusagen.length>=3 ? Math.round(zusagen.reduce((s,n)=>s+n,0)/zusagen.length) : 0;
+    const mitZeit = trainings.filter(e=>e.time&&e.endTime).slice(-1)[0];
+    const min = t => { const [h,m]=String(t).split(":").map(Number); return (h||0)*60+(m||0); };
+    const roh = mitZeit ? min(mitZeit.endTime)-min(mitZeit.time) : 0;
+    const dauerMin = roh>=30&&roh<=180 ? roh : 0;
+    const cat = String(team?.cat||"").toLowerCase();
+    const alter = /bambini|g-/.test(cat) ? "bambini" : /f-|e-/.test(cat) ? "fe"
+                : /d-|c-/.test(cat) ? "dc" : /b-|a-/.test(cat) ? "aelter" : "";
+    const alterLabel = { bambini:"ihr seid Bambini oder G-Jugend", fe:"ihr seid F- oder E-Jugend",
+                         dc:"ihr seid D- oder C-Jugend", aelter:"ihr seid B-Jugend oder älter" }[alter] || "";
+    const betreuerN = (data.trainers||[]).filter(x=>x.cid===cid&&(x.tids||[]).includes(tid)).length;
+    return { anzahlN, dauerMin, alter, alterLabel, betreuerN };
+  },[data,tid,cid,team]);
+
   const [verlauf,setVerlauf] = useState([{ von:"assi", art:"hallo",
     text:"Moin! Ich bin Co, euer Co-Trainer. Erzähl mir, woran es gerade hakt – und red nicht drumrum. „Wir müssen das Zusammenspiel verbessern“, „wir kriegen zu viele Gegentore“, „zeig mir Tricks“. Ich hör zu, und dann machen wir einen Plan." }]);
   const [frage,setFrage] = useState("");
@@ -79,14 +106,25 @@ export default function TrainerAssistent({ data, save, fire, cl, session, myTids
     setVerlauf(v=>{
       const m = v[idx]; if(!m||m.art!=="frage") return v;
       const antworten = {...m.antworten, [frageId]:optId};
-      const fragen = fragenZu(m.themaId);
+      // Die Liste wird nach JEDER Antwort neu bestimmt: erst dann steht fest,
+      // ob eine weitere Frage überhaupt noch etwas bringt.
+      const fragen = fragenZu(m.themaId, antworten, coCtx);
       const naechst = m.ix+1;
       const kopf = v.slice(0,idx);
       const rest = v.slice(idx+1);
       if(naechst < fragen.length)
         return [...kopf, {...m, ix:naechst, antworten}, ...rest];
-      const erg = rechneErgebnis(m.themaId, antworten);
+      const erg = rechneErgebnis(m.themaId, antworten, coCtx);
       return [...kopf, {...m, ix:naechst, antworten, fertig:true}, ...rest,
+        { von:"assi", art:"ergebnis", erg }];
+    });
+  };
+  // Abkürzen: Co rechnet sofort mit dem, was er bis hierhin hat.
+  const reichtJetzt = (idx) => {
+    setVerlauf(v=>{
+      const m = v[idx]; if(!m||m.art!=="frage") return v;
+      const erg = rechneErgebnis(m.themaId, m.antworten, coCtx);
+      return [...v.slice(0,idx), {...m, fertig:true, abgekuerzt:true}, ...v.slice(idx+1),
         { von:"assi", art:"ergebnis", erg }];
     });
   };
@@ -266,7 +304,7 @@ export default function TrainerAssistent({ data, save, fire, cl, session, myTids
                 )}
 
                 {m.art==="frage"&&(()=>{
-                  const fragen=fragenZu(m.themaId);
+                  const fragen=fragenZu(m.themaId, m.antworten, coCtx);
                   const f=fragen[Math.min(m.ix,fragen.length-1)];
                   if(m.fertig) return (
                     <div style={{marginTop:8,display:"flex",flexDirection:"column",gap:4}}>
@@ -274,11 +312,15 @@ export default function TrainerAssistent({ data, save, fire, cl, session, myTids
                         const o=q.opt.find(x=>x.id===m.antworten[q.id]);
                         return o?<div key={q.id} style={{fontSize:12,color:"#475569"}}>✓ {q.text} <b style={{color:"#0f172a"}}>{o.label}</b></div>:null;
                       })}
+                      {m.abgekuerzt&&<div style={{fontSize:11.5,color:"#64748b",fontStyle:"italic"}}>Den Rest habe ich weggelassen – du wolltest das Ergebnis.</div>}
                     </div>
                   );
+                  const offen=Math.max(0,fragen.length-m.ix-1);
                   return (
                     <div style={{marginTop:2}}>
-                      <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:6}}>FRAGE {m.ix+1} VON {fragen.length}</div>
+                      <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:6}}>
+                        FRAGE {m.ix+1}{offen>0?` · noch ${offen} ${offen===1?"weitere":"weitere"}`:" · letzte"}
+                      </div>
                       <div style={{fontSize:13.5,fontWeight:800,color:"#0f172a",marginBottom:9}}>{f.text}</div>
                       <div style={{display:"flex",flexDirection:"column",gap:6}}>
                         {f.opt.map(o=>(
@@ -289,6 +331,19 @@ export default function TrainerAssistent({ data, save, fire, cl, session, myTids
                           </button>
                         ))}
                       </div>
+                      {/* Wer keine Lust auf weitere Fragen hat, bekommt sofort das
+                          Ergebnis - mit dem, was Co bis hierhin weiss. */}
+                      {m.ix>=2&&offen>0&&(
+                        <button onClick={()=>reichtJetzt(i)}
+                          style={{marginTop:9,fontSize:12,color:"#64748b",background:"none",border:"none",cursor:"pointer",fontFamily:"inherit",textDecoration:"underline"}}>
+                          Das reicht – rechne jetzt
+                        </button>
+                      )}
+                      {m.ix===0&&(
+                        <div style={{fontSize:11,color:"#94a3b8",marginTop:8,lineHeight:1.5}}>
+                          Ich frage höchstens zehnmal – und nur das, was ich nicht schon weiß.
+                        </div>
+                      )}
                     </div>
                   );
                 })()}
@@ -302,6 +357,13 @@ export default function TrainerAssistent({ data, save, fire, cl, session, myTids
                       {e.rechenweg.map((r,j)=>(
                         <div key={j} style={{fontSize:11.5,color:"#475569",lineHeight:1.5,marginBottom:3}}>• {r}</div>
                       ))}
+                      {(e.gewusst||[]).length>0&&(
+                        <div style={{marginTop:6,paddingTop:6,borderTop:"1px dashed #e2e8f0"}}>
+                          {e.gewusst.map((g,j)=>(
+                            <div key={j} style={{fontSize:11,color:"#64748b",lineHeight:1.5,fontStyle:"italic"}}>{g}</div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                     <div style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.3,marginBottom:5}}>DAS WÜRDE ICH MACHEN</div>
                     <ol style={{margin:"0 0 10px",paddingLeft:18,display:"flex",flexDirection:"column",gap:6}}>

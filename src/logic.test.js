@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   eventStart, eventDeadline, isVotingLocked, isDeadlinePassed,
-  isEventPast, daysUntil, isUpcoming5, formatCountdown,
+  isEventPast, needsLateReason, daysUntil, isUpcoming5, formatCountdown,
   round2, clampSkill, monthKey, skillsMean, blendSkill,
   germanPublicHolidays, publicHolidayName, DE_STATES,
   parseRosterText, parseSpielplan } from "./logic.js";
@@ -63,6 +63,28 @@ test("isDeadlinePassed: vergangen true, zukuenftig false, keine Frist false", ()
   assert.equal(isDeadlinePassed({ deadline:{ date:"2099-01-01", time:"10:00" } }), false);
   assert.equal(isDeadlinePassed({}), false);
   assert.equal(isDeadlinePassed({ deadline:{} }), false);
+});
+
+// ---- needsLateReason (beide Fristen zusammen) ----
+test("needsLateReason: 24h-Sperre allein genuegt schon", () => {
+  // Termin morgen in wenigen Stunden -> automatische Sperre greift,
+  // obwohl gar keine manuelle Frist gesetzt ist.
+  const bald = new Date(Date.now() + 3*3600000);
+  const pad = x => String(x).padStart(2,"0");
+  const ev = { date:`${bald.getFullYear()}-${pad(bald.getMonth()+1)}-${pad(bald.getDate())}`,
+               time:`${pad(bald.getHours())}:${pad(bald.getMinutes())}` };
+  assert.equal(isDeadlinePassed(ev), false);   // keine manuelle Frist
+  assert.equal(needsLateReason(ev), true);     // trotzdem Grund noetig
+});
+test("needsLateReason: weit entfernt false, vergangen false", () => {
+  assert.equal(needsLateReason({ date: isoDaysFromNow(10), time:"12:00" }), false);
+  assert.equal(needsLateReason({ date: isoDaysFromNow(-10), time:"12:00" }), false);
+  assert.equal(needsLateReason({}), false);
+});
+test("needsLateReason: manuelle Frist durch, Termin noch offen", () => {
+  const ev = { date: isoDaysFromNow(10), time:"12:00", deadline:{ date: isoDaysFromNow(-1) } };
+  assert.equal(isVotingLocked(ev), false);
+  assert.equal(needsLateReason(ev), true);
 });
 
 // ---- formatCountdown ----

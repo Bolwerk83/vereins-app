@@ -1,6 +1,6 @@
 import React, { useState,useEffect,useCallback,useRef,useMemo,createContext,useContext } from "react";
 import { splitData, mergeData, merge3Obj } from "./data.js";
-import { eventStart, eventDeadline, isVotingLocked, isDeadlinePassed, isEventPast, daysUntil, isUpcoming5, formatCountdown, round2, clampSkill, monthKey, skillsMean, blendSkill, germanPublicHolidays, publicHolidayName, DE_STATES, parseRosterText, parseSpielplan } from "./logic.js";
+import { eventStart, eventDeadline, isDeadlinePassed, isEventPast, needsLateReason, daysUntil, isUpcoming5, formatCountdown, round2, clampSkill, monthKey, skillsMean, blendSkill, germanPublicHolidays, publicHolidayName, DE_STATES, parseRosterText, parseSpielplan } from "./logic.js";
 import { ACOLORS, acol, inits, contrast, mix, readable } from "./util.js";
 import { feat } from "./features.js";
 import { SK, SS, CFG, DEFAULT_CFG, JOIN_CODE, getConfig, setConfig, MULTI_TENANT, auth, _DATA_ARRAYS, normData, sb, localGet, localSet, sess, dbHealth } from "./storage.js";
@@ -8121,6 +8121,10 @@ function PollAttend({ev,user,onVote,cl,session=null,save=()=>{},data=null,fire=(
   const [lateMins, setLateMins] = useState(myLate||15);
   const tot=yes.length+no.length; const p=cl?.pri||"#16a34a";
   const dlPassed=isDeadlinePassed(ev);
+  // Fuer die Knoepfe zaehlt BEIDES: die automatische 24-Stunden-Sperre und die
+  // manuelle Frist. Sonst fragt die Oberflaeche keinen Grund ab, das Speichern
+  // verlangt aber einen - und die Abmeldung geht lautlos verloren.
+  const fristAb=needsLateReason(ev);
 
   const [showReason, setShowReason] = useState(false);
   const [noReason, setNoReason] = useState("");
@@ -8133,7 +8137,7 @@ function PollAttend({ev,user,onVote,cl,session=null,save=()=>{},data=null,fire=(
   const [showJoin, setShowJoin] = useState(false);
   const [joinReason, setJoinReason] = useState("");
   const [joinLate, setJoinLate] = useState(0);          // 0 = pünktlich, sonst Minuten
-  const braucheGrund = dlPassed && !warJa;
+  const braucheGrund = fristAb && !warJa;
   const sendJoin = (reason) => {
     const grund=String(reason||"").trim(); if(!grund) return;
     onVote(ev.id,"att", joinLate ? {val:"yes",late:joinLate,reason:grund} : {val:"yes",reason:grund});
@@ -8258,7 +8262,7 @@ function PollAttend({ev,user,onVote,cl,session=null,save=()=>{},data=null,fire=(
       </div>
 
       {/* Nicht dabei */}
-      <div onClick={()=>uv==="no"?voteNo():setShowReason(s=>!s)}
+      <div onClick={()=>{ if(uv==="no"&&!fristAb){ voteNo(); return; } setShowReason(s=>!s); }}
         style={{borderRadius:16,border:`2px solid ${uv==="no"?"#dc2626":"#e2e8f0"}`,background:uv==="no"?"#fee2e2":"#fafafa",padding:"14px 16px",cursor:"pointer",transition:"all .18s"}}>
         <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
           <div style={{width:22,height:22,borderRadius:"50%",border:`${uv==="no"?"7px":"2px"} solid ${uv==="no"?"#dc2626":"#cbd5e1"}`,background:"#fff",flexShrink:0,transition:"all .15s"}}/>
@@ -8283,14 +8287,14 @@ function PollAttend({ev,user,onVote,cl,session=null,save=()=>{},data=null,fire=(
               </button>
             ))}
           </div>
-          <div style={{display:"flex",gap:6,marginBottom:dlPassed?0:8}}>
+          <div style={{display:"flex",gap:6,marginBottom:fristAb?0:8}}>
             <input value={noReason} onChange={e=>setNoReason(e.target.value)} placeholder={tr("vReasonPh")}
               onKeyDown={e=>{if(e.key==="Enter"&&noReason.trim())voteNo(noReason.trim());}}
               style={{flex:1,padding:"8px 11px",fontSize:13,border:"1.5px solid #fca5a5",borderRadius:9,outline:"none",fontFamily:"inherit",boxSizing:"border-box"}}/>
             <button disabled={!noReason.trim()} onClick={()=>voteNo(noReason.trim())}
               style={{padding:"8px 14px",borderRadius:9,border:"none",background:noReason.trim()?"#dc2626":"#fecaca",color:"#fff",fontWeight:800,fontSize:13,cursor:noReason.trim()?"pointer":"default",fontFamily:"inherit"}}>{tr("vReasonSend")}</button>
           </div>
-          {dlPassed
+          {fristAb
             ? <div style={{fontSize:11.5,color:"#991b1b",fontWeight:600}}>{tr("vLateNeedsReason")}</div>
             : <button onClick={()=>voteNo("")} style={{fontSize:12,color:"#64748b",background:"none",border:"none",cursor:"pointer",fontFamily:"inherit"}}>{tr("vNoReason")}</button>}
         </div>
@@ -16281,7 +16285,7 @@ function EinfachTrainer({ cl, evs=[], tod, trainerNames=[], helperNames=[], squa
           {selfName&&onSelfVote&&(fokus.pt==="att"||!fokus.pt)&&fokus.date>=tod&&(()=>{
             // Gleiche Sprache wie in der vollstaendigen Liste: nach der Frist
             // heissen die Knoepfe "Spaete Anmeldung" / "Spaete Absage".
-            const spaet=(isVotingLocked(fokus)||isDeadlinePassed(fokus))&&!isEventPast(fokus);
+            const spaet=needsLateReason(fokus);
             return (
             <div style={{display:"flex",alignItems:"center",gap:7,marginTop:12,paddingTop:11,borderTop:"1px solid #f1f4f8"}}>
               <span style={{fontSize:12,color:"#98a2b3",fontWeight:600,flexShrink:0}}>Ich:</span>
@@ -16585,7 +16589,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
   const selfVote = (evId,val) => {
     if(!selfName) return;
     const ev0=(local.events||[]).find(e=>e.id===evId);
-    const locked = ev0 && (isVotingLocked(ev0)||isDeadlinePassed(ev0)) && !isEventPast(ev0);
+    const locked = !!ev0 && needsLateReason(ev0);
     // Nach Frist: Absage nur mit Grund -> im Termin (Schnellknopf kann keinen Grund erfassen).
     if(locked && val==="no"){ setViewEv(ev0); fire("Absage nach Frist nur mit Grund – bitte im Termin angeben."); return; }
     const ts=new Date().toISOString();
@@ -17216,7 +17220,9 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
               const ev2={...viewEv,...patch};
               save({...local,events:local.events.map(e=>e.id===viewEv.id?ev2:e)});
               setViewEv(prev=>({...prev,...patch}));
-              if(f&&!f.neuMischen) fire("Einteilung festgehalten – bleibt so, bis du sie freigibst");
+              // Beim Verschieben von Hand meldet sich die Anzeige selbst -
+              // sonst stünden zwei Hinweise übereinander.
+              if(f&&!f.neuMischen&&!f.manuell) fire("Einteilung festgehalten – bleibt so, bis du sie freigibst");
             }}/>
         )}
 
@@ -20131,7 +20137,7 @@ function DashRow({ev,cl,tod,onView,onEdit,onDel,onReset,onCopyLink,selfName,onSe
   const upcoming5 = isUpcoming5(ev);
   // "Zu spaet dran" gilt fuer beide Fristen: die automatische 24-Stunden-Sperre
   // UND eine vom Trainer gesetzte Abstimmungs-Frist.
-  const votingLocked = (isVotingLocked(ev)||isDeadlinePassed(ev)) && !isEventPast(ev);
+  const votingLocked = needsLateReason(ev);
   const lateCount = (ev.lateCancellations||[]).length;
   const canSelfVote = selfName && onSelfVote && (ev.pt==="att"||!ev.pt) && ev.date>=tod;
   // Live-Countdown nur bei anstehenden Events innerhalb der nächsten 5 Tage
@@ -23267,6 +23273,44 @@ const spielchenPaarungen = (gruppen=[], profiles=[], jaNamen=[], groesse=6, saat
   }
   return { paarungen, groesse };
 };
+// ---- Spielchen von Hand nachbessern -------------------------------------
+// Die gerechnete Einteilung ist ein Vorschlag, kein Gesetz. Der Trainer will
+// zwischendurch jemanden testen oder einen aus der Entwicklung mit nach oben
+// nehmen. Deshalb laesst sich jeder Spieler verschieben oder tauschen - die
+// Linien werden danach neu gestellt, damit die Aufstellung stimmig bleibt.
+const _spielchenStellen = (ps, profiles) => ps.map(p=>{
+  const hatTor = l => (l||[]).some(n=>_linienVon(n,profiles).includes("T"));
+  const mitTW = hatTor(p.a.namen) && hatTor(p.b.namen);
+  return { ...p, torwart:mitTW,
+    a:{ ...p.a, linien:stelleAuf(p.a.namen, profiles, mitTW) },
+    b:{ ...p.b, linien:stelleAuf(p.b.namen, profiles, mitTW) } };
+});
+const spielchenOrt = (ps, name) => {
+  for(let i=0;i<ps.length;i++){ const p=ps[i];
+    if(p.a.namen.includes(name)) return {pi:i, wo:"a"};
+    if(p.b.namen.includes(name)) return {pi:i, wo:"b"};
+    if((p.bank||[]).includes(name)) return {pi:i, wo:"bank"}; }
+  return null;
+};
+const spielchenSetzen = (ps, profiles, name, pi, wo) => {
+  if(!ps[pi]) return ps;
+  const neu = ps.map(p=>({ ...p,
+    a:{ ...p.a, namen:p.a.namen.filter(n=>n!==name) },
+    b:{ ...p.b, namen:p.b.namen.filter(n=>n!==name) },
+    bank:(p.bank||[]).filter(n=>n!==name) }));
+  const z = neu[pi];
+  if(wo==="bank") z.bank=[...z.bank, name];
+  else z[wo]={ ...z[wo], namen:[...z[wo].namen, name] };
+  return _spielchenStellen(neu, profiles);
+};
+const spielchenTauschen = (ps, profiles, n1, n2) => {
+  if(!spielchenOrt(ps,n1)||!spielchenOrt(ps,n2)) return ps;
+  const t = liste => (liste||[]).map(n=>n===n1?n2:n===n2?n1:n);
+  return _spielchenStellen(ps.map(p=>({ ...p,
+    a:{ ...p.a, namen:t(p.a.namen) },
+    b:{ ...p.b, namen:t(p.b.namen) },
+    bank:t(p.bank) })), profiles);
+};
 const intGruppeDesKindes = (name, profiles, gruppen) => {
   const p=(profiles||[]).find(x=>(x.name||"").toLowerCase()===String(name).toLowerCase());
   if(!p||!p.intGrp) return null;
@@ -23334,6 +23378,9 @@ function recommendLineup(present, profiles, pastLineups, friendWeight=1){
 // Entwicklung gegen Entwicklung. Dargestellt wie die Aufstellung im Spiel,
 // mit Linien passend zur Spielform.
 function SpielchenTeams({ ev, gruppen=[], profiles=[], jaNamen=[], titel="", cat="", fire, onGroesse, onFest }){
+  // Ausgewaehlter Spieler beim Verschieben von Hand - ganz oben, damit die
+  // fruehen Abbrueche weiter unten keine Hooks ueberspringen.
+  const [gewaehlt,setGewaehlt]=useState(null);
   const GROESSEN=[[3,"3 gegen 3"],[4,"3+1 / 4"],[5,"4+1 / 5"],[6,"5+1 / 6"],[7,"6+1 / 7"],[9,"8+1 / 9"]];
   // Ohne eigene Wahl richtet sich die Spielform nach der Altersklasse.
   const standard=spielGrStandard(cat);
@@ -23353,11 +23400,31 @@ function SpielchenTeams({ ev, gruppen=[], profiles=[], jaNamen=[], titel="", cat
   const festNamen=fest?paarungen.flatMap(p=>[...p.a.namen,...p.b.namen,...p.bank]):[];
   const dazu=fest?jaNamen.filter(n=>!festNamen.includes(n)):[];
   const weg =fest?festNamen.filter(n=>!jaNamen.includes(n)):[];
-  const speichern=()=>onFest&&onFest({ groesse,
-    paarungen: frisch.paarungen.map(p=>({ titel:p.titel, grpId:p.gruppe?p.gruppe.id:null,
-      a:{ leib:p.a.leib.id, namen:p.a.namen, linien:p.a.linien },
-      b:{ leib:p.b.leib.id, namen:p.b.namen, linien:p.b.linien },
-      bank:p.bank, torwart:p.torwart })) });
+  // Eine Einteilung so ablegen, dass sie beim naechsten Oeffnen wieder da ist.
+  const alsFest=(ps, manuell=false)=>({ groesse, manuell,
+    paarungen: ps.map(p=>({ titel:p.titel, grpId:(p.gruppe&&p.gruppe.id)||p.grpId||null,
+      a:{ leib:(p.a.leib&&p.a.leib.id)||p.a.leib, namen:p.a.namen, linien:p.a.linien },
+      b:{ leib:(p.b.leib&&p.b.leib.id)||p.b.leib, namen:p.b.namen, linien:p.b.linien },
+      bank:p.bank||[], torwart:p.torwart })) });
+  const speichern=()=>onFest&&onFest(alsFest(frisch.paarungen));
+  // Von Hand verschieben: erst einen Spieler antippen, dann das Ziel - oder
+  // einen zweiten Spieler, dann tauschen die beiden die Plaetze. Jede
+  // Aenderung haelt die Einteilung fest, sonst waere sie beim naechsten
+  // Oeffnen wieder weg.
+  const vonHand=!!(fest&&fest.manuell);
+  const tippe=(n)=>{
+    if(!gewaehlt){ setGewaehlt(n); return; }
+    if(gewaehlt===n){ setGewaehlt(null); return; }
+    onFest&&onFest(alsFest(spielchenTauschen(paarungen, profiles, gewaehlt, n), true));
+    fire&&fire(`Getauscht: ${String(gewaehlt).split(" ")[0]} ↔ ${String(n).split(" ")[0]}`);
+    setGewaehlt(null);
+  };
+  const zielTippe=(pi,wo)=>{
+    if(!gewaehlt) return;
+    onFest&&onFest(alsFest(spielchenSetzen(paarungen, profiles, gewaehlt, pi, wo), true));
+    fire&&fire(`${String(gewaehlt).split(" ")[0]} verschoben`);
+    setGewaehlt(null);
+  };
   const LINIEN=[["T","Tor"],["A","Abwehr"],["M","Mittelfeld"],["S","Angriff"]];
   const farbe={T:"#d97706",A:"#2563eb",M:"#16a34a",S:"#dc2626"};
   const kurz=n=>String(n).split(" ")[0];
@@ -23368,18 +23435,34 @@ function SpielchenTeams({ ev, gruppen=[], profiles=[], jaNamen=[], titel="", cat
       p.bank.length?`  Auswechsel: ${p.bank.map(kurz).join(", ")}`:""].filter(Boolean).join("\n")),
   ].join("\n\n");
 
-  const Seite=({s})=>(
+  // Ein Name zum Antippen: einmal waehlen, dann verschieben oder tauschen.
+  const Chip=({n})=>{
+    const an=gewaehlt===n;
+    return (
+      <button onClick={()=>tippe(n)} title={an?"Nochmal tippen hebt die Auswahl auf":"Antippen zum Verschieben oder Tauschen"}
+        style={{padding:"4px 9px",minHeight:30,borderRadius:9,marginRight:4,marginBottom:4,
+          border:`1.5px solid ${an?"#0f172a":"#e2e8f0"}`,background:an?"#0f172a":"#f8fafc",
+          color:an?"#fff":"#0f172a",fontWeight:700,fontSize:11.5,cursor:"pointer",fontFamily:"inherit"}}>{n}</button>
+    );
+  };
+  const ZielKnopf=({pi,wo,text})=>(
+    <button onClick={()=>zielTippe(pi,wo)}
+      style={{padding:"3px 9px",minHeight:28,borderRadius:99,border:"1.5px dashed #6366f1",background:"#eef2ff",
+        color:"#4338ca",fontWeight:800,fontSize:10.5,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>{text}</button>
+  );
+  const Seite=({s,pi,wo})=>(
     <div style={{flex:1,minWidth:0,background:"#fff",border:`1.5px solid ${s.leib.col}`,borderRadius:11,padding:"8px 9px"}}>
-      <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:6}}>
+      <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:6,flexWrap:"wrap"}}>
         <span style={{width:12,height:12,borderRadius:99,background:s.leib.col,flexShrink:0}}/>
         <span style={{fontWeight:900,fontSize:12.5,color:s.leib.col,flex:1}}>{s.leib.name}</span>
         <span style={{fontSize:10.5,fontWeight:800,color:"#94a3b8"}}>{s.namen.length}</span>
+        {gewaehlt&&!s.namen.includes(gewaehlt)&&<ZielKnopf pi={pi} wo={wo} text="→ hierher"/>}
       </div>
       {LINIEN.filter(([k])=>(s.linien[k]||[]).length>0).map(([k,l])=>(
         <div key={k} style={{display:"flex",gap:6,marginBottom:3}}>
-          <span style={{width:58,flexShrink:0,fontSize:9.5,fontWeight:800,color:farbe[k],letterSpacing:.2,paddingTop:2}}>{l.toUpperCase()}</span>
-          <span style={{flex:1,minWidth:0,fontSize:11.5,fontWeight:700,color:"#0f172a",lineHeight:1.45}}>
-            {(s.linien[k]||[]).join(", ")}
+          <span style={{width:58,flexShrink:0,fontSize:9.5,fontWeight:800,color:farbe[k],letterSpacing:.2,paddingTop:6}}>{l.toUpperCase()}</span>
+          <span style={{flex:1,minWidth:0,display:"flex",flexWrap:"wrap"}}>
+            {(s.linien[k]||[]).map(n=><Chip key={n} n={n}/>)}
           </span>
         </div>
       ))}
@@ -23399,9 +23482,11 @@ function SpielchenTeams({ ev, gruppen=[], profiles=[], jaNamen=[], titel="", cat
       <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap",marginBottom:8}}>
         {fest
           ? <>
-              <span style={{fontSize:11,fontWeight:800,color:"#15803d",background:"#dcfce7",borderRadius:7,padding:"3px 8px"}}>📌 festgehalten</span>
-              <button onClick={()=>onFest&&onFest(null)}
-                style={{padding:"5px 10px",minHeight:32,borderRadius:99,border:"1.5px solid #e2e8f0",background:"#fff",color:"#64748b",fontWeight:800,fontSize:11.5,cursor:"pointer",fontFamily:"inherit"}}>Freigeben</button>
+              <span style={{fontSize:11,fontWeight:800,color:vonHand?"#4338ca":"#15803d",background:vonHand?"#eef2ff":"#dcfce7",borderRadius:7,padding:"3px 8px"}}>
+                {vonHand?"✋ von Hand angepasst":"📌 festgehalten"}
+              </span>
+              <button onClick={()=>{ setGewaehlt(null); onFest&&onFest(null); }}
+                style={{padding:"5px 10px",minHeight:32,borderRadius:99,border:"1.5px solid #e2e8f0",background:"#fff",color:"#64748b",fontWeight:800,fontSize:11.5,cursor:"pointer",fontFamily:"inherit"}}>{vonHand?"↩ Zurücksetzen":"Freigeben"}</button>
             </>
           : <>
               <button onClick={speichern}
@@ -23433,7 +23518,18 @@ function SpielchenTeams({ ev, gruppen=[], profiles=[], jaNamen=[], titel="", cat
       <div style={{fontSize:11.5,color:"#64748b",lineHeight:1.5,marginBottom:9}}>
         Aus den {jaNamen.length} Zusagen. Jede Gruppe spielt gegen sich selbst – die Leibchen unterscheiden die beiden Mannschaften.
         Ein Torwart wird aufgestellt, wenn jemand dabei ist, der ins Tor kann; sonst wird Futsal ohne gespielt.
+        <br/>Zum Ändern einen Namen antippen: dann ein Ziel wählen oder einen zweiten Namen – die beiden tauschen dann die Plätze.
       </div>
+      {/* Laufende Verschiebung: Co-Pilot-Zeile, damit klar ist, was als Nächstes passiert. */}
+      {gewaehlt&&(
+        <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",background:"#eef2ff",border:"1.5px solid #c7d2fe",borderRadius:11,padding:"8px 10px",marginBottom:9}}>
+          <span style={{fontSize:12,fontWeight:800,color:"#3730a3",flex:1,minWidth:0}}>
+            <b>{gewaehlt}</b> ist ausgewählt – jetzt ein Ziel antippen oder einen zweiten Namen zum Tauschen.
+          </span>
+          <button onClick={()=>setGewaehlt(null)}
+            style={{padding:"5px 11px",minHeight:32,borderRadius:99,border:"1.5px solid #c7d2fe",background:"#fff",color:"#4338ca",fontWeight:800,fontSize:11.5,cursor:"pointer",fontFamily:"inherit"}}>Abbrechen</button>
+        </div>
+      )}
       <div style={{display:"flex",flexDirection:"column",gap:10}}>
         {paarungen.map((p,i)=>(
           <div key={p.titel+i} style={{background:"#f8fafc",border:"1.5px solid #e2e8f0",borderRadius:13,padding:"9px 10px"}}>
@@ -23443,13 +23539,18 @@ function SpielchenTeams({ ev, gruppen=[], profiles=[], jaNamen=[], titel="", cat
               {!p.torwart&&<span title="Futsal: ohne Torwart" style={{fontSize:10,fontWeight:800,color:"#7c3aed",background:"#f3e8ff",borderRadius:6,padding:"2px 6px"}}>ohne Torwart</span>}
             </div>
             <div style={{display:"flex",gap:7,alignItems:"stretch"}}>
-              <Seite s={p.a}/>
+              <Seite s={p.a} pi={i} wo="a"/>
               <div style={{display:"flex",alignItems:"center",fontSize:10.5,fontWeight:900,color:"#94a3b8"}}>vs</div>
-              <Seite s={p.b}/>
+              <Seite s={p.b} pi={i} wo="b"/>
             </div>
-            {p.bank.length>0&&(
-              <div style={{marginTop:7,paddingTop:6,borderTop:"1px dashed #e2e8f0",fontSize:11,color:"#64748b"}}>
-                <b style={{fontSize:10,letterSpacing:.3,color:"#94a3b8"}}>AUSWECHSEL</b> {p.bank.join(", ")}
+            {(p.bank.length>0||gewaehlt)&&(
+              <div style={{marginTop:7,paddingTop:6,borderTop:"1px dashed #e2e8f0",display:"flex",gap:6,alignItems:"flex-start",flexWrap:"wrap"}}>
+                <b style={{fontSize:10,letterSpacing:.3,color:"#94a3b8",paddingTop:9}}>AUSWECHSEL</b>
+                <span style={{flex:1,minWidth:0,display:"flex",flexWrap:"wrap"}}>
+                  {p.bank.map(n=><Chip key={n} n={n}/>)}
+                  {p.bank.length===0&&<span style={{fontSize:11,color:"#94a3b8",paddingTop:9}}>niemand</span>}
+                </span>
+                {gewaehlt&&!p.bank.includes(gewaehlt)&&<span style={{paddingTop:6}}><ZielKnopf pi={i} wo="bank" text="→ auf die Bank"/></span>}
               </div>
             )}
           </div>
@@ -24748,7 +24849,8 @@ const GRUND_NEIN=["Krank","Urlaub","Schulpflicht","Wettkampf"];
 function AntwortKnoepfe({ ev, gross, onVote, wer=null }){
   const [spaetAuf,setSpaetAuf]=useState(false);
   // Nach der Frist geht die Antwort weiter - aber nur mit Begründung.
-  const fristAb=isDeadlinePassed(ev);
+  // Frist heisst: automatische 24-Stunden-Sperre ODER die manuelle Frist.
+  const fristAb=needsLateReason(ev);
   const [grundFuer,setGrundFuer]=useState(null);   // {val,late} oder null
   const [eigen,setEigen]=useState("");
   // Solange nichts gewaehlt ist, sind ALLE drei Knoepfe nur umrandet - so
@@ -24942,7 +25044,7 @@ function EinfachEltern({ cl, team, kind, events, onVote, onKindWechseln, onChat,
         </div>
         {/* Nach der Frist braucht die Änderung einen Grund - dafür den Termin
             gross aufmachen, statt hier still zu scheitern. */}
-        <button onClick={()=>{ if(isDeadlinePassed(ev)){ waehle(ev.id); setAendern(true); return; } onVote(ev.id,"att",a.art==="nein"?"yes":"no"); }}
+        <button onClick={()=>{ if(needsLateReason(ev)){ waehle(ev.id); setAendernId(ev.id); return; } onVote(ev.id,"att",a.art==="nein"?"yes":"no"); }}
           style={{flexShrink:0,padding:"11px 10px",minHeight:44,borderRadius:9,border:"none",background:"transparent",color:"#64748b",fontWeight:800,fontSize:12.5,cursor:"pointer",fontFamily:"inherit",textDecoration:"underline"}}>
           {a.art==="nein"?"doch dabei":"absagen"}
         </button>
@@ -25324,7 +25426,7 @@ function UserHome({data,session,onSave,onLogout,lang="de",setLang=()=>{},onSwitc
         return {...e, extraPolls:(e.extraPolls||[]).map(p=>p.id===pid?{...p, votes:{...(p.votes||{}), [user]: val}}:p)};
       }
       if(pt==="att"){
-        const locked = (isVotingLocked(e) || isDeadlinePassed(e)) && !isEventPast(e);
+        const locked = needsLateReason(e);
         const newVal = (typeof val==="object"&&val!==null) ? val.val : val;
         const reason = (typeof val==="object"&&val!==null) ? String(val.reason||"") : "";
         const prev   = (e.votes||{})[user];

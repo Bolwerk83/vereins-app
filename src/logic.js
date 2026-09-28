@@ -39,6 +39,15 @@ export const isEventPast = (ev) => {
   return Date.now() >= s.getTime();
 };
 
+// Braucht eine Aenderung jetzt eine Begruendung? Genau dann, wenn EINE der
+// beiden Fristen durch ist - die automatische 24-Stunden-Sperre ODER eine vom
+// Trainer gesetzte Frist - und der Termin noch nicht begonnen hat.
+// Eine einzige Stelle fuer alle Knoepfe und fuer das Speichern: sonst zeigt
+// die Oberflaeche "einfach absagen" an, waehrend das Speichern einen Grund
+// verlangt - und es passiert scheinbar gar nichts.
+export const needsLateReason = (ev) =>
+  (isVotingLocked(ev) || isDeadlinePassed(ev)) && !isEventPast(ev);
+
 // Tage bis zum Termin (negativ = vergangen, Infinity = kein Datum).
 export const daysUntil = (ev) => {
   const s = eventStart(ev); if (!s) return Infinity;

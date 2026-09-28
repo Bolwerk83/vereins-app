@@ -225,6 +225,39 @@ const FRAGE_ORT = { id:"ort", text:"Wo trainiert ihr?", opt:[
   { id:"halb",    label:"Halbes Feld" },
   { id:"halle",   label:"Halle" },
 ]};
+// Fragen, die Co nur stellt, wenn sie das Ergebnis wirklich drehen - und
+// wenn er die Antwort nicht ohnehin schon aus der App kennt.
+const FRAGE_ALTER = { id:"alter", text:"Welche Altersklasse trainierst du?", opt:[
+  { id:"bambini", label:"Bambini oder G-Jugend" },
+  { id:"fe",      label:"F- oder E-Jugend" },
+  { id:"dc",      label:"D- oder C-Jugend" },
+  { id:"aelter",  label:"B-Jugend oder älter" },
+]};
+const FRAGE_BETREUER = { id:"betreuer", text:"Wie viele Betreuer seid ihr im Training?", opt:[
+  { id:"1", label:"Ich allein" },
+  { id:"2", label:"Zu zweit" },
+  { id:"3", label:"Drei oder mehr" },
+]};
+const FRAGE_BAELLE = { id:"baelle", text:"Wie viele Bälle habt ihr?", opt:[
+  { id:"jeder", label:"Für jedes Kind einen" },
+  { id:"halb",  label:"Etwa für die Hälfte" },
+  { id:"wenig", label:"Nur eine Handvoll" },
+]};
+const FRAGE_TORE = { id:"tore", text:"Wie viele Tore stehen zur Verfügung?", opt:[
+  { id:"keine", label:"Keine – nur Hütchen" },
+  { id:"zwei",  label:"Zwei" },
+  { id:"viele", label:"Vier oder mehr (Minitore)" },
+]};
+const FRAGE_SPIEL = { id:"spiel", text:"Wann ist das nächste Spiel?", opt:[
+  { id:"woche",   label:"Diese Woche" },
+  { id:"spaeter", label:"In zwei bis vier Wochen" },
+  { id:"keins",   label:"Keins in Sicht" },
+]};
+const FRAGE_ZIEL = { id:"ziel", text:"Was soll in vier Wochen anders sein?", opt:[
+  { id:"ergebnis",    label:"Wir wollen Spiele gewinnen" },
+  { id:"entwicklung", label:"Alle sollen besser werden" },
+  { id:"freude",      label:"Es soll wieder Spaß machen" },
+]};
 
 // Themen-Frage: die eine Frage, die das Ergebnis wirklich dreht.
 export const THEMA_FRAGE = {
@@ -435,27 +468,154 @@ export const THEMA_FRAGE2 = {
   ]},
 };
 
-// Die Fragen zu einem Thema: beide Themen-Fragen, dann die drei festen.
-export const fragenZu = (themaId) => {
-  const tf = THEMA_FRAGE[themaId], tf2 = THEMA_FRAGE2[themaId];
-  return [ ...(tf?[tf]:[]), ...(tf2?[tf2]:[]), FRAGE_ANZAHL, FRAGE_DAUER, FRAGE_ORT ];
+// Dritte Themen-Frage: der letzte Schliff. Sie geht dorthin, wo die beiden
+// ersten Fragen noch offen gelassen haben, warum es genau hakt.
+export const THEMA_FRAGE3 = {
+  zusammenspiel:{ id:"nach", text:"Was passiert direkt nach einer Balleroberung?", opt:[
+    { id:"weg", label:"Der Ball wird sofort weggeschlagen", folge:"Das ist Angst vor dem Fehler, nicht fehlende Technik.",
+      massnahmen:["Feste Regel im Training: nach jeder Eroberung erst ein Pass zum Mitspieler, dann darf nach vorn gespielt werden."] },
+    { id:"stehen", label:"Alle bleiben erst einmal stehen", folge:"Die drei Sekunden nach der Eroberung sind die wertvollsten – und sie verpuffen.",
+      massnahmen:["Umschalt-Signal einbauen: auf Pfiff wechselt der Ballbesitz, danach drei Sekunden Vollgas nach vorn."] },
+    { id:"selten", label:"Wir erobern kaum Bälle", folge:"Dann liegt es vor dem Zusammenspiel – ihr kommt gar nicht erst an den Ball.",
+      massnahmen:["Erst Anlaufen und Zustellen üben: zu zweit auf den Ballführenden, einer stellt, einer klaut."] },
+  ]},
+  abschluss:{ id:"wer", text:"Wer schießt bei euch aufs Tor?", opt:[
+    { id:"einer", label:"Fast immer derselbe", folge:"Einer trägt die Last – der Gegner stellt ihn zu, und dann geht nichts mehr.",
+      massnahmen:["Vorgabe in Spielformen: das Tor zählt nur, wenn drei verschiedene Kinder schon getroffen haben."] },
+    { id:"verteilt", label:"Das verteilt sich ganz gut", folge:"Gute Basis – dann fehlt es an der Menge, nicht an der Verteilung.",
+      massnahmen:["Abschlussdruck erhöhen: jede Einheit endet mit 10 Minuten Torschuss unter Zeitdruck."] },
+    { id:"keiner", label:"Keiner traut sich richtig", folge:"Ein Mutthema. Wer für Fehlschüsse Kritik erwartet, schießt nicht.",
+      massnahmen:["Jeden Torschuss loben, auch den daneben – drei Wochen lang konsequent, dann schießen sie."] },
+  ]},
+  verteidigen:{ id:"zahl", text:"Wie viele Gegentore sind es ungefähr pro Spiel?", opt:[
+    { id:"wenige", label:"Ein bis zwei", folge:"Das ist normal – hier reicht Feinarbeit, kein Umbau.",
+      massnahmen:["Eine einzige Sache pro Woche verbessern, nicht die ganze Ordnung umstellen."] },
+    { id:"viele", label:"Drei bis fünf", folge:"Da fehlt Ordnung, nicht Einsatz.",
+      massnahmen:["Feste Grundordnung aufmalen und in jedem Training zehn Minuten ohne Gegner einlaufen lassen."] },
+    { id:"sehrviele", label:"Mehr als fünf", folge:"Dann stimmt meist die Staffel nicht – das löst kein Training allein.",
+      massnahmen:["Mit dem Verein über die Einteilung sprechen und im Training kleine Erfolge sichern: Spielformen, die ihr gewinnen könnt."] },
+  ]},
+  technik:{ id:"fuss", text:"Wie sieht es mit dem schwachen Fuß aus?", opt:[
+    { id:"nie", label:"Wird eigentlich nie benutzt", folge:"Der größte ungehobene Schatz in dem Alter.",
+      massnahmen:["Fünf Minuten je Einheit ausschließlich schwacher Fuß – ohne Gegner, ohne Tempo, ohne Wettkampf."] },
+    { id:"manchmal", label:"Ab und zu", folge:"Der Anfang ist gemacht, jetzt braucht es den Zwang.",
+      massnahmen:["Eine Spielform pro Einheit mit der Regel: nur schwacher Fuß, Tore zählen doppelt."] },
+    { id:"beide", label:"Die meisten können beide", folge:"Starke Grundlage – dann geht es um Tempo und Druck, nicht um Technik.",
+      massnahmen:["Jede Technikübung am Ende mit Gegner und Zeitvorgabe wiederholen."] },
+  ]},
+  kondition:{ id:"wann2", text:"Wann fällt es am meisten auf?", opt:[
+    { id:"spiel", label:"Nur im Spiel", folge:"Dann ist es Anspannung und Tempo, nicht die Grundlage.",
+      massnahmen:["Im Training mit Spieltempo arbeiten: kurze Blöcke, volle Intensität, echte Pausen."] },
+    { id:"training", label:"Auch im Training", folge:"Echte Grundlagenlücke – die schließt man über Spielformen, nicht über Läufe.",
+      massnahmen:["Feldgröße vergrößern und Pausen verkürzen: die Ausdauer kommt beim Spielen von allein."] },
+    { id:"einzelne", label:"Nur bei einzelnen Kindern", folge:"Das ist kein Mannschaftsthema – behandle es auch nicht als eines.",
+      massnahmen:["Betroffene früher wechseln und ihnen unter vier Augen eine kleine Wochenaufgabe mitgeben."] },
+  ]},
+  torwart:{ id:"tr", text:"Wie trainiert ihr das Torwartspiel?", opt:[
+    { id:"gar", label:"Gar nicht", folge:"Dann steht dort jede Woche jemand ohne Werkzeug.",
+      massnahmen:["Zehn Minuten Torwart-Grundlagen ins Aufwärmen – für alle, nicht nur für den Torwart."] },
+    { id:"nebenbei", label:"Nebenbei beim Abschluss", folge:"Besser als nichts, aber er ist dort nur Zielscheibe.",
+      massnahmen:["Beim Torschuss feste Aufgaben für den Torwart vorgeben: Stellung, Fangen, Abwurf."] },
+    { id:"extra", label:"Mit eigener Station", folge:"Sehr gut – dann geht es nur noch um die Anbindung ans Spiel.",
+      massnahmen:["Den Torwart in Spielformen als Mitspieler einbauen: Aufbau beginnt bei ihm."] },
+  ]},
+  teamgeist:{ id:"wen", text:"Wen betrifft es?", opt:[
+    { id:"alle", label:"Die ganze Mannschaft", folge:"Dann liegt es an der Rahmenbedingung, nicht an einzelnen Kindern.",
+      massnahmen:["Ein gemeinsames Ziel setzen, das ihr in vier Wochen erreichen könnt – und wöchentlich daran erinnern."] },
+    { id:"gruppe", label:"Eine kleine Gruppe", folge:"Grüppchenbildung – die löst sich nur über neue Zusammensetzungen.",
+      massnahmen:["Mannschaften im Training jede Woche neu mischen, feste Paare bewusst trennen."] },
+    { id:"einzeln", label:"Ein oder zwei Kinder", folge:"Einzelgespräch statt Mannschaftsansprache.",
+      massnahmen:["Ruhig und unter vier Augen ansprechen – nie vor der Gruppe, nie direkt nach dem Spiel."] },
+  ]},
+  eltern:{ id:"seit", text:"Wie lange geht das schon?", opt:[
+    { id:"neu", label:"Ganz frisch", folge:"Jetzt ist es noch klein – und genau jetzt löst es sich am leichtesten.",
+      massnahmen:["Kurz und freundlich direkt ansprechen, bevor sich eine Meinung festsetzt."] },
+    { id:"laenger", label:"Schon länger", folge:"Dann hat sich eine Erwartung gebildet, die du erst einmal ansprechen musst.",
+      massnahmen:["Einmal alle zusammenholen, die Regeln erklären, danach konsequent darauf verweisen."] },
+    { id:"immer", label:"Eigentlich dauernd", folge:"Das kostet dich Kraft, die den Kindern fehlt.",
+      massnahmen:["Feste Sprechzeit einführen: eine halbe Stunde nach dem Training, sonst nur schriftlich."] },
+  ]},
+};
+
+// Was Co schon aus der App weiß, fragt er nicht mehr. Hier wird daraus die
+// Antwort, die er sonst erfragen müsste.
+export const ctxAntworten = (ctx={}) => {
+  const a = {};
+  if(ctx.anzahlN>0)    a.anzahl = ctx.anzahlN>16 ? "gross" : ctx.anzahlN>10 ? "mittel" : "klein";
+  if(ctx.dauerMin>0)   a.dauer  = String([45,60,75,90].reduce((b,x)=>Math.abs(x-ctx.dauerMin)<Math.abs(b-ctx.dauerMin)?x:b, 60));
+  if(ctx.alter)        a.alter  = ctx.alter;
+  if(ctx.betreuerN>0)  a.betreuer = ctx.betreuerN>=3 ? "3" : ctx.betreuerN===2 ? "2" : "1";
+  return a;
+};
+// Was er schon wusste, sagt er offen - sonst wirkt das Ergebnis geraten.
+export const ctxHinweise = (ctx={}) => [
+  ctx.anzahlN>0   && `Wusste ich schon: zuletzt waren im Schnitt ${ctx.anzahlN} Kinder im Training.`,
+  ctx.dauerMin>0  && `Wusste ich schon: eure Einheit dauert ${ctx.dauerMin} Minuten.`,
+  ctx.alterLabel  && `Wusste ich schon: ${ctx.alterLabel}.`,
+  ctx.betreuerN>0 && `Wusste ich schon: ihr seid ${ctx.betreuerN===1?"allein":ctx.betreuerN+" Betreuer"} im Training.`,
+].filter(Boolean);
+
+// Höchstens so viele Fragen - danach wird gerechnet, auch wenn noch etwas
+// offen wäre. Zehn sind die Grenze, mehr hält niemand durch.
+export const MAX_FRAGEN = 10;
+
+// Die Fragen zu einem Thema. Co stellt NICHT stur dieselbe Liste: Er fragt
+// die drei Themen-Fragen, dann nur das, was er noch nicht weiß - und nur
+// das, was am Ergebnis wirklich etwas ändert. Deshalb hängt die Liste von
+// den bisherigen Antworten und vom Wissen aus der App ab.
+export const fragenZu = (themaId, antworten={}, ctx={}) => {
+  const ausApp = ctxAntworten(ctx);
+  const A = { ...ausApp, ...antworten };
+  // Weggelassen wird eine Frage nur, wenn die App die Antwort schon kennt -
+  // niemals, weil der Trainer sie gerade beantwortet hat. Sonst verschwaende
+  // die Frage direkt nach dem Antippen wieder aus der Liste.
+  const kennt = id => ausApp[id]!==undefined && antworten[id]===undefined;
+  const tf = THEMA_FRAGE[themaId], tf2 = THEMA_FRAGE2[themaId], tf3 = THEMA_FRAGE3[themaId];
+  const liste = [ ...(tf?[tf]:[]), ...(tf2?[tf2]:[]), ...(tf3?[tf3]:[]) ];
+  // Der Schwerpunkt steht erst fest, wenn die erste Themen-Frage beantwortet ist.
+  const wahl = tf ? tf.opt.find(o=>o.id===A[tf.id]) : null;
+  const focus = (wahl && wahl.focus) || (THEMEN.find(t=>t.id===themaId)||{}).focus || "";
+  const dazu = f => { if(!kennt(f.id)) liste.push(f); };
+  dazu(FRAGE_ANZAHL);
+  dazu(FRAGE_DAUER);
+  liste.push(FRAGE_ORT);                       // ändert sich von Woche zu Woche
+  dazu(FRAGE_ALTER);
+  // Betreuer nur fragen, wenn überhaupt Stationen in Frage kommen - allein
+  // mit acht Kindern braucht es keine Aufteilung.
+  if(A.anzahl && A.anzahl!=="klein") dazu(FRAGE_BETREUER);
+  // Material nur dort, wo es das Ergebnis dreht.
+  if(focus==="technik") dazu(FRAGE_BAELLE);
+  if(focus==="torschuss"||focus==="spielform") dazu(FRAGE_TORE);
+  // Der Spieltermin verschiebt, wie viel Neues man einführen darf.
+  if(["zusammenspiel","abschluss","verteidigen","teamgeist"].includes(themaId)) dazu(FRAGE_SPIEL);
+  // Das Ziel fragt er nur, wenn es wirklich offen ist.
+  if(themaId==="teamgeist"||themaId==="eltern"||A.spiel==="keins") dazu(FRAGE_ZIEL);
+  return liste.slice(0, MAX_FRAGEN);
 };
 
 // Der "Taschenrechner": aus den Antworten wird ein Ergebnis - immer
 // dasselbe bei denselben Antworten, mit offenem Rechenweg.
-export const rechneErgebnis = (themaId, antworten={}) => {
+export const rechneErgebnis = (themaId, antworten={}, ctx={}) => {
+  const A = { ...ctxAntworten(ctx), ...antworten };
   const thema = THEMEN.find(t=>t.id===themaId);
   const tf = THEMA_FRAGE[themaId];
   const tf2 = THEMA_FRAGE2[themaId];
-  const wahl = tf ? (tf.opt.find(o=>o.id===antworten[tf.id]) || null) : null;
-  const wahl2 = tf2 ? (tf2.opt.find(o=>o.id===antworten[tf2.id]) || null) : null;
-  const anzahl = antworten.anzahl || "mittel";
-  const dauer  = Number(antworten.dauer||60);
-  const ort    = antworten.ort || "platz";
+  const tf3 = THEMA_FRAGE3[themaId];
+  const wahl  = tf  ? (tf.opt.find(o=>o.id===A[tf.id])   || null) : null;
+  const wahl2 = tf2 ? (tf2.opt.find(o=>o.id===A[tf2.id]) || null) : null;
+  const wahl3 = tf3 ? (tf3.opt.find(o=>o.id===A[tf3.id]) || null) : null;
+  const anzahl = A.anzahl || "mittel";
+  const dauer  = Number(A.dauer||60);
+  const ort    = A.ort || "platz";
 
   const focus = (wahl && wahl.focus) || thema?.focus || "auto";
   // Gruppen: bei vielen Kindern Stationsbetrieb, sonst eine Gruppe.
-  const gruppen = anzahl==="gross" ? 3 : anzahl==="mittel" ? 2 : 1;
+  const gruppenRoh = anzahl==="gross" ? 3 : anzahl==="mittel" ? 2 : 1;
+  // Eine Station ohne Betreuer ist keine Station. Deshalb deckelt die Zahl
+  // der Betreuer den Stationsbetrieb - das ist der haeufigste Planungsfehler.
+  const betreuer = Number(A.betreuer||0);
+  const gedeckelt = betreuer>0 && gruppenRoh>betreuer;
+  const gruppen = gedeckelt ? betreuer : gruppenRoh;
   // In der Halle und auf dem halben Feld bleibt weniger Platz - kürzere
   // Wege, kleinere Felder, dafür mehr Wiederholungen.
   const feld = ort==="halle" ? "20 × 12 m" : ort==="halb" ? "30 × 20 m" : "40 × 25 m";
@@ -464,20 +624,56 @@ export const rechneErgebnis = (themaId, antworten={}) => {
   // Netto-Zeit: Ankommen und Abschluss kosten immer etwas.
   const netto = Math.max(30, dauer - (dauer>=75?15:10));
 
+  // Zusatz-Antworten: jede bringt ihre eigene Folgerung und ihre eigene
+  // Massnahme mit - sonst waere die Frage überflüssig gewesen.
+  const extra = [];
+  const zusatz = [];
+  if(A.alter){ const t={bambini:"Bambini/G-Jugend",fe:"F-/E-Jugend",dc:"D-/C-Jugend",aelter:"B-Jugend oder älter"}[A.alter];
+    const f={bambini:"alles im Spiel verpacken, keine Reihen, keine Ansagen über zwei Sätze",
+             fe:"kurze Erklärungen, viele Ballkontakte, Wettkampf in jeder Übung",
+             dc:"Aufgaben dürfen komplexer werden, Gegnerdruck gehört dazu",
+             aelter:"Intensität und Verantwortung hochfahren, Taktik ausdrücklich besprechen"}[A.alter];
+    extra.push(`${t} → ${f}`); }
+  if(gedeckelt) extra.push(`${betreuer===1?"Du bist allein":`Ihr seid zu ${betreuer===2?"zweit":"dritt"}`} → daraus ${gruppen===1?"wird eine Gruppe":`werden ${gruppen} Stationen`}; eine Station ohne Aufsicht bringt nichts`);
+  else if(betreuer>0) extra.push(`${betreuer===1?"Du bist allein":`${betreuer} Betreuer`} → ${gruppen} ${gruppen===1?"Station":"Stationen"} sind betreut`);
+  if(A.baelle==="wenig"){ extra.push("Nur wenige Bälle → zu zweit an einem Ball statt Einzelstationen");
+    zusatz.push("Übungen zu zweit an einem Ball ansetzen – das halbiert den Bedarf und erhöht die Zuspiele."); }
+  if(A.baelle==="jeder"&&focus==="technik") extra.push("Ball für jedes Kind → Technik ohne Wartezeit, jeder übt dauernd");
+  if(A.tore==="keine"){ extra.push("Keine Tore → Hütchentore, das Tor zählt beim Durchdribbeln");
+    zusatz.push("Hütchentore aufbauen: durchdribbeln zählt. Kleine Tore erzeugen mehr Abschlüsse als ein großes."); }
+  if(A.tore==="viele") extra.push("Vier Tore → zwei Felder gleichzeitig, doppelt so viele Abschlüsse");
+  if(A.spiel==="woche"){ extra.push("Spiel diese Woche → höchstens eine neue Sache einführen, der Rest ist Wiederholung");
+    zusatz.push("Vor dem Spiel nichts Neues mehr: eine Sache üben, die im Spiel sofort hilft."); }
+  if(A.spiel==="keins"){ extra.push("Kein Spiel in Sicht → jetzt ist Zeit für Grundlagen, die im Wettkampf zu lange dauern");
+    zusatz.push("Die Wochen ohne Spiel für das nutzen, was sonst nie drankommt – schwacher Fuß, Torwart, Standards."); }
+  if(A.ziel==="ergebnis") zusatz.push("Ein Ziel je Spiel, das ihr selbst beeinflussen könnt – nicht das Ergebnis, sondern zum Beispiel „kein Gegentor in den ersten zehn Minuten“.");
+  if(A.ziel==="entwicklung") zusatz.push("Zwei Kinder pro Einheit gezielt beobachten und ihnen danach je einen Satz mitgeben – reihum, dann kommt jeder dran.");
+  if(A.ziel==="freude") zusatz.push("Jede Einheit mit einem Spiel beenden, das gut ausgeht. Der letzte Eindruck bleibt hängen.");
+
   const rechenweg = [
-    wahl && `„${wahl.label}“ → ${wahl.folge}`,
+    wahl  && `„${wahl.label}“ → ${wahl.folge}`,
     wahl2 && `„${wahl2.label}“ → ${wahl2.folge}`,
-    `${anzahl==="gross"?"Mehr als 16 Kinder":anzahl==="mittel"?"11 bis 16 Kinder":"Bis 10 Kinder"} → ${gruppen===1?"eine Gruppe, jeder viele Ballkontakte":`${gruppen} Stationen im Wechsel`}`,
+    wahl3 && `„${wahl3.label}“ → ${wahl3.folge}`,
+    `${anzahl==="gross"?"Mehr als 16 Kinder":anzahl==="mittel"?"11 bis 16 Kinder":"Bis 10 Kinder"} → ${gruppenRoh===1?"eine Gruppe, jeder viele Ballkontakte":`${gruppenRoh} Stationen im Wechsel`}`,
     `${dauer} Minuten → ${netto} Minuten echte Übungszeit (Ankommen und Abschlussspiel abgezogen)`,
     `${ort==="halle"?"Halle":ort==="halb"?"Halbes Feld":"Ganzer Platz"} → Felder ${feld}, Abschlussspiel ${spielform}`,
+    ...extra,
   ].filter(Boolean);
 
+  // Höchstens sechs Maßnahmen - danach liest sie ohnehin niemand mehr um.
+  const massnahmen = [
+    ...((wahl && wahl.massnahmen) || (thema?.tipps||[]).slice(0,3)),
+    ...((wahl2 && wahl2.massnahmen) || []),
+    ...((wahl3 && wahl3.massnahmen) || []),
+    ...zusatz,
+  ].slice(0,6);
+
   return {
-    themaId, thema, wahl, focus, gruppen, feld, spielform, dauer, netto,
-    diagnose: [wahl&&wahl.folge, wahl2&&wahl2.folge].filter(Boolean).join(" ") || thema?.kern || "",
-    massnahmen: [...((wahl && wahl.massnahmen) || (thema?.tipps||[]).slice(0,3)),
-                 ...((wahl2 && wahl2.massnahmen) || [])],
+    themaId, thema, wahl, focus, gruppen, feld, spielform, dauer, netto, betreuer,
+    diagnose: [wahl&&wahl.folge, wahl2&&wahl2.folge, wahl3&&wahl3.folge].filter(Boolean).join(" ") || thema?.kern || "",
+    massnahmen,
     rechenweg,
+    gewusst: ctxHinweise(ctx),
     trainingsParam: { focus, targetMin:dauer },
   };
 };
