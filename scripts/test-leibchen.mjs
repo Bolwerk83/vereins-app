@@ -161,7 +161,10 @@ else fail("Kein Spielchen: "+b.slice(0,400).replace(/\n/g," | "));
     if(!(ohneTW&&hatTorZeile)) ok("Kein Widerspruch zwischen „ohne Torwart“ und einer Tor-Linie");
     else fail("„ohne Torwart“, aber eine Tor-Linie steht da"); }
   if(/vs/.test(bl)) ok("Die beiden Seiten stehen sich gegenüber");
-  else fail("Kein Gegenüber"); }
+  else fail("Kein Gegenüber");
+  { const fehlen=kader.filter(n=>!bl.includes(n));
+    if(fehlen.length===0) ok("Jedes Kind mit Zusage taucht auf – auch die ohne Gruppe");
+    else fail("Kinder fallen weg: "+fehlen.join(", ")); } }
 // Die Seiten tragen verschiedene Leibchen
 { const farben=await page.evaluate(()=>{ const t=document.body.innerText; const i=t.indexOf("🎽");
     const bl=t.slice(i,i+1200);
@@ -199,6 +202,48 @@ else fail("Kein Spielchen: "+b.slice(0,400).replace(/\n/g," | "));
   const nachher=await block();
   if(vorher&&vorher===nachher) ok("Beim erneuten Öffnen steht dieselbe Einteilung da");
   else fail("Einteilung springt bei jedem Öffnen"); }
+
+// ===== 6) Einteilung festhalten =====
+{ const vorher=await block();
+  if(await klick("📌 Festhalten")) ok("Es gibt „📌 Festhalten“"); else fail("Kein Festhalten-Knopf");
+  await page.waitForTimeout(1300);
+  const ev=await page.evaluate(x=>{ const d=JSON.parse(localStorage.getItem("vereinsapp_v14")||"null");
+    return (d.events||[]).find(e=>e.id===x)||null; }, trId);
+  if(ev&&ev.spielFest&&ev.spielFest.paarungen&&ev.spielFest.paarungen.length===2)
+    ok("Die Einteilung ist am Termin gespeichert (2 Paarungen)");
+  else fail("Nicht gespeichert: "+JSON.stringify(ev&&ev.spielFest&&ev.spielFest.paarungen&&ev.spielFest.paarungen.length));
+  const nachher=await block();
+  if(/festgehalten/.test(nachher)) ok("Und als festgehalten gekennzeichnet");
+  else fail("Keine Kennzeichnung: "+nachher.slice(0,200).replace(/\n/g," | ")); }
+
+// Auch nach Neuladen steht dieselbe Einteilung - und zwar die festgehaltene
+{ const vorher=await block();
+  await page.reload({waitUntil:"networkidle"}); await page.waitForTimeout(2800); await dismiss();
+  await page.evaluate(()=>{ const b2=[...document.querySelectorAll("button")].find(x=>/^(Ansehen|✅ Anwesenheit)$/.test((x.innerText||"").trim())); b2&&b2.click(); });
+  await page.waitForTimeout(1700);
+  const nachher=await block();
+  if(vorher===nachher) ok("Nach dem Neuladen steht exakt dieselbe Einteilung da");
+  else fail("Einteilung hat sich geändert"); }
+
+// Kommt eine Zusage dazu, weist er darauf hin
+{ await page.evaluate(x=>{ const d=JSON.parse(localStorage.getItem("vereinsapp_v14")||"null");
+    const ev=(d.events||[]).find(e=>e.id===x);
+    ev.votes["Spät Zusager"]={val:"yes",ts:new Date().toISOString(),role:"player"};
+    d.playerProfiles.push({id:"pp_spaet",cid:"demo",archived:false,name:"Spät Zusager",by:2017,gender:"m",
+      mainTid:"demo_f1",optTids:[],friends:[],mustWith:[],intGrp:"g1"});
+    localStorage.setItem("vereinsapp_v14", JSON.stringify(d)); }, trId);
+  await page.reload({waitUntil:"networkidle"}); await page.waitForTimeout(2800); await dismiss();
+  await page.evaluate(()=>{ const b2=[...document.querySelectorAll("button")].find(x=>/^(Ansehen|✅ Anwesenheit)$/.test((x.innerText||"").trim())); b2&&b2.click(); });
+  await page.waitForTimeout(1700);
+  const bl=await block();
+  if(/Zusagen haben sich geändert/.test(bl)&&/1 dazu/.test(bl))
+    ok("Kommt jemand dazu, weist er darauf hin statt still falsch zu bleiben");
+  else fail("Kein Hinweis auf die geänderten Zusagen: "+bl.slice(0,300).replace(/\n/g," | "));
+  if(await klick("Neu einteilen")) ok("Und bietet an, neu einzuteilen"); else fail("Kein Neu-Einteilen");
+  await page.waitForTimeout(1300);
+  const bl2=await block();
+  if(!/festgehalten/.test(bl2)&&/Spät Zusager/.test(bl2)) ok("Danach ist der Nachzügler dabei");
+  else fail("Nachzügler fehlt: "+bl2.slice(0,300).replace(/\n/g," | ")); }
 
 if(errors.length){ console.log("JS-FEHLER:"); [...new Set(errors)].forEach(e=>console.log(" -",e.slice(0,150))); }
 console.log(errors.length||fails.length?`ERGEBNIS: ${fails.length} Fehlschläge, ${errors.length} JS-Fehler`:"ERGEBNIS: ALLES OK");

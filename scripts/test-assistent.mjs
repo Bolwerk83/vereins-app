@@ -94,18 +94,18 @@ await page.waitForTimeout(1200);
   else fail("Kein geführter Weg angeboten");
   await page.waitForTimeout(800);
   b=await body();
-  if(/FRAGE 1 VON 4/.test(b)) ok("Die erste von vier Fragen steht da");
+  if(/FRAGE 1 VON 5/.test(b)) ok("Die erste von fünf Fragen steht da");
   else fail("Keine Fragen: "+b.slice(-400).replace(/\n/g," | "));
   if(/Wo geht der Ball meistens verloren/.test(b)) ok("Und sie passt zum Thema");
   else fail("Frage passt nicht zum Thema");
   // vier Antworten per Knopf
-  const antworten=["Sie spielen gar nicht erst ab","Mehr als 16","75 Minuten","Halle"];
+  const antworten=["Sie spielen gar nicht erst ab","Alle laufen zum Ball","Mehr als 16","75 Minuten","Halle"];
   for(const a2 of antworten){
     const g=await klick("^"+a2.replace(/[.*+?^${}()|[\]\\]/g,"\\$&"));
     if(!g) fail("Antwort nicht anklickbar: "+a2);
     await page.waitForTimeout(700);
   }
-  ok("Alle vier Fragen lassen sich per Knopfdruck beantworten");
+  ok("Alle fünf Fragen lassen sich per Knopfdruck beantworten");
   b=await body();
   if(/🧮 Ergebnis/.test(b)) ok("Danach kommt ein Ergebnis");
   else fail("Kein Ergebnis: "+b.slice(-500).replace(/\n/g," | "));
@@ -117,14 +117,18 @@ await page.waitForTimeout(1200);
   else fail("Zeit nicht gerechnet");
   if(/20 × 12 m/.test(b)) ok("Die Halle führt zu kleineren Feldern (20 × 12 m)");
   else fail("Ort nicht berücksichtigt");
-  if(/DAS WÜRDE ICH MACHEN/.test(b)) ok("Dazu drei konkrete Maßnahmen");
-  else fail("Keine Maßnahmen"); }
+  if(/DAS WÜRDE ICH MACHEN/.test(b)) ok("Dazu konkrete Maßnahmen");
+  else fail("Keine Maßnahmen");
+  if(/Kindertraube/.test(b)) ok("Die zweite Frage schärft die Diagnose („Kindertraube“)");
+  else fail("Zweite Frage wirkt nicht: "+b.slice(-500).replace(/\n/g," | "));
+  if(/Zonen markieren/.test(b)) ok("Und bringt eine eigene Maßnahme mit");
+  else fail("Keine Maßnahme aus der zweiten Frage"); }
 
 // ===== 2c) Gleiche Antworten, gleiches Ergebnis =====
 { const vorher=await page.evaluate(()=>{ const t=document.body.innerText; const i=t.lastIndexOf("SO KOMMT DAS ZUSTANDE");
     return t.slice(i,i+320); });
   await klick("🧮 Fragen beantworten"); await page.waitForTimeout(700);
-  for(const a2 of ["Sie spielen gar nicht erst ab","Mehr als 16","75 Minuten","Halle"]){
+  for(const a2 of ["Sie spielen gar nicht erst ab","Alle laufen zum Ball","Mehr als 16","75 Minuten","Halle"]){
     await klick("^"+a2.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")); await page.waitForTimeout(600); }
   const nachher=await page.evaluate(()=>{ const t=document.body.innerText; const i=t.lastIndexOf("SO KOMMT DAS ZUSTANDE");
     return t.slice(i,i+320); });

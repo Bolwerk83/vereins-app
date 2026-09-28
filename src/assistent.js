@@ -366,10 +366,79 @@ export const THEMA_FRAGE = {
   ]},
 };
 
-// Die Fragen zu einem Thema: Themen-Frage zuerst, dann die drei festen.
+// Zweite Themen-Frage: schaerft die Diagnose noch einmal. Erst beide
+// zusammen ergeben eine Antwort, die sich von der Allgemeinheit loest.
+export const THEMA_FRAGE2 = {
+  zusammenspiel:{ id:"bild", text:"Wie sieht es auf dem Platz aus?", opt:[
+    { id:"traube", label:"Alle laufen zum Ball", folge:"Klassische Kindertraube – es fehlt die Idee, sich vom Ball zu lösen.",
+      massnahmen:["Zonen markieren: jedes Kind darf nur in seiner Zone verteidigen – zehn Minuten, dann wird getauscht."] },
+    { id:"weit", label:"Wir stehen zu weit auseinander", folge:"Zu große Abstände – Pässe kommen deshalb gar nicht erst an.",
+      massnahmen:["Feld kleiner machen. Kurze Wege erzwingen Zusammenspiel von allein."] },
+    { id:"solo", label:"Einzelne dribbeln alles allein", folge:"Meist die Stärksten – sie haben gelernt, dass es so am schnellsten geht.",
+      massnahmen:["Den Dribbelstarken eine Zusatzaufgabe geben: „Erst zwei Mitspieler einsetzen, dann darfst du.“"] },
+  ]},
+  abschluss:{ id:"wo", text:"Wo entstehen eure Abschlüsse?", opt:[
+    { id:"mitte", label:"Aus dem Gedränge in der Mitte", folge:"Dort ist es am vollsten – kein Wunder, dass wenig ankommt.",
+      massnahmen:["Über die Außen spielen und flach vors Tor legen – das öffnet die Mitte."] },
+    { id:"aussen", label:"Von außen nach Hereingabe", folge:"Gute Idee, aber in der Jugend kommt selten jemand rechtzeitig an.",
+      massnahmen:["Immer zwei Kinder in die Mitte schicken: kurzer und langer Pfosten."] },
+    { id:"konter", label:"Nach Kontern", folge:"Dann ist Tempo eure Stärke – die sollte man ausbauen, nicht wegtrainieren.",
+      massnahmen:["Umschaltspiel üben: nach Balleroberung drei Sekunden Vollgas nach vorn."] },
+  ]},
+  technik:{ id:"jetzt", text:"Was übt ihr im Moment am häufigsten?", opt:[
+    { id:"stationen", label:"Viele Stationen mit Ball", folge:"Gute Grundlage – es fehlt meist nur der Gegner.",
+      massnahmen:["Jede Station am Ende mit leichtem Gegnerdruck wiederholen."] },
+    { id:"spielformen", label:"Hauptsächlich Spielformen", folge:"Viel Spielfreude, aber wenig saubere Wiederholungen.",
+      massnahmen:["10 Minuten fest für Technik reservieren – vor dem Spielen, nicht danach."] },
+    { id:"kaum", label:"Kaum Technik, meist nur spielen", folge:"Dann kommt der Sprung jetzt aus wenigen gezielten Minuten.",
+      massnahmen:["Mit einem einzigen Element anfangen: Ballan- und -mitnahme, jede Einheit fünf Minuten."] },
+  ]},
+  verteidigen:{ id:"wann", text:"Wann kippt es meistens?", opt:[
+    { id:"anfang", label:"Gleich zu Beginn", folge:"Ein Startproblem – ihr seid noch nicht da, der Gegner schon.",
+      massnahmen:["Richtig aufwärmen: die letzten drei Minuten mit Tempo und Zweikämpfen."] },
+    { id:"kraft", label:"Nach 10 Minuten, wenn die Kraft weg ist", folge:"Kein Taktik-, sondern ein Belastungsthema.",
+      massnahmen:["Früher und öfter wechseln – lieber vier frische Minuten als zehn müde."] },
+    { id:"gegentor", label:"Nach einem Gegentor", folge:"Köpfe, nicht Beine. Das lässt sich üben.",
+      massnahmen:["Im Training mit Rückstand starten lassen – 0:1, und dann zeigen, wie man zurückkommt."] },
+  ]},
+  kondition:{ id:"oft", text:"Wie oft trainiert ihr?", opt:[
+    { id:"ein", label:"1× pro Woche", folge:"Dann ist jede Minute kostbar – Kondition nebenbei, nie als eigener Block.",
+      massnahmen:["Kein Extra-Lauftraining. Die Spielformen übernehmen das."] },
+    { id:"zwei", label:"2× pro Woche", folge:"Guter Rhythmus: eine Einheit mit mehr Intensität, eine ruhiger.",
+      massnahmen:["Die Einheit nach dem Spiel bewusst locker halten."] },
+    { id:"drei", label:"3× oder öfter", folge:"Achtung Überlastung – in dem Alter wachsen die Kinder noch.",
+      massnahmen:["Mindestens eine Einheit pro Woche ohne Wettkampf-Charakter."] },
+  ]},
+  torwart:{ id:"wollen", text:"Wie viele wollen ins Tor?", opt:[
+    { id:"keiner", label:"Eigentlich keiner", folge:"Dann darf es keine Strafe sein – und keine Dauerlösung.",
+      massnahmen:["Torwart-Zeit begrenzen: höchstens eine Halbzeit, danach wieder Feld."] },
+    { id:"einzelne", label:"Ein oder zwei", folge:"Die tragen sonst bald die ganze Last allein.",
+      massnahmen:["Auch die Willigen regelmäßig im Feld spielen lassen."] },
+    { id:"viele", label:"Viele", folge:"Schöne Ausgangslage – dann einfach reihum.",
+      massnahmen:["Feste Reihenfolge aufschreiben, damit niemand vergessen wird."] },
+  ]},
+  teamgeist:{ id:"dauer", text:"Wie lange geht das schon so?", opt:[
+    { id:"kurz", label:"Seit ein, zwei Spielen", folge:"Noch kein Muster – wahrscheinlich reicht ein Erfolgserlebnis.",
+      massnahmen:["Nächstes Training mit einem Spiel beenden, das ihr gewinnen könnt."] },
+    { id:"wochen", label:"Seit Wochen", folge:"Jetzt braucht es etwas Sichtbares, nicht nur gute Worte.",
+      massnahmen:["Ein Freundschaftsspiel gegen einen passenden Gegner ansetzen – bewusst machbar."] },
+    { id:"saison", label:"Die ganze Saison", folge:"Dann stimmt die Einteilung nicht, nicht die Einstellung.",
+      massnahmen:["Mit dem Verein über die Staffel-Einteilung sprechen – oder zwei Mannschaften melden."] },
+  ]},
+  eltern:{ id:"kanal", text:"Wie erreichst du die Eltern?", opt:[
+    { id:"whatsapp", label:"WhatsApp-Gruppe", folge:"Schnell, aber jede Diskussion läuft vor Publikum.",
+      massnahmen:["Gruppe auf Ankündigungen umstellen, Rückfragen per Einzelchat."] },
+    { id:"app", label:"Nur über die App", folge:"Sauber – dann fehlt oft nur der persönliche Ton.",
+      massnahmen:["Einmal pro Monat zwei Sätze, die nichts mit Terminen zu tun haben."] },
+    { id:"kaum", label:"Kaum Kontakt", folge:"Der häufigste Grund für Missverständnisse.",
+      massnahmen:["Einen festen Wochentag für eine kurze Nachricht setzen – Verlässlichkeit schlägt Länge."] },
+  ]},
+};
+
+// Die Fragen zu einem Thema: beide Themen-Fragen, dann die drei festen.
 export const fragenZu = (themaId) => {
-  const tf = THEMA_FRAGE[themaId];
-  return [ ...(tf?[tf]:[]), FRAGE_ANZAHL, FRAGE_DAUER, FRAGE_ORT ];
+  const tf = THEMA_FRAGE[themaId], tf2 = THEMA_FRAGE2[themaId];
+  return [ ...(tf?[tf]:[]), ...(tf2?[tf2]:[]), FRAGE_ANZAHL, FRAGE_DAUER, FRAGE_ORT ];
 };
 
 // Der "Taschenrechner": aus den Antworten wird ein Ergebnis - immer
@@ -377,7 +446,9 @@ export const fragenZu = (themaId) => {
 export const rechneErgebnis = (themaId, antworten={}) => {
   const thema = THEMEN.find(t=>t.id===themaId);
   const tf = THEMA_FRAGE[themaId];
+  const tf2 = THEMA_FRAGE2[themaId];
   const wahl = tf ? (tf.opt.find(o=>o.id===antworten[tf.id]) || null) : null;
+  const wahl2 = tf2 ? (tf2.opt.find(o=>o.id===antworten[tf2.id]) || null) : null;
   const anzahl = antworten.anzahl || "mittel";
   const dauer  = Number(antworten.dauer||60);
   const ort    = antworten.ort || "platz";
@@ -395,6 +466,7 @@ export const rechneErgebnis = (themaId, antworten={}) => {
 
   const rechenweg = [
     wahl && `„${wahl.label}“ → ${wahl.folge}`,
+    wahl2 && `„${wahl2.label}“ → ${wahl2.folge}`,
     `${anzahl==="gross"?"Mehr als 16 Kinder":anzahl==="mittel"?"11 bis 16 Kinder":"Bis 10 Kinder"} → ${gruppen===1?"eine Gruppe, jeder viele Ballkontakte":`${gruppen} Stationen im Wechsel`}`,
     `${dauer} Minuten → ${netto} Minuten echte Übungszeit (Ankommen und Abschlussspiel abgezogen)`,
     `${ort==="halle"?"Halle":ort==="halb"?"Halbes Feld":"Ganzer Platz"} → Felder ${feld}, Abschlussspiel ${spielform}`,
@@ -402,8 +474,9 @@ export const rechneErgebnis = (themaId, antworten={}) => {
 
   return {
     themaId, thema, wahl, focus, gruppen, feld, spielform, dauer, netto,
-    diagnose: wahl ? wahl.folge : (thema?.kern||""),
-    massnahmen: (wahl && wahl.massnahmen) || (thema?.tipps||[]).slice(0,3),
+    diagnose: [wahl&&wahl.folge, wahl2&&wahl2.folge].filter(Boolean).join(" ") || thema?.kern || "",
+    massnahmen: [...((wahl && wahl.massnahmen) || (thema?.tipps||[]).slice(0,3)),
+                 ...((wahl2 && wahl2.massnahmen) || [])],
     rechenweg,
     trainingsParam: { focus, targetMin:dauer },
   };

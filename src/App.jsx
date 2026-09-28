@@ -17204,9 +17204,19 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
             cat={((local.teams||[]).find(tm=>tm.id===viewEv.tid)||{}).cat||""}
             fire={fire}
             onGroesse={g=>{
-              const ev2={...viewEv,spielGr:g};
+              const ev2={...viewEv,spielGr:g,spielFest:null};
               save({...local,events:local.events.map(e=>e.id===viewEv.id?ev2:e)});
-              setViewEv(prev=>({...prev,spielGr:g}));
+              setViewEv(prev=>({...prev,spielGr:g,spielFest:null}));
+            }}
+            onFest={f=>{
+              // null = freigeben, {neuMischen} = andere Einteilung, sonst festhalten
+              const patch = f&&f.neuMischen
+                ? { spielFest:null, spielMix:String(Date.now()) }
+                : { spielFest:f||null };
+              const ev2={...viewEv,...patch};
+              save({...local,events:local.events.map(e=>e.id===viewEv.id?ev2:e)});
+              setViewEv(prev=>({...prev,...patch}));
+              if(f&&!f.neuMischen) fire("Einteilung festgehalten – bleibt so, bis du sie freigibst");
             }}/>
         )}
 
@@ -23247,7 +23257,14 @@ const spielchenPaarungen = (gruppen=[], profiles=[], jaNamen=[], groesse=6, saat
 
   gruppen.forEach((g,ix)=>bauen(g.name, g, jaNamen.filter(n=>grpVon(n)===g.id), ix));
   const ohne=jaNamen.filter(n=>!grpVon(n)||!gruppen.some(g=>g.id===grpVon(n)));
-  if(ohne.length+rest.length>0) bauen("Gemischt", null, [...ohne,...rest], gruppen.length);
+  if(ohne.length+rest.length>0){ const topf=[...ohne,...rest]; rest.length=0; bauen("Gemischt", null, topf, gruppen.length); }
+  // Wer jetzt noch uebrig ist (zu wenige fuer eine eigene Paarung), wechselt
+  // bei der kleinsten Paarung ein - niemand faellt still hinten runter.
+  while(rest.length && paarungen.length){
+    const n=rest.shift();
+    paarungen.slice().sort((x,y)=>
+      (x.a.namen.length+x.b.namen.length+x.bank.length)-(y.a.namen.length+y.b.namen.length+y.bank.length))[0].bank.push(n);
+  }
   return { paarungen, groesse };
 };
 const intGruppeDesKindes = (name, profiles, gruppen) => {
@@ -23316,14 +23333,31 @@ function recommendLineup(present, profiles, pastLineups, friendWeight=1){
 // Spielchen im Training: je Gruppe eine Paarung - Leistung gegen Leistung,
 // Entwicklung gegen Entwicklung. Dargestellt wie die Aufstellung im Spiel,
 // mit Linien passend zur Spielform.
-function SpielchenTeams({ ev, gruppen=[], profiles=[], jaNamen=[], titel="", cat="", fire, onGroesse }){
+function SpielchenTeams({ ev, gruppen=[], profiles=[], jaNamen=[], titel="", cat="", fire, onGroesse, onFest }){
   const GROESSEN=[[3,"3 gegen 3"],[4,"3+1 / 4"],[5,"4+1 / 5"],[6,"5+1 / 6"],[7,"6+1 / 7"],[9,"8+1 / 9"]];
   // Ohne eigene Wahl richtet sich die Spielform nach der Altersklasse.
   const standard=spielGrStandard(cat);
   const groesse=Number(ev.spielGr)||standard;
   if(jaNamen.length<4) return null;
-  const {paarungen}=spielchenPaarungen(gruppen, profiles, jaNamen, groesse, String(ev.id||"")+String(ev.date||""));
+  // Festgehaltene Einteilung hat Vorrang - sonst wird frisch gerechnet.
+  const fest=ev.spielFest&&Array.isArray(ev.spielFest.paarungen)&&ev.spielFest.paarungen.length?ev.spielFest:null;
+  const frisch=spielchenPaarungen(gruppen, profiles, jaNamen, groesse, String(ev.id||"")+String(ev.date||"")+String(ev.spielMix||""));
+  const paarungen = fest
+    ? fest.paarungen.map(p=>({ ...p,
+        gruppe:(gruppen.find(g=>g.id===p.grpId)||{name:p.titel,col:"#64748b"}),
+        a:{ ...p.a, leib:(LEIBCHEN.find(l=>l.id===p.a.leib)||LEIBCHEN[0]) },
+        b:{ ...p.b, leib:(LEIBCHEN.find(l=>l.id===p.b.leib)||LEIBCHEN[1]) } }))
+    : frisch.paarungen;
   if(!paarungen.length) return null;
+  // Haben sich die Zusagen seit dem Festhalten geaendert?
+  const festNamen=fest?paarungen.flatMap(p=>[...p.a.namen,...p.b.namen,...p.bank]):[];
+  const dazu=fest?jaNamen.filter(n=>!festNamen.includes(n)):[];
+  const weg =fest?festNamen.filter(n=>!jaNamen.includes(n)):[];
+  const speichern=()=>onFest&&onFest({ groesse,
+    paarungen: frisch.paarungen.map(p=>({ titel:p.titel, grpId:p.gruppe?p.gruppe.id:null,
+      a:{ leib:p.a.leib.id, namen:p.a.namen, linien:p.a.linien },
+      b:{ leib:p.b.leib.id, namen:p.b.namen, linien:p.b.linien },
+      bank:p.bank, torwart:p.torwart })) });
   const LINIEN=[["T","Tor"],["A","Abwehr"],["M","Mittelfeld"],["S","Angriff"]];
   const farbe={T:"#d97706",A:"#2563eb",M:"#16a34a",S:"#dc2626"};
   const kurz=n=>String(n).split(" ")[0];
@@ -23361,6 +23395,31 @@ function SpielchenTeams({ ev, gruppen=[], profiles=[], jaNamen=[], titel="", cat
             else { navigator.clipboard?.writeText(txt); fire&&fire("Kopiert ✓"); } }}
           style={{padding:"6px 11px",borderRadius:9,border:"1.5px solid #e2e8f0",background:"#fff",color:"#475569",fontWeight:800,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>Teilen</button>
       </div>
+      {/* Festhalten: dieselbe Einteilung ueber Wochen spielen lassen. */}
+      <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap",marginBottom:8}}>
+        {fest
+          ? <>
+              <span style={{fontSize:11,fontWeight:800,color:"#15803d",background:"#dcfce7",borderRadius:7,padding:"3px 8px"}}>📌 festgehalten</span>
+              <button onClick={()=>onFest&&onFest(null)}
+                style={{padding:"5px 10px",minHeight:32,borderRadius:99,border:"1.5px solid #e2e8f0",background:"#fff",color:"#64748b",fontWeight:800,fontSize:11.5,cursor:"pointer",fontFamily:"inherit"}}>Freigeben</button>
+            </>
+          : <>
+              <button onClick={speichern}
+                style={{padding:"5px 10px",minHeight:32,borderRadius:99,border:"1.5px solid #bbf7d0",background:"#f0fdf4",color:"#15803d",fontWeight:800,fontSize:11.5,cursor:"pointer",fontFamily:"inherit"}}>📌 Festhalten</button>
+              <button onClick={()=>onFest&&onFest({neuMischen:true})}
+                style={{padding:"5px 10px",minHeight:32,borderRadius:99,border:"1.5px solid #e2e8f0",background:"#fff",color:"#64748b",fontWeight:800,fontSize:11.5,cursor:"pointer",fontFamily:"inherit"}}>🔄 Neu mischen</button>
+            </>}
+      </div>
+      {fest&&(dazu.length>0||weg.length>0)&&(
+        <div style={{fontSize:11.5,color:"#92400e",background:"#fffbeb",border:"1px solid #fde68a",borderRadius:10,padding:"8px 10px",lineHeight:1.5,marginBottom:9}}>
+          Die Zusagen haben sich geändert:
+          {dazu.length>0?` ${dazu.length} dazu (${dazu.map(n=>String(n).split(" ")[0]).join(", ")})`:""}
+          {dazu.length>0&&weg.length>0?" ·":""}
+          {weg.length>0?` ${weg.length} nicht mehr dabei (${weg.map(n=>String(n).split(" ")[0]).join(", ")})`:""}.
+          <button onClick={()=>onFest&&onFest(null)}
+            style={{marginLeft:6,padding:"3px 9px",borderRadius:99,border:"1.5px solid #fcd34d",background:"#fff",color:"#92400e",fontWeight:800,fontSize:11,cursor:"pointer",fontFamily:"inherit"}}>Neu einteilen</button>
+        </div>
+      )}
       <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap",marginBottom:8}}>
         <span style={{fontSize:10.5,fontWeight:800,color:"#64748b",letterSpacing:.3}}>SPIELFORM</span>
         {GROESSEN.map(([n,l])=>(
