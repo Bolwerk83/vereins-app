@@ -10,6 +10,7 @@ const srv = http.createServer((req,res)=>{ let p=path.join(dist,req.url.split("?
 const exe=process.env.PLAYWRIGHT_CHROMIUM||"/opt/pw-browsers/chromium-1194/chrome-linux/chrome";
 const browser = await chromium.launch({ executablePath:exe, args:["--no-sandbox"] });
 const page = await browser.newPage({ viewport:{ width:390, height:900 } });
+page.setDefaultTimeout(10000);   // schnell scheitern statt haengen
 const errors=[]; const fails=[];
 page.on("pageerror", e=>errors.push(e.message));
 page.on("dialog", d=>d.accept());
@@ -23,7 +24,20 @@ await page.addInitScript(()=>{
 });
 await page.goto("http://127.0.0.1:4213/", { waitUntil:"networkidle" }); await page.waitForTimeout(2500);
 await page.locator('button:has-text("Überspringen")').first().click().catch(()=>{}); await page.waitForTimeout(400);
-const closeEv=async()=>{ await page.getByRole('button',{name:'Schließen',exact:true}).first().click().catch(()=>{}); await page.keyboard.press("Escape").catch(()=>{}); await page.waitForTimeout(400); };
+// Das offene Termin-Fenster: Inhalt lesen und ueber "✕" schliessen.
+const fenster=()=>page.evaluate(()=>[...document.querySelectorAll("div")]
+  .filter(d=>getComputedStyle(d).position==="fixed"&&d.offsetHeight>200)
+  .map(f=>f.innerText||"").join(" "));
+const closeEv=async()=>{
+  await page.evaluate(()=>{
+    const fx=[...document.querySelectorAll("div")].filter(d=>getComputedStyle(d).position==="fixed"&&d.offsetHeight>200);
+    for(const f of fx){
+      const b2=[...f.querySelectorAll("button")].find(x=>/^(✕|×|✖|Schließen)$/.test((x.innerText||"").trim()));
+      if(b2){ b2.click(); return; }
+    }
+  });
+  await page.waitForTimeout(450);
+};
 
 // ===== 1) Statistik-Kacheln anklickbar =====
 let b=await body();
@@ -48,9 +62,9 @@ if(b.includes("NÄCHSTE 21 TAGE")) ok("Kachel Termine springt zur Terminliste");
 const openEvWith=async(txt)=>{
   const c=await page.locator('button:has-text("Ansehen")').count();
   for(let i=0;i<c;i++){
-    await page.locator('button:has-text("Ansehen")').nth(i).click().catch(()=>{}); await page.waitForTimeout(700);
-    await page.locator('button:has-text("👥 Orga")').first().click().catch(()=>{}); await page.waitForTimeout(500);
-    if((await body()).includes(txt)) return true;
+    await page.locator('button:has-text("Ansehen")').nth(i).click({timeout:8000}).catch(()=>{}); await page.waitForTimeout(800);
+    await page.locator('button:has-text("👥 Orga")').first().click({timeout:3000}).catch(()=>{}); await page.waitForTimeout(500);
+    if((await fenster()).includes(txt)) return true;
     await closeEv();
   }
   return false;

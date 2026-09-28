@@ -9,11 +9,41 @@ const srv = http.createServer((req,res)=>{ let p=path.join(dist,req.url.split("?
 const exe=process.env.PLAYWRIGHT_CHROMIUM||"/opt/pw-browsers/chromium-1194/chrome-linux/chrome";
 const browser = await chromium.launch({ executablePath:exe, args:["--no-sandbox"] });
 const page = await browser.newPage({ viewport:{ width:390, height:900 } });
+page.setDefaultTimeout(10000);   // schnell scheitern statt haengen
 const errors=[]; const fails=[];
 page.on("pageerror", e=>errors.push(e.message));
 const fail=m=>{ fails.push(m); console.log("FEHLGESCHLAGEN:", m); };
 const ok=m=>console.log("OK:", m);
 const body=()=>page.evaluate(()=>document.body.innerText);
+// Offenes Termin-Fenster zumachen und seinen Inhalt lesen: die Seite
+// dahinter steht weiter in body(), deshalb wird das Fenster selbst gelesen.
+const fenster=()=>page.evaluate(()=>[...document.querySelectorAll("div")]
+  .filter(d=>getComputedStyle(d).position==="fixed"&&d.offsetHeight>200)
+  .map(f=>f.innerText||"").join(" "));
+const fensterZu=async()=>{
+  await page.evaluate(()=>{
+    const fx=[...document.querySelectorAll("div")].filter(d=>getComputedStyle(d).position==="fixed"&&d.offsetHeight>200);
+    for(const f of fx){
+      const b2=[...f.querySelectorAll("button")].find(x=>/^(✕|×|✖|Schließen)$/.test((x.innerText||"").trim()));
+      if(b2){ b2.click(); return; }
+    }
+  });
+  await page.waitForTimeout(450);
+};
+// Den Termin oeffnen, in dem der Helfer-Einsatz steht.
+const oeffneEinsatzTermin=async()=>{
+  const c=await page.locator('button:has-text("Ansehen")').count();
+  for(let i=0;i<c;i++){
+    await page.locator('button:has-text("Ansehen")').nth(i).click({timeout:8000}).catch(()=>{});
+    await page.waitForTimeout(800);
+    // Trainer sehen den Einsatz im Orga-Reiter, Helfer direkt im Termin.
+    await page.locator('button:has-text("👥 Orga")').first().click({timeout:3000}).catch(()=>{});
+    await page.waitForTimeout(500);
+    if(/Helfer-Einsatz/.test(await fenster())) return true;
+    await fensterZu();
+  }
+  return false;
+};
 // Fake-Cloud: Saves landen im Offline-Spiegel und überleben Reloads (wie am Sportplatz ohne Netz)
 await page.addInitScript(()=>{
   localStorage.setItem("vereinsapp_config", JSON.stringify({url:"https://127.0.0.1:1/x", key:"test"}));
@@ -95,16 +125,8 @@ if(await helperLogin("Anna Helferin",pwA,"anna123")){
   if(b.includes("Anna")||b.includes("Termine")) ok("Helfer A eingeloggt (Dashboard)");
   await dismissOverlays();
   // Termin öffnen und helfen
-  const c=await page.locator('button:has-text("Ansehen")').count();
-  for(let i=0;i<c;i++){
-    await page.locator('button:has-text("Ansehen")').nth(i).click({timeout:8000}).catch(()=>{});
-    await page.waitForTimeout(700);
-    await page.locator('button:has-text("👥 Orga")').first().click().catch(()=>{}); await page.waitForTimeout(500);
-    const t2=await body();
-    if(t2.includes("Helfer-Einsatz")){ break; }
-    await page.keyboard.press("Escape").catch(()=>{}); await page.waitForTimeout(200);
-    await page.getByRole('button',{name:'Schließen',exact:true}).first().click().catch(()=>{}); await page.waitForTimeout(300);
-  }
+  // Helfer haben keinen Orga-Reiter mehr - der Einsatz steht direkt im Termin.
+  await oeffneEinsatzTermin();
   b=await body();
   if(b.includes("Grillstand-Test")) ok("Helfer sieht die Einsatz-Notiz"); else { fail("Notiz fehlt beim Helfer"); console.log("DEBUG Karte:", (b.match(/Helfer-Einsatz[\s\S]{0,260}/)||["?"])[0].replace(/\n+/g," | ")); }
   await page.locator('button:has-text("🙋 Ich helfe!")').last().click(); await page.waitForTimeout(600);
@@ -117,13 +139,7 @@ if(await helperLogin("Anna Helferin",pwA,"anna123")){
 if(await helperLogin("Bernd Helfer",pwB,"bernd123")){
   ok("Helfer B eingeloggt");
   await dismissOverlays();
-  const c=await page.locator('button:has-text("Ansehen")').count();
-  for(let i=0;i<c;i++){
-    await page.locator('button:has-text("Ansehen")').nth(i).click(); await page.waitForTimeout(700);
-    await page.locator('button:has-text("👥 Orga")').first().click().catch(()=>{}); await page.waitForTimeout(500);
-    if((await body()).includes("Helfer-Einsatz")) break;
-    await page.getByRole('button',{name:'Schließen',exact:true}).first().click().catch(()=>{}); await page.waitForTimeout(300);
-  }
+  await oeffneEinsatzTermin();
   b=await body();
   if(b.includes("🙋 Auf die Warteliste")) ok("B sieht Wartelisten-Knopf (Platz voll)"); else fail("Wartelisten-Knopf fehlt");
   await page.locator('button:has-text("🙋 Auf die Warteliste")').last().click(); await page.waitForTimeout(600);
@@ -135,21 +151,15 @@ if(await helperLogin("Bernd Helfer",pwB,"bernd123")){
 await page.evaluate(()=>{ sessionStorage.setItem("vereinsapp_v12_session", JSON.stringify({ role:"trainer", cid:"demo", tids:["demo_f1"], name:"Demo Trainer", id:"demo_tr1" })); });
 await page.reload({waitUntil:"networkidle"}); await page.waitForTimeout(2500);
 await page.locator('button:has-text("Überspringen")').first().click().catch(()=>{}); await page.waitForTimeout(300);
-const c2=await page.locator('button:has-text("Ansehen")').count();
-for(let i=0;i<c2;i++){
-  await page.locator('button:has-text("Ansehen")').nth(i).click(); await page.waitForTimeout(700);
-  await page.locator('button:has-text("👥 Orga")').first().click().catch(()=>{}); await page.waitForTimeout(500);
-  if((await body()).includes("Helfer-Einsatz")) break;
-  await page.getByRole('button',{name:'Schließen',exact:true}).first().click().catch(()=>{}); await page.waitForTimeout(300);
-}
-b=await body();
-if(b.includes("Anna Helferin")&&b.includes("WARTELISTE")&&b.includes("Bernd Helfer")) ok("Trainer sieht: Anna fest, Bernd auf Warteliste"); else fail("Trainer-Übersicht unvollständig: "+(b.match(/Helfer-Einsatz[\s\S]{0,200}/)||["?"])[0].replace(/\n/g," | "));
+await oeffneEinsatzTermin();
+b=await fenster();
+if(b.includes("Anna Helferin")&&b.includes("WARTELISTE")&&b.includes("Bernd Helfer")) ok("Trainer sieht: Anna fest, Bernd auf Warteliste"); else fail("Trainer-Übersicht unvollständig: "+(b.match(/Helfer-Einsatz[\s\S]{0,220}/)||[b.slice(0,220)])[0].replace(/\n/g," | "));
 // Anna entfernen -> Bernd rückt automatisch nach
 await page.evaluate(()=>{ const chips=[...document.querySelectorAll("span")].filter(x=>x.innerText.includes("Anna Helferin"));
   for(const ch of chips){ const x=[...ch.querySelectorAll("span")].find(s2=>s2.textContent==="×"); if(x){ x.click(); return; } } });
 await page.waitForTimeout(700);
-b=await body();
-if(!b.includes("Anna Helferin")&&b.includes("Bernd Helfer")&&!b.includes("WARTELISTE")) ok("Nachrücken: Anna raus, Bernd automatisch fest"); else fail("Nachrücken klappt nicht: "+(b.match(/Helfer-Einsatz[\s\S]{0,200}/)||["?"])[0].replace(/\n/g," | "));
+b=await fenster();
+if(!b.includes("Anna Helferin")&&b.includes("Bernd Helfer")&&!b.includes("WARTELISTE")) ok("Nachrücken: Anna raus, Bernd automatisch fest"); else fail("Nachrücken klappt nicht: "+(b.match(/Helfer-Einsatz[\s\S]{0,220}/)||[b.slice(0,220)])[0].replace(/\n/g," | "));
 
 if(errors.length){ console.log("JS-FEHLER:"); [...new Set(errors)].forEach(e=>console.log(" -",e.slice(0,150))); }
 console.log(errors.length||fails.length?`ERGEBNIS: ${fails.length} Fehlschläge, ${errors.length} JS-Fehler`:"ERGEBNIS: ALLES OK");

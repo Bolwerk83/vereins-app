@@ -9,13 +9,27 @@ const srv = http.createServer((req,res)=>{ let p=path.join(dist,req.url.split("?
 const exe=process.env.PLAYWRIGHT_CHROMIUM||"/opt/pw-browsers/chromium-1194/chrome-linux/chrome";
 const browser = await chromium.launch({ executablePath:exe, args:["--no-sandbox"] });
 const page = await browser.newPage({ viewport:{ width:390, height:900 } });
+page.setDefaultTimeout(10000);   // schnell scheitern statt haengen
 const errors=[]; const fails=[];
 page.on("pageerror", e=>errors.push(e.message));
 page.on("dialog", d=>d.accept());
 const fail=m=>{ fails.push(m); console.log("FEHLGESCHLAGEN:", m); };
 const ok=m=>console.log("OK:", m);
 const body=()=>page.evaluate(()=>document.body.innerText);
-const closeEv=async()=>{ await page.getByRole('button',{name:'Schließen',exact:true}).first().click().catch(()=>{}); await page.keyboard.press("Escape").catch(()=>{}); await page.waitForTimeout(400); };
+// Das offene Termin-Fenster: sein Inhalt und sein Schliessen-Knopf ("✕").
+const fenster=()=>page.evaluate(()=>[...document.querySelectorAll("div")]
+  .filter(d=>getComputedStyle(d).position==="fixed"&&d.offsetHeight>200)
+  .map(f=>f.innerText||"").join(" "));
+const closeEv=async()=>{
+  await page.evaluate(()=>{
+    const fx=[...document.querySelectorAll("div")].filter(d=>getComputedStyle(d).position==="fixed"&&d.offsetHeight>200);
+    for(const f of fx){
+      const b2=[...f.querySelectorAll("button")].find(x=>/^(✕|×|✖|Schließen)$/.test((x.innerText||"").trim()));
+      if(b2){ b2.click(); return; }
+    }
+  });
+  await page.waitForTimeout(450);
+};
 const dismissOverlays=async()=>{ for(let k=0;k<14;k++){ const done=await page.evaluate(()=>{
   const fx=[...document.querySelectorAll("div")].filter(d=>getComputedStyle(d).position==="fixed"&&d.querySelector("button")&&d.innerText.length>30);
   for(const f of fx){
@@ -26,9 +40,10 @@ const dismissOverlays=async()=>{ for(let k=0;k<14;k++){ const done=await page.ev
 const openHelferEv=async()=>{
   const c=await page.locator('button:has-text("Ansehen")').count();
   for(let i=0;i<c;i++){
-    await page.locator('button:has-text("Ansehen")').nth(i).click().catch(()=>{}); await page.waitForTimeout(700);
-    await page.locator('button:has-text("👥 Orga")').first().click().catch(()=>{}); await page.waitForTimeout(500);
-    const t=await body();
+    await page.locator('button:has-text("Ansehen")').nth(i).click({timeout:8000}).catch(()=>{}); await page.waitForTimeout(800);
+    // Trainer sehen den Einsatz im Orga-Reiter, Helfer direkt im Termin.
+    await page.locator('button:has-text("👥 Orga")').first().click({timeout:3000}).catch(()=>{}); await page.waitForTimeout(500);
+    const t=await fenster();
     if(t.includes("Helfer-Einsatz")||t.includes("Helfer-Anmeldung für diesen Termin freigeben")) return true;
     await closeEv();
   }
