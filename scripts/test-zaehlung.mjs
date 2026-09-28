@@ -60,7 +60,10 @@ if(gesetzt) ok("Alt-Zusagen gesetzt: 3 Spieler, 2× Trainer (einmal abgekürzt),
 await page.reload({waitUntil:"networkidle"}); await page.waitForTimeout(2500); await dismiss();
 k=await karte();
 if(/✓ 3 Spieler/.test(k)) ok("Terminkarte zählt nur die 3 Spieler"); else fail("Karte zählt falsch: "+(k.match(/✓ \d+ Spieler/)||["(kein Zähler)"])[0]+" · "+k.slice(0,140));
-if(/🧑‍🏫 3 Betreuer/.test(k)) ok("Alle drei Betreuer stehen separat (2 Trainer + 1 Helfer)"); else fail("Betreuer-Chip falsch: "+(k.match(/🧑‍🏫[^|]*/)||["fehlt"])[0]);
+// Nur wer im Verein hinterlegt ist, zaehlt als Betreuer. "Demo Trainer"
+// und "Demo T." gehoeren zu keinem Trainer-Eintrag - fuer sie gilt dasselbe
+// wie fuer jeden fremden Namen: nicht mitzaehlen, aber sichtbar lassen.
+if(/🧑‍🏫 1 Betreuer/.test(k)) ok("Nur der echte Helfer zählt als Betreuer (1)"); else fail("Betreuer-Chip falsch: "+(k.match(/🧑‍🏫[^|]*/)||["fehlt"])[0]);
 
 // ===== 3) Im Termin =====
 { const geklickt=await inKarte("^Ansehen$"); await page.waitForTimeout(1400);
@@ -76,6 +79,8 @@ if(!modal){ const alles=await body();
   if(vor==="3") ok("Kachel „Spieler dabei“ zeigt 3"); else fail("Kachel falsch: "+vor+" statt 3"); }
 // Betreuer stehen jetzt als eigene Liste mit Zeitpunkt (frueher eine Chip-Zeile)
 if(/BETREUER \(/.test(modal)) ok("Betreuer stehen in ihrem eigenen Block"); else fail("Betreuer-Block fehlt: "+modal.slice(0,160).replace(/\n/g," | "));
+if(/NICHT IM KADER \(2\)/.test(modal)) ok("Die zwei unbekannten Namen stehen als „nicht im Kader“ – sie zählen nirgends mit");
+else fail("Unbekannte Namen nicht abgegrenzt: "+(modal.match(/NICHT IM KADER[^\n]*/)||["fehlt"])[0]);
 const liste=await page.evaluate(()=>{ const h=[...document.querySelectorAll("span")].find(x=>x.innerText==="Anwesenheit abhaken");
   const box=h?.closest("div")?.parentElement; return box?box.innerText:""; });
 if(liste&&!/Demo T\./.test(liste)) ok("Abgekürzter Trainer-Name („Demo T.“) fehlt in der Anwesenheitsliste"); else fail("Trainer in der Anwesenheitsliste: "+liste.slice(0,140).replace(/\n/g," | "));

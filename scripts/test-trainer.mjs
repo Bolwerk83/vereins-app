@@ -15,6 +15,14 @@ page.on("dialog", d=>d.accept());
 const fail=m=>{ fails.push(m); console.log("FEHLGESCHLAGEN:", m); };
 const ok=m=>console.log("OK:", m);
 const body=()=>page.evaluate(()=>document.body.innerText);
+const zuMachen=async()=>{ for(let i=0;i<4;i++){
+  const zu=await page.evaluate(()=>{ const b=[...document.querySelectorAll('button')]
+    .find(x=>/^(✕|Schließen|Fertig)$/.test((x.innerText||'').trim()));
+    if(!b) return false; b.click(); return true; });
+  await page.waitForTimeout(350);
+  const offen=await page.evaluate(()=>[...document.querySelectorAll('div')]
+    .some(d=>getComputedStyle(d).position==='fixed'&&(d.innerText||'').length>200));
+  if(!zu||!offen) break; } };
 await page.addInitScript(()=>{
   localStorage.setItem("vereinsapp_config", JSON.stringify({url:"https://127.0.0.1:1/x", key:"test"}));
   localStorage.setItem("va_simple","0"); localStorage.setItem("va_tsimple","0");   // diese Tests pruefen die ausfuehrliche Ansicht
@@ -45,7 +53,10 @@ if(b.includes("🧑‍🏫 1 Betreuer")) ok("Trainer-Selbstzusage separat ausgew
 await page.locator('button:has-text("Ansehen")').first().click(); await page.waitForTimeout(800);
 b=await body();
 if(b.includes("Spieler dabei")) ok("Kachel „Spieler dabei“ (Trainer zählen nicht mit)"); else fail("Spieler-Kachel fehlt");
-if(b.includes("🧑‍🏫 BETREUER:")&&b.includes("Trainer A ✓")) ok("Betreuer-Zusagen als eigene Zeile"); else fail("Betreuer-Zeile fehlt: "+(b.match(/BETREUER[^\n]{0,60}/)||["?"])[0]);
+// Der Betreuer-Block zaehlt inzwischen im Kopf und listet je Name eine
+// Zeile mit Status und Zeitpunkt - frueher stand alles in einer Zeile.
+if(/🧑‍🏫 BETREUER \(\d+/.test(b)&&b.includes("Trainer A")&&b.includes("✓ zugesagt")) ok("Betreuer-Zusagen im eigenen Block");
+else fail("Betreuer-Zeile fehlt: "+(b.match(/BETREUER[^\n]{0,60}/)||["?"])[0]);
 if(!b.includes("ABSTIMMUNGEN (")) ok("Doppelte Abstimmungs-Liste entfällt (Abhak-Liste reicht)"); else fail("Abstimmungs-Liste noch da");
 if(!b.includes("NOCH NICHT ABGESTIMMT")) ok("„Noch nicht abgestimmt“-Block entfällt"); else fail("Noch-nicht-abgestimmt noch da");
 if(b.includes("Anwesenheit abhaken")) ok("Abhak-Liste vorhanden"); else fail("Abhak-Liste fehlt");
@@ -60,7 +71,9 @@ if(firstRow.includes("zugesagt")||firstRow.includes("später")) ok("Sortierung: 
 // Direkt-Abstimmen fuer Offene in der Abhak-Liste
 const hasVoteBtn=await page.locator('button[title="Für diesen Spieler zusagen"]').count();
 if(hasVoteBtn>0) ok("Offene Spieler direkt in der Liste zu-/absagbar (✓/✕)"); else fail("Direkt-Abstimmen fehlt");
-await page.getByRole('button',{name:'Schließen',exact:true}).first().click().catch(()=>{}); await page.waitForTimeout(400);
+// Das Fenster schliesst inzwischen ueber das ✕ oben rechts - bleibt es
+// offen, faengt es alle weiteren Klicks ab.
+await zuMachen(); await page.waitForTimeout(400);
 
 // ===== 2b) Trainingsplan: Herkunft wird festgehalten und angezeigt =====
 { const c=await page.locator('button:has-text("Ansehen")').count();
