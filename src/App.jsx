@@ -10628,12 +10628,20 @@ function PlayersTab({ data,myTids,save,fire,cl,session }) {
   const savePlayer = p => {
     const full   = data.playerProfiles||[];
     const exists = full.find(x=>x.id===p.id);
-    const next   = exists ? full.map(x=>x.id===p.id?p:x) : [...full,p];
     // Umbenannt? Dann ziehen die bisherigen Antworten mit. Sonst blieben sie
     // unter dem alten Namen stehen und tauchten im Termin als fremder Name auf.
     const umbenannt = !!exists && !!String(p.name||"").trim() && _nrmName(exists.name)!==_nrmName(p.name);
+    // Der frühere Name bleibt am Profil hängen. Eltern, die noch mit dem alten
+    // Namen angemeldet sind, werden daran wiedererkannt - sonst stimmen sie
+    // weiter unter dem alten Namen ab, und der taucht immer wieder auf, egal
+    // wie oft der Trainer ihn wegräumt.
+    const pNeu = umbenannt
+      ? {...p, prevNames:[...new Set([String(exists.name||"").trim(), ...((exists.prevNames)||[])])]
+          .filter(x=>x&&_nrmName(x)!==_nrmName(p.name)).slice(0,5)}
+      : p;
+    const next   = exists ? full.map(x=>x.id===p.id?pNeu:x) : [...full,pNeu];
     const basis = {...data, playerProfiles:next};
-    save(umbenannt ? renamePerson(basis, exists.name, p.name) : basis);
+    save(umbenannt ? renamePerson(basis, exists.name, pNeu.name) : basis);
     setEditP(null); setShowNew(false);
     fire(umbenannt ? "Name geändert – bisherige Antworten übernommen" : "Spielerprofil gespeichert");
   };
@@ -17301,6 +17309,28 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
               setViewEv(prev=>({...prev,votes:nv}));
               fire(val==="yes"?name+": zugesagt (vom Trainer eingetragen)":name+": abgesagt (vom Trainer eingetragen)");
             }}
+            onFremd={isHelper?null:(name,ziel)=>{
+              // Fremde Antwort aufraeumen: entweder loeschen oder dem richtigen
+              // Kind zuschlagen. Beim Zuordnen wird der alte Name am Profil
+              // vermerkt - damit zieht die App die Anmeldung der Eltern beim
+              // naechsten Laden mit, sonst stimmen sie weiter alt ab.
+              const nv={...(viewEv.votes||{})};
+              const alt2=nv[name]; delete nv[name];
+              const zt=x=>(x&&typeof x==="object"&&x.ts)?String(x.ts):"";
+              let profile=local.playerProfiles||[];
+              if(ziel){
+                const vorh=nv[ziel];
+                nv[ziel]=(vorh===undefined||zt(alt2)>zt(vorh))?alt2:vorh;
+                profile=profile.map(p=>_nrmName(p.name)===_nrmName(ziel)
+                  ? {...p, prevNames:[...new Set([String(name).trim(),...((p.prevNames)||[])])]
+                      .filter(x=>x&&_nrmName(x)!==_nrmName(p.name)).slice(0,5)}
+                  : p);
+              }
+              save({...local, playerProfiles:profile,
+                events:local.events.map(e=>e.id===viewEv.id?{...e,votes:nv}:e)});
+              setViewEv(prev=>({...prev,votes:nv}));
+              fire(ziel?`${name} → ${ziel} übernommen`:`${name} entfernt`);
+            }}
             onVotePatch={isHelper?null:(name,patch)=>{
               const alt=(viewEv.votes||{})[name];
               const basis=(typeof alt==="object"&&alt!==null)?alt:{val:alt,ts:new Date().toISOString()};
@@ -17378,7 +17408,29 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
                 setViewEv(prev=>({...prev,votes:nv}));
                 fire(val==="yes"?name+": zugesagt (vom Trainer eingetragen)":name+": abgesagt (vom Trainer eingetragen)");
               }}
-              onVotePatch={isHelper?null:(name,patch)=>{
+              onFremd={isHelper?null:(name,ziel)=>{
+              // Fremde Antwort aufraeumen: entweder loeschen oder dem richtigen
+              // Kind zuschlagen. Beim Zuordnen wird der alte Name am Profil
+              // vermerkt - damit zieht die App die Anmeldung der Eltern beim
+              // naechsten Laden mit, sonst stimmen sie weiter alt ab.
+              const nv={...(viewEv.votes||{})};
+              const alt2=nv[name]; delete nv[name];
+              const zt=x=>(x&&typeof x==="object"&&x.ts)?String(x.ts):"";
+              let profile=local.playerProfiles||[];
+              if(ziel){
+                const vorh=nv[ziel];
+                nv[ziel]=(vorh===undefined||zt(alt2)>zt(vorh))?alt2:vorh;
+                profile=profile.map(p=>_nrmName(p.name)===_nrmName(ziel)
+                  ? {...p, prevNames:[...new Set([String(name).trim(),...((p.prevNames)||[])])]
+                      .filter(x=>x&&_nrmName(x)!==_nrmName(p.name)).slice(0,5)}
+                  : p);
+              }
+              save({...local, playerProfiles:profile,
+                events:local.events.map(e=>e.id===viewEv.id?{...e,votes:nv}:e)});
+              setViewEv(prev=>({...prev,votes:nv}));
+              fire(ziel?`${name} → ${ziel} übernommen`:`${name} entfernt`);
+            }}
+            onVotePatch={isHelper?null:(name,patch)=>{
                 const alt=(viewEv.votes||{})[name];
                 const basis=(typeof alt==="object"&&alt!==null)?alt:{val:alt,ts:new Date().toISOString()};
                 const nv={...(viewEv.votes||{}),[name]:{...basis,...patch,okAt:new Date().toISOString(),okBy:session?.name||"Trainer"}};
@@ -18584,7 +18636,8 @@ const bringtMit = (ev, name) => {
 };
 
 function AttendanceCheckoff({ ev, teamPlayers=[], teamPlusAus=null, onSetPresent=()=>{}, onSetGuests=()=>{}, trainerNames=[], helperNames=[], onSetVote=null,
-                             gruppen=[], leibchen=null, onGruppe=null, grpVon=null }){
+                             gruppen=[], leibchen=null, onGruppe=null, grpVon=null,
+                             istFremd=null, onFremd=null }){
   const [guestName,setGuestName]=useState("");
   // Absage-Grund nachtragen: die Eltern haben angerufen, aber nichts eingetragen.
   const [grundFuer,setGrundFuer]=useState(null);   // Name oder null
@@ -18593,6 +18646,8 @@ function AttendanceCheckoff({ ev, teamPlayers=[], teamPlusAus=null, onSetPresent
   // heute wie drauf ist - dann soll man ihn nicht erst auf der Team-Seite
   // suchen muessen.
   const [grpFuer,setGrpFuer]=useState(null);       // Name oder null
+  // Zuordnung uebrig gebliebener Antworten: je Name der gewaehlte Kader-Name
+  const [fremdZiel,setFremdZiel]=useState({});
   const ABSAGE_GRUND=["Krank","Urlaub","Schule","Verletzt","Wettkampf","Familie"];
   const present=ev.present||{};
   const guests=ev.guests||[];
@@ -18680,6 +18735,34 @@ function AttendanceCheckoff({ ev, teamPlayers=[], teamPlusAus=null, onSetPresent
                     </span>
                   )}
                 </div>
+                {/* Antwort, die zu niemandem mehr gehört - meist nach einer
+                    Umbenennung. Hier steht sie, hier wird sie aufgeräumt:
+                    dem richtigen Kind zuschlagen oder löschen. */}
+                {onFremd&&istFremd&&istFremd(name)&&(
+                  <div onClick={e=>e.stopPropagation()} style={{marginTop:7,paddingTop:7,borderTop:"1px dashed #fcd34d"}}>
+                    <div style={{fontSize:11,fontWeight:800,color:"#b45309",marginBottom:6}}>
+                      ❓ Gehört zu keinem Kind im Kader – alter Name nach einer Umbenennung?
+                    </div>
+                    <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
+                      <select value={fremdZiel[name]||""} onChange={e=>setFremdZiel(z=>({...z,[name]:e.target.value}))}
+                        style={{flex:"1 1 150px",minWidth:0,minHeight:34,padding:"6px 8px",fontSize:12,borderRadius:9,
+                          border:"1.5px solid #fcd34d",background:"#fff",color:"#334155",fontFamily:"inherit"}}>
+                        <option value="">Wer ist das? …</option>
+                        {teamPlayers.slice().sort((a,b)=>String(a).localeCompare(String(b),"de")).map(x=>(
+                          <option key={x} value={x}>{x}</option>
+                        ))}
+                      </select>
+                      <button disabled={!fremdZiel[name]}
+                        onClick={()=>{ onFremd(name, fremdZiel[name]); setFremdZiel(z=>({...z,[name]:""})); }}
+                        style={{minHeight:34,padding:"0 11px",borderRadius:9,border:"none",
+                          background:fremdZiel[name]?"#2563eb":"#e2e8f0",color:"#fff",fontWeight:800,fontSize:12,
+                          cursor:fremdZiel[name]?"pointer":"default",fontFamily:"inherit",whiteSpace:"nowrap"}}>Zuordnen</button>
+                      <button onClick={()=>onFremd(name, null)} title="Antwort löschen"
+                        style={{minHeight:34,padding:"0 11px",borderRadius:9,border:"1.5px solid #fecaca",background:"#fff",
+                          color:"#b42318",fontWeight:800,fontSize:12,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>✕ Entfernen</button>
+                    </div>
+                  </div>
+                )}
                 {/* Leistungsgruppe direkt hier umstellen - ein Tipp auf den
                     Chip, ein Tipp auf die Gruppe. Kein Umweg über die
                     Team-Seite, während man auf dem Platz steht. */}
@@ -18793,7 +18876,9 @@ function AttendanceCheckoff({ ev, teamPlayers=[], teamPlusAus=null, onSetPresent
   );
 }
 
-function VoteOverview({ev,players,playerProfiles=[],teams,myTids,cl,onSetDeadline,onSetPresent=()=>{},onSetGuests=()=>{},onSetVote=null,onVotePatch=null,myKids=[],staff=null,readOnly=false,trainerNames=[],helperNames=[],gruppen=[],leibchen=null,onGruppe=null,grpVon=null}) {
+function VoteOverview({ev,players,playerProfiles=[],teams,myTids,cl,onSetDeadline,onSetPresent=()=>{},onSetGuests=()=>{},onSetVote=null,onVotePatch=null,onFremd=null,myKids=[],staff=null,readOnly=false,trainerNames=[],helperNames=[],gruppen=[],leibchen=null,onGruppe=null,grpVon=null,istFremd=null}) {
+  // Zuordnung fremder Antworten: je Name der gewaehlte Kader-Name
+  const [fremdZiel,setFremdZiel]=useState({});
   const p = cl?.pri||"#16a34a";
   const isGameEv = ["heimspiel","auswarts","freundschaft","turnier"].includes(ev.type);
   const present = ev.present||{};
@@ -18904,15 +18989,41 @@ function VoteOverview({ev,players,playerProfiles=[],teams,myTids,cl,onSetDeadlin
         <div style={{background:"#fff",border:"1px dashed #e2e8f0",borderRadius:11,padding:"9px 12px",marginBottom:16}}>
           <div style={{fontSize:11,fontWeight:800,color:"#94a3b8",letterSpacing:.3}}>❓ NICHT IM KADER ({fremd.length})</div>
           {fremd.map(f=>(
-            <div key={"x"+f.name} style={{display:"flex",alignItems:"center",gap:8,padding:"6px 0",borderTop:"1px solid #f1f5f9"}}>
-              <span style={{flex:1,minWidth:0,fontWeight:700,fontSize:12.5,color:"#64748b",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{f.name}</span>
-              <span style={{flexShrink:0,fontSize:11,fontWeight:700,color:"#94a3b8"}}>{f.ja?"✓ zugesagt":"✕ abgesagt"}</span>
-              {stimmZeit((ev.votes||{})[f.name])&&<span style={{flexShrink:0,fontSize:10.5,color:"#cbd5e1",whiteSpace:"nowrap"}}>{stimmZeit((ev.votes||{})[f.name])}</span>}
+            <div key={"x"+f.name} style={{padding:"6px 0",borderTop:"1px solid #f1f5f9"}}>
+              <div style={{display:"flex",alignItems:"center",gap:8}}>
+                <span style={{flex:1,minWidth:0,fontWeight:700,fontSize:12.5,color:"#64748b",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{f.name}</span>
+                <span style={{flexShrink:0,fontSize:11,fontWeight:700,color:"#94a3b8"}}>{f.ja?"✓ zugesagt":"✕ abgesagt"}</span>
+                {stimmZeit((ev.votes||{})[f.name])&&<span style={{flexShrink:0,fontSize:10.5,color:"#cbd5e1",whiteSpace:"nowrap"}}>{stimmZeit((ev.votes||{})[f.name])}</span>}
+              </div>
+              {/* Aufraeumen: zuordnen oder entfernen. Ohne das bleibt so ein
+                  Eintrag fuer immer stehen - genau die Beschwerde. */}
+              {onFremd&&(
+                <div style={{display:"flex",alignItems:"center",gap:6,marginTop:6,flexWrap:"wrap"}}>
+                  <select value={fremdZiel[f.name]||""} onChange={e=>setFremdZiel(z=>({...z,[f.name]:e.target.value}))}
+                    style={{flex:"1 1 150px",minWidth:0,minHeight:34,padding:"6px 8px",fontSize:12,borderRadius:9,
+                      border:"1.5px solid #e2e8f0",background:"#fff",color:"#334155",fontFamily:"inherit"}}>
+                    <option value="">Wer ist das? …</option>
+                    {teamPlayers.slice().sort((a,b)=>String(a).localeCompare(String(b),"de")).map(n=>(
+                      <option key={n} value={n}>{n}</option>
+                    ))}
+                  </select>
+                  <button disabled={!fremdZiel[f.name]}
+                    onClick={()=>{ onFremd(f.name, fremdZiel[f.name]); setFremdZiel(z=>({...z,[f.name]:""})); }}
+                    style={{minHeight:34,padding:"0 11px",borderRadius:9,border:"none",
+                      background:fremdZiel[f.name]?"#2563eb":"#e2e8f0",color:"#fff",fontWeight:800,fontSize:12,
+                      cursor:fremdZiel[f.name]?"pointer":"default",fontFamily:"inherit",whiteSpace:"nowrap"}}>Zuordnen</button>
+                  <button onClick={()=>onFremd(f.name, null)}
+                    title="Antwort löschen – sie zählt ohnehin nirgends mit"
+                    style={{minHeight:34,padding:"0 11px",borderRadius:9,border:"1.5px solid #fecaca",background:"#fff",
+                      color:"#b42318",fontWeight:800,fontSize:12,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>✕ Entfernen</button>
+                </div>
+              )}
             </div>
           ))}
           <div style={{fontSize:10.5,color:"#94a3b8",marginTop:6,lineHeight:1.4}}>
             {fremd.length===1?"Diese Antwort gehört":"Diese Antworten gehören"} zu keinem Kind im Kader und zu keinem Betreuer –
             meist ein Name, der später geändert wurde. Zählt nirgends mit.
+            {onFremd&&" Ordne sie dem richtigen Kind zu – dann merkt sich die App den alten Namen, und die Eltern stimmen künftig unter dem richtigen ab."}
           </div>
         </div>
       )}
@@ -19165,7 +19276,7 @@ function VoteOverview({ev,players,playerProfiles=[],teams,myTids,cl,onSetDeadlin
         </div>
       </>}
 
-      {!readOnly&&<AttendanceCheckoff ev={ev} teamPlayers={teamPlayers} teamPlusAus={teamPlusAus} onSetPresent={onSetPresent} onSetGuests={onSetGuests} trainerNames={trainerNames} helperNames={helperNames} onSetVote={onSetVote} gruppen={gruppen} leibchen={leibchen} onGruppe={onGruppe} grpVon={grpVon}/>}
+      {!readOnly&&<AttendanceCheckoff ev={ev} teamPlayers={teamPlayers} teamPlusAus={teamPlusAus} onSetPresent={onSetPresent} onSetGuests={onSetGuests} trainerNames={trainerNames} helperNames={helperNames} onSetVote={onSetVote} gruppen={gruppen} leibchen={leibchen} onGruppe={onGruppe} grpVon={grpVon} istFremd={istFremd} onFremd={onFremd}/>}
 
       {/* "Noch nicht abgestimmt" nur ohne Abhak-Liste - dort stehen Offene mit ✓/✕ drin */}
       {readOnly&&missing.length>0&&<>
@@ -19874,6 +19985,26 @@ const purgePerson = (data, {id=null, name=""}={}) => {
   return out;
 };
 
+// Eltern, die nach einer Umbenennung noch mit dem alten Namen angemeldet sind,
+// stimmen sonst weiter unter dem alten Namen ab - der Name taucht im Termin
+// immer wieder auf, auch wenn der Trainer ihn wegraeumt. Deshalb wird die
+// Anmeldung still auf den heutigen Namen gezogen, sobald der alte Name am
+// Profil als frueherer Name vermerkt ist.
+const sitzungNachUmbenennung = (s, cd) => {
+  if(!s || s.role!=="user" || !s.user) return s;
+  const profile=(cd&&cd.playerProfiles)||[];
+  const gl=(a,b)=>_nrmName(a)===_nrmName(b);
+  if(profile.some(p=>gl(p.name,s.user))) return s;         // Name gibt es noch
+  const treffer=profile.find(p=>(p.prevNames||[]).some(x=>gl(x,s.user))
+    && (!s.tid || p.mainTid===s.tid || (p.optTids||[]).includes(s.tid)));
+  if(!treffer || gl(treffer.name,s.user)) return s;
+  const neu={...s, user:treffer.name, ...(s.name?{name:treffer.name}:{})};
+  let dauerhaft=false;
+  try{ dauerhaft=!!localStorage.getItem(SS+"_persist"); }catch{}
+  try{ sess.set(neu, dauerhaft); }catch{}
+  return neu;
+};
+
 // Wird eine Person umbenannt, ziehen ihre Eintraege mit: Zu- und Absagen,
 // Anwesenheit, Spielzeit, Fahrgemeinschaft, Helfer-Meldungen, Aufstellung,
 // Dienste, Stationen und Gruppen. Ohne das bleiben die alten Antworten unter
@@ -19921,12 +20052,23 @@ const renamePerson = (data, alt, neu) => {
     if(Array.isArray(ev.sc))                ev.sc=ev.sc.map(x=>typeof x==="string"?um(x):(gleich(x&&x.name)?{...x,name:n}:x));
     if(Array.isArray(ev.stations))          ev.stations=ev.stations.map(st=>({...st, werNamen:umKeys(st.werNamen)}));
     if(Array.isArray(ev.duties))            ev.duties=ev.duties.map(d=>gleich(d&&d.assignee)?{...d,assignee:n}:d);
+    // Die Aufstellung ist ein Linien-Objekt {T,A,M,S,E} - fruehere Staende
+    // waren eine flache Liste. Beides muss mitziehen, sonst steht der alte
+    // Name weiter in der Abwehr und gehoert dort zu niemandem mehr.
+    const LINIEN_K=["T","A","M","S","E","staff"];
+    const umLinien = l => { const o={...l};
+      LINIEN_K.forEach(k=>{ if(Array.isArray(o[k])) o[k]=umListe(o[k]); }); return o; };
     if(Array.isArray(ev.lineup))            ev.lineup=ev.lineup.map(x=>typeof x==="string"?um(x):(gleich(x&&x.name)?{...x,name:n}:x));
-    if(Array.isArray(ev.lineups))           ev.lineups=ev.lineups.map(l=>{
-      const o={...l};
-      ["T","A","M","S","staff"].forEach(k=>{ if(Array.isArray(o[k])) o[k]=umListe(o[k]); });
-      return o;
-    });
+    else if(ev.lineup&&typeof ev.lineup==="object") ev.lineup=umLinien(ev.lineup);
+    if(Array.isArray(ev.lineups))           ev.lineups=ev.lineups.map(umLinien);
+    // Festgehaltene Spielchen-Einteilung: Mannschaften, Bank und Linien.
+    if(ev.spielFest&&Array.isArray(ev.spielFest.paarungen)){
+      const umSeite = s => s&&typeof s==="object"
+        ? {...s, namen:umListe(s.namen), linien:(s.linien&&typeof s.linien==="object")?umLinien(s.linien):s.linien}
+        : s;
+      ev.spielFest={...ev.spielFest, paarungen:ev.spielFest.paarungen.map(p=>({
+        ...p, a:umSeite(p.a), b:umSeite(p.b), bank:umListe(p.bank) }))};
+    }
     if(ev.orga){
       ev.orga={...ev.orga,
         items:(ev.orga.items||[]).map(it=>({...it,who:umListe(it.who)})),
@@ -23451,6 +23593,20 @@ const spielchenLeibchen = (stand) => {
   });
   return map;
 };
+// Gehoert diese Antwort ueberhaupt noch zu jemandem im Verein? Kein Profil
+// (auch nicht aus einer anderen Mannschaft), kein Trainer, kein Helfer, kein
+// Gast des Termins -> uebrig geblieben, meist nach einer Umbenennung. Solche
+// Antworten tragen oft role:"player" und stehen deshalb mitten in der
+// Abhak-Liste, nicht im Block "nicht im Kader".
+const fremdeStimme = (ev, local, name) => {
+  const n=_nrmName(name); if(!n) return false;
+  const kurzN=_shortName(name);
+  if((local.playerProfiles||[]).some(p=>_nrmName(p.name)===n||_shortName(p.name)===kurzN)) return false;
+  if((local.trainers||[]).some(t=>_nrmName(t.name)===n)) return false;
+  if((local.helpers||[]).some(h=>_nrmName(h.name)===n)) return false;
+  if(((ev&&ev.guests)||[]).some(g=>_nrmName(g)===n)) return false;
+  return true;
+};
 // Alles, was die Anwesenheitsliste ueber Leistungsgruppen und Leibchen
 // wissen muss - an EINER Stelle, damit die Abhak-Liste in der Orga und in
 // den Rueckmeldungen dasselbe zeigt.
@@ -23466,6 +23622,7 @@ const gruppenProps = (ev, local, save, fire, jaNamen=[]) => {
     leibchen: istTraining
       ? spielchenLeibchen(spielchenStand(ev, gruppen, profiles, jaNamen, team?.cat||""))
       : null,
+    istFremd: name=>fremdeStimme(ev, local, name),
     onGruppe: !istTraining ? null : (name,gid)=>{
       const p=prof(name);
       if(!p){ fire("Für "+String(name).split(" ")[0]+" gibt es kein Profil – die Gruppe steht auf der Team-Seite."); return; }
@@ -26366,7 +26523,9 @@ function AppInner({lang,setLang}) {
         // Offline gespeicherte Aenderungen ueberleben auch einen App-Neustart:
         // lokalen Stand zeigen, der Sync traegt ihn gleich in die Cloud nach.
         if (sb.hasPending()) { const loc=localGet(); if (loc) cd=normData(loc); }
-        setData(cd); setCid(s.cid); setSess(s); setScr(s.role==="user"?"user":"dash"); return;
+        // Wurde das Kind zwischenzeitlich umbenannt, zieht die Anmeldung mit.
+        const s2=sitzungNachUmbenennung(s, cd);
+        setData(cd); setCid(s.cid); setSess(s2); setScr(s2.role==="user"?"user":"dash"); return;
       }
       // Direktlink ?club=<slug|id>&team=<id> → Verein laden, dann zur Anmeldung
       const params=new URLSearchParams(window.location.search);
