@@ -47,6 +47,15 @@ Besuch auch offline (Service Worker, Netz-zuerst-Strategie).
   anklickbar. Darunter eine **Spalte pro Person** mit Betreuungszeiten,
   offenen Kinderterminen und roter Jetzt-Linie; Klick in eine Spalte trägt für
   genau diese Person ein.
+- **Am Handy: Heute auf einen Blick** – das Wichtigste passt auf den ersten
+  Bildschirm, ohne zu scrollen: ein kleiner Abreißblock (Wischen über den Kopf
+  blättert) mit einem Satz zum Tag („Noch 1 Termin heute, 2 geschafft.“), je Kind
+  eine Kachel *wo es gerade ist* und wer es als Nächstes begleitet, die Tagesliste
+  mit roter Jetzt-Linie und hervorgehobenem nächsten Termin („in 1:20 Std.“) und
+  **Wartet auf dich**: Anfragen, Kindertermine ohne Begleitung und Geburtstage –
+  jeweils mit einem Tipp erledigt. Familienplaner, Morgen, Vorschläge und die
+  Wochen-Balance sind zugeklappt, verraten aber schon in der Zusammenfassung das
+  Wichtigste; der Planer zeigt sich zugeklappt als **Tagesband** (wer ist wann belegt).
 - **Suche (⌘K, Strg+K oder „/“)** – ein Feld für alles:
   - *Finden* trotz Tippfehlern, ß/ss und Umlauten, mit Synonymen
     („Doktor“ findet den Kinderarzt) und Markierung der Treffer.

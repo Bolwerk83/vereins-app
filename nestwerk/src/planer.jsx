@@ -1,17 +1,29 @@
-// Bausteine für „Heute“ und den Kalender: Abreißkalender, Familienplaner, Als-Nächstes, Tageslage
-import React, { useEffect, useRef, useState } from 'react'
-import { WD_LONG, MONTHS, fromIso, wdIdx, addDays, mins, kw, holidayOn, evDur } from './util.js'
+// Bausteine für „Heute“ und den Kalender: Abreißkalender, Familienplaner, Tagesband, Als-Nächstes, Tageslage
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { WD, WD_LONG, MONTHS, fromIso, wdIdx, addDays, mins, kw, holidayOn, evDur } from './util.js'
 import { Icon } from './icons.jsx'
 
 const pad = (n) => String(n).padStart(2, '0')
 const hhmm = (m) => pad(Math.floor(m / 60) % 24) + ':' + pad(m % 60)
+const MON_SHORT = ['Jan.', 'Feb.', 'März', 'Apr.', 'Mai', 'Juni', 'Juli', 'Aug.', 'Sept.', 'Okt.', 'Nov.', 'Dez.']
 
 /* ================= Abreißkalender ================= */
 
-function AbSheet({ d, land, cls }) {
+function AbSheet({ d, land, cls, mini }) {
   const x = fromIso(d)
   const fei = holidayOn(d, land)
   const red = wdIdx(x) === 6 || !!fei
+  if (mini) {
+    // Handy: Monat im Farbkopf wie beim echten Abreißblock, darunter Tag und KW
+    return (
+      <div className={'ab-sheet' + (cls ? ' ' + cls : '')}>
+        <div className="ab-mon">{MON_SHORT[x.getMonth()]}</div>
+        <div className="ab-wd">{WD[wdIdx(x)]}</div>
+        <div className={'ab-num' + (red ? ' red' : '')}>{x.getDate()}</div>
+        <div className="ab-foot"><b>KW {kw(d)}</b></div>
+      </div>
+    )
+  }
   return (
     <div className={'ab-sheet' + (cls ? ' ' + cls : '')}>
       <div className="ab-wd">{WD_LONG[wdIdx(x)]}</div>
@@ -22,19 +34,33 @@ function AbSheet({ d, land, cls }) {
   )
 }
 
-export function Abreiss({ date, today, land, onChange }) {
+// Jeder Datumswechsel blättert sichtbar – egal ob per Pfeil, Wischen oder von außen:
+// vorwärts reißt das Blatt ab, rückwärts fällt ein Blatt herein.
+export function Abreiss({ date, today, land, onChange, mini }) {
   const [tear, setTear] = useState(null)
   const [drop, setDrop] = useState(false)
   const startX = useRef(null)
+  const prev = useRef(date)
+  useLayoutEffect(() => {
+    const p = prev.current
+    prev.current = date
+    if (p === date) return
+    if (date > p) { setTear({ d: p, k: Date.now() }); setDrop(false) } else { setTear(null); setDrop(true) }
+  }, [date])
   useEffect(() => {
     if (!tear) return undefined
     const t = setTimeout(() => setTear(null), 620)
     return () => clearTimeout(t)
   }, [tear])
-  const go = (n) => {
-    if (n > 0) { setTear({ d: date, k: Date.now() }); setDrop(false) } else { setTear(null); setDrop(true) }
-    onChange(addDays(date, n))
-  }
+  const go = (n) => onChange(addDays(date, n))
+  const sheets = (
+    <div className="ab-pad" aria-live="polite">
+      <AbSheet d={date} land={land} mini={mini} cls={drop ? 'drop' : ''} key={date} />
+      {tear && <div className="ab-tear" key={tear.k} aria-hidden="true"><AbSheet d={tear.d} land={land} mini={mini} /></div>}
+    </div>
+  )
+  // Klein (Handy): nur der Block – Blättern und Wischen übernimmt die Kopfzeile drumherum
+  if (mini) return <div className="abreiss mini">{sheets}</div>
   return (
     <div className="abreiss"
       onPointerDown={(e) => { startX.current = e.clientX }}
@@ -44,15 +70,12 @@ export function Abreiss({ date, today, land, onChange }) {
         startX.current = null
         if (Math.abs(dx) > 44) go(dx < 0 ? 1 : -1)
       }}>
-      <div className="ab-pad" aria-live="polite">
-        <AbSheet d={date} land={land} cls={drop ? 'drop' : ''} key={date} />
-        {tear && <div className="ab-tear" key={tear.k} aria-hidden="true"><AbSheet d={tear.d} land={land} /></div>}
-      </div>
+      {sheets}
       <div className="ab-nav">
         <button type="button" onClick={() => go(-1)} aria-label="Vorheriger Tag"><Icon name="chevL" size={16} /></button>
         {date === today
           ? <span className="ab-stamp">Heute</span>
-          : <button type="button" onClick={() => { setTear(null); setDrop(true); onChange(today) }}>Heute</button>}
+          : <button type="button" onClick={() => onChange(today)}>Heute</button>}
         <button type="button" onClick={() => go(1)} aria-label="Nächster Tag – Blatt abreißen"><Icon name="chevR" size={16} /></button>
       </div>
     </div>
@@ -89,8 +112,8 @@ function layoutColumn(list) {
   return out
 }
 
-export function Planer({ date, columns, events, viewEvent, careOn, nowMin, today, byId, pins = [], onOpen, onCare, onAdd, compact, maxH, foot = true }) {
-  const dayEvents = events.filter((e) => e.on_date === date && e.status !== 'declined')
+// Sichtbarer Stundenbereich: 7–21 Uhr, erweitert um alles, was an dem Tag früher oder später liegt
+function dayRange(dayEvents, columns, careOn, date) {
   let startH = 7
   let endH = 21
   for (const e of dayEvents) {
@@ -104,7 +127,12 @@ export function Planer({ date, columns, events, viewEvent, careOn, nowMin, today
     }
   }
   startH = Math.max(0, startH)
-  endH = Math.min(24, Math.max(endH, startH + 6))
+  return [startH, Math.min(24, Math.max(endH, startH + 6))]
+}
+
+export function Planer({ date, columns, events, viewEvent, careOn, nowMin, today, byId, pins = [], onOpen, onCare, onAdd, compact, maxH, foot = true }) {
+  const dayEvents = events.filter((e) => e.on_date === date && e.status !== 'declined')
+  const [startH, endH] = dayRange(dayEvents, columns, careOn, date)
   const H = compact ? 38 : 46
   const bodyH = (endH - startH) * H
   const y = (m) => ((m - startH * 60) / 60) * H
@@ -198,6 +226,45 @@ export function Planer({ date, columns, events, viewEvent, careOn, nowMin, today
           {onAdd && <span style={{ marginLeft: 'auto' }}>In eine Spalte klicken: Termin eintragen</span>}
         </div>
       )}
+    </div>
+  )
+}
+
+/* ================= Tagesband: der Tag der ganzen Familie, eine Zeile pro Person ================= */
+
+// Die Mini-Ausgabe des Familienplaners fürs Handy: zeigt auf einen Blick, wer wann
+// belegt ist, wo Lücken sind und wo „jetzt“ ist. Antippen öffnet den großen Planer.
+export function DayBand({ date, columns, events, viewEvent, careOn, nowMin, today }) {
+  const dayEvents = events.filter((e) => e.on_date === date && e.status !== 'declined')
+  const [startH, endH] = dayRange(dayEvents, columns, careOn, date)
+  const span = (endH - startH) * 60
+  const pct = (m) => Math.max(0, Math.min(100, ((m - startH * 60) / span) * 100))
+  const isToday = date === today
+  const showNow = isToday && nowMin != null && nowMin >= startH * 60 && nowMin <= endH * 60
+  const ticks = []
+  for (let h = Math.ceil((startH + 1) / 2) * 2; h < endH; h += 2) ticks.push(h)
+  return (
+    <div className="band" aria-hidden="true">
+      <div className="band-ticks">{ticks.map((h) => <span key={h} style={{ left: pct(h * 60) + '%' }}>{h}</span>)}</div>
+      {columns.map((m) => (
+        <div className="band-lane" key={m.id} style={{ '--c': m.color }}>
+          <span className="band-av">{m.name[0].toUpperCase()}</span>
+          <div className="band-track">
+            {careOn(m, date).map((b) => (
+              <i key={b.id} className="bs care" style={{ left: pct(mins(b.from)) + '%', width: pct(mins(b.to)) - pct(mins(b.from)) + '%' }} />
+            ))}
+            {dayEvents.filter((e) => e.member_id === m.id).map((e) => {
+              const s = mins(e.at_time)
+              const en = s + Math.max(evDur(e), 30)
+              const past = isToday && nowMin != null && en <= nowMin
+              const open = m.kind === 'kid' && !e.zust && e.status === 'fix' && !past
+              const cls = ['bs', e.status === 'pending' ? 'pend' : '', viewEvent(e).masked ? 'masked' : '', past ? 'past' : '', open ? 'open' : ''].filter(Boolean).join(' ')
+              return <i key={e.id} className={cls} style={{ left: pct(s) + '%', width: Math.max(2.4, pct(en) - pct(s)) + '%' }} />
+            })}
+          </div>
+        </div>
+      ))}
+      {showNow && <div className="band-now" style={{ '--p': pct(nowMin) / 100 }} />}
     </div>
   )
 }

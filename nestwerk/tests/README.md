@@ -7,7 +7,7 @@ npm run build
 npx vite preview --port 4173 &   # Testserver
 npm install                       # einmalig (bringt playwright-core mit)
 node tests/suche.test.mjs         # Such-Engine: Verstehen, Finden, Antworten (ohne Browser)
-node tests/oberflaeche.test.mjs   # Suche, Heute, Planer, Eselsohr, Kalender, Handy
+node tests/oberflaeche.test.mjs   # Suche, Heute, Planer, Eselsohr, Kalender, Handy („auf einen Blick“)
 node tests/palast.test.mjs        # 🏛️ Gedächtnispalast (E2E-Verschlüsselung)
 node tests/betreuung.test.mjs     # 🏫 Betreuungszeiten
 node tests/assistent.test.mjs     # ✨ Assistent, Wizards, Demo, 🎂 Geburtstage

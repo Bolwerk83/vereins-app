@@ -237,6 +237,11 @@ mark, .mark {
 .searchpill kbd { flex: none; }
 @media (max-width: 599px) { .searchpill kbd { display: none; } .searchpill { height: 48px; } }
 
+/* Handy: eine schmale Kopfzeile – die Suche sitzt griffbereit mitten im Dock */
+@media (max-width: 700px) {
+  .mast { grid-template-areas: "brand . act"; padding: 10px 0 6px; }
+  .mast .searchpill { display: none; }
+}
 .mast-act { grid-area: act; display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
 .iconbtn {
   position: relative; width: 42px; height: 42px; flex: none; border-radius: 13px;
@@ -275,6 +280,7 @@ mark, .mark {
   min-width: 20px; height: 20px; padding: 0 6px; border-radius: 999px;
   background: var(--red); color: #fff; font: 700 11.5px/20px var(--f-ui); text-align: center;
 }
+.cnt.soft { background: var(--sheet-3); color: var(--ink-2); box-shadow: inset 0 0 0 1px var(--line); }
 
 /* Das Blatt */
 .blatt { position: relative; min-width: 0; }
@@ -627,6 +633,144 @@ button.chip.off { opacity: .45; border-style: dashed; }
 .bal-bar { height: 6px; border-radius: 4px; background: var(--line); margin: 8px 0 6px; overflow: hidden; }
 .bal-bar i { display: block; height: 100%; border-radius: 4px; background: var(--c); transition: width .5s ease; }
 .bal-name { font-size: 13px; color: var(--ink-2); font-weight: 600; }
+
+/* ================= Heute auf einen Blick (Handy) ================= */
+.glance { padding-top: 4px; }
+.glance .label { margin: 20px 0 9px; font-size: 16.5px; gap: 8px; }
+.glance .label .lact { margin-left: auto; }
+.glance .label .btn.sm { height: 32px; padding: 0 11px; }
+.glance .row { padding: 10px 14px; gap: 10px; min-height: 0; }
+.glance .row-wrap > .row { padding-right: 34px; }
+.glance .rowico { width: 30px; height: 30px; border-radius: 10px; }
+.glance .row-title { font-size: 14.5px; }
+.glance .row-meta { font-size: 13px; }
+.glance .time { min-width: 42px; font-size: 14px; }
+.glance .invite-actions .btn { width: 38px; height: 34px; }
+.glance .empty { padding: 14px; font-size: 14px; }
+
+/* Kopf: Mini-Abreißblock · Gruß und ein Satz zum Tag · Blättern (auch per Wischen) */
+.g-head { display: grid; grid-template-columns: 62px minmax(0, 1fr) auto; gap: 0 13px; align-items: center; touch-action: pan-y; user-select: none; -webkit-user-select: none; }
+.g-hello { min-width: 0; }
+.g-hello .hero { font-size: 26px; line-height: 1.04; margin: 0 0 4px; }
+.g-sum { margin: 0; font-size: 14px; line-height: 1.38; color: var(--ink-2); text-wrap: pretty; }
+.g-fei { color: var(--red); font-weight: 650; }
+.g-demo { font-size: 11.5px; padding: 1px 8px; vertical-align: 1px; }
+.g-back { margin-top: 7px; font-size: 12.5px; padding: 3px 10px; gap: 5px; }
+.g-daynav { display: flex; flex-direction: column; gap: 6px; }
+.g-daynav button {
+  width: 36px; height: 36px; border-radius: 11px; cursor: pointer; display: grid; place-items: center;
+  border: 1px solid var(--line-2); background: var(--sheet); color: var(--ink-2);
+  transition: transform .1s ease, background .15s ease;
+}
+.g-daynav button:active { transform: scale(.93); background: var(--sheet-2); }
+
+/* Mini-Abreißblock: Monat im Farbkopf, Wochentag, Zahl, KW */
+.abreiss.mini .ab-sheet {
+  padding: 21px 4px 7px; text-align: center; border-radius: 6px 6px 10px 10px;
+  box-shadow: 0 2px 0 -1px var(--sheet), 0 3px 0 -1px var(--line-2), 0 5px 0 -2px var(--sheet), 0 6px 0 -2px var(--line), 0 14px 22px -16px rgba(18, 16, 40, 0.45);
+}
+.abreiss.mini .ab-sheet::before { height: 16px; }
+.abreiss.mini .ab-sheet::after { top: 18px; left: 6px; right: 6px; border-top-width: 1.5px; }
+.ab-mon { position: absolute; left: 0; right: 0; top: 0; height: 16px; z-index: 1; font: 700 9.5px/16px var(--f-ui); letter-spacing: .12em; text-transform: uppercase; color: var(--accent-ink); }
+.abreiss.mini .ab-wd { font-size: 10px; letter-spacing: .14em; margin-top: 4px; }
+.abreiss.mini .ab-num { font-size: 38px; margin: 3px 0 2px; letter-spacing: -0.04em; }
+.abreiss.mini .ab-foot { justify-content: center; }
+.abreiss.mini .ab-foot b { font-size: 10px; }
+.abreiss.mini .ab-tear { animation-name: abtear-mini; }
+@keyframes abtear-mini {
+  0% { transform: none; opacity: 1; }
+  30% { transform: rotate(-6deg) translateY(-3px); opacity: 1; }
+  100% { transform: translate(-12px, -64px) rotate(-16deg); opacity: 0; }
+}
+
+/* Kinder: wo sie gerade sind, was als Nächstes kommt */
+.g-kids {
+  display: grid; grid-auto-flow: column; grid-auto-columns: minmax(150px, 1fr); gap: 8px;
+  margin: 14px -16px 0; padding: 0 16px 2px; overflow-x: auto; scrollbar-width: none; scroll-snap-type: x proximity;
+}
+.g-kids::-webkit-scrollbar { display: none; }
+.g-kid {
+  scroll-snap-align: start; display: flex; flex-direction: column; align-items: flex-start; gap: 3px; min-width: 0;
+  padding: 9px 12px 10px; border-radius: 14px; text-align: left; cursor: pointer; color: var(--ink);
+  border: 1px solid color-mix(in oklab, var(--c) 26%, var(--line)); background: color-mix(in oklab, var(--c) 8%, var(--sheet));
+  transition: transform .12s ease;
+}
+.g-kid:active { transform: scale(.98); }
+.gk-top { display: flex; align-items: center; gap: 7px; font-size: 13.5px; font-weight: 650; }
+.gk-top .avatar { width: 22px; height: 22px; font-size: 11px; }
+.gk-line, .gk-ev { max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gk-line { font-weight: 650; font-size: 14px; line-height: 1.3; color: color-mix(in oklab, var(--c) 52%, var(--ink)); }
+.gk-line.setup { color: var(--accent-text); }
+/* Termin darf gekürzt werden, wer begleitet nie */
+.gk-sub { display: flex; gap: 6px; max-width: 100%; min-width: 0; font-size: 12.5px; line-height: 1.3; color: var(--ink-2); }
+.gk-ev { min-width: 0; }
+.gk-who { flex: none; font-weight: 600; color: var(--ink); }
+.gk-who.warn { color: var(--warn); }
+
+/* Tagesliste mit Jetzt-Linie; der nächste Termin ist hervorgehoben */
+.g-day .row-wrap.past { opacity: .55; }
+.g-day .row-wrap.is-next > .row { background: color-mix(in oklab, var(--accent) 9%, transparent); box-shadow: inset 3px 0 0 var(--accent); }
+.g-wait .btn.sm { padding: 0 11px; font-size: 13px; gap: 6px; }
+.g-in { flex: none; font-size: 12px; font-weight: 700; color: var(--accent-text); background: var(--accent-soft); border-radius: 999px; padding: 3px 9px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.g-open { color: var(--warn); font-weight: 650; }
+.g-now { position: relative; height: 0; border-top: 2px solid var(--red); margin: 10px 14px 10px 62px; }
+.g-now::before { content: ''; position: absolute; left: -5px; top: -6px; width: 10px; height: 10px; border-radius: 50%; background: var(--red); }
+.g-now span { position: absolute; left: -48px; top: -10px; font: 700 11px/18px var(--f-ui); background: var(--red); color: #fff; border-radius: 6px; padding: 0 5px; font-variant-numeric: tabular-nums; }
+.g-now + .row-wrap, .g-now + .row, .g-now + .empty { border-top: 0; }
+.g-after .row-title { color: var(--ink-2); font-weight: 600; }
+.g-fold > summary {
+  list-style: none; display: flex; align-items: center; gap: 8px; padding: 10px 14px; cursor: pointer;
+  font-size: 13px; font-weight: 600; color: var(--ink-3); border-top: 1px solid var(--line);
+}
+.g-fold:first-child > summary { border-top: 0; }
+.g-fold > summary::-webkit-details-marker { display: none; }
+.g-fold > summary::after { content: '›'; margin-left: auto; font-size: 17px; line-height: 1; transition: transform .2s ease; }
+.g-fold[open] > summary::after { transform: rotate(90deg); }
+.g-fold > .row-wrap:first-of-type, .g-fold > .row:first-of-type { border-top: 1px solid var(--line); }
+
+/* Klappbereiche: zugeklappt mit Zusammenfassung, aufgeklappt der ganze Inhalt */
+.klapps { margin-top: 18px; background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 16px; box-shadow: var(--card-shadow); overflow: hidden; }
+.klapp + .klapp { border-top: 1px solid var(--line); }
+.klapp > summary { list-style: none; display: block; padding: 11px 14px; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.klapp > summary::-webkit-details-marker { display: none; }
+.klapp > summary:active { background: var(--sheet-2); }
+.k-head { display: flex; align-items: center; gap: 11px; }
+.k-head .rowico { width: 30px; height: 30px; border-radius: 10px; }
+.k-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.k-title { display: flex; align-items: center; gap: 7px; font-weight: 650; font-size: 15px; }
+.k-badge { min-width: 19px; height: 19px; padding: 0 6px; border-radius: 999px; background: var(--sheet-3); color: var(--ink-2); font: 700 11px/19px var(--f-ui); text-align: center; }
+.k-sum { font-size: 13px; color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.k-chev { flex: none; color: var(--ink-3); display: grid; place-items: center; transition: transform .22s ease; }
+.klapp[open] .k-chev { transform: rotate(180deg); }
+.k-body { border-top: 1px solid var(--line); animation: kdown .22s ease; }
+@keyframes kdown { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+.k-body > .planer { border: 0; border-radius: 0; margin: 0; }
+.k-body .sug .row { align-items: flex-start; }
+.k-body .balance { padding-top: 12px; }
+
+/* Tagesband: der Tag der Familie als Mini-Planer, eine Zeile pro Person */
+.band { --band-l: 24px; position: relative; display: grid; gap: 5px; margin: 10px 0 3px; }
+.band-ticks { position: relative; height: 12px; margin-left: var(--band-l); }
+.band-ticks span { position: absolute; transform: translateX(-50%); font-size: 10px; line-height: 12px; font-weight: 600; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.band-lane { display: grid; grid-template-columns: var(--band-l) minmax(0, 1fr); align-items: center; }
+.band-av { width: 16px; height: 16px; border-radius: 50%; background: var(--c); color: #fff; font: 700 9.5px/16px var(--f-ui); text-align: center; }
+.band-track { position: relative; height: 9px; border-radius: 5px; background: color-mix(in oklab, var(--c) 10%, var(--sheet-2)); overflow: hidden; }
+.bs { position: absolute; top: 0; bottom: 0; border-radius: 4px; background: var(--c); }
+.bs.care { border-radius: 3px; background: repeating-linear-gradient(135deg, color-mix(in oklab, var(--c) 58%, transparent) 0 3px, color-mix(in oklab, var(--c) 20%, transparent) 3px 6px); }
+.bs.past { opacity: .38; }
+.bs.pend { background: repeating-linear-gradient(-45deg, var(--c) 0 3px, transparent 3px 6px); }
+.bs.masked { background: color-mix(in oklab, var(--ink) 34%, transparent); }
+.bs.open { background: var(--warn); }
+.band-now { position: absolute; top: 13px; bottom: -2px; left: calc(var(--band-l) + (100% - var(--band-l)) * var(--p)); width: 2px; margin-left: -1px; border-radius: 2px; background: var(--red); }
+
+/* Kalender auf dem Handy: Personen-Chips in einer Zeile, Liste vor dem Planer */
+@media (max-width: 700px) {
+  .kal-tools .legend { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin-inline: -16px; padding: 0 16px 2px; }
+  .kal-tools .legend::-webkit-scrollbar { display: none; }
+  .kal-tools .legend .chip { flex: none; }
+  .calgrid > div > .legend { display: none; }
+  .day-panel .klapps { margin-top: 12px; }
+}
 
 /* ================= Kalender ================= */
 .kal-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px 18px; flex-wrap: wrap; }

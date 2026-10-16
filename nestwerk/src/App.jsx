@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react'
 import { loadState, saveState, storageWorks } from './store.js'
 import { fetchVereinData, mapTeamEvents } from './verein.js'
 import { loadSyncMeta, saveSyncMeta, newSyncCode, esCreate, esPull, esPush, stripLocal, mergeDb } from './sync.js'
-import { WD, WD_LONG, MONTHS, COLORS, iso, fromIso, wdIdx, fmtDate, fmtShort, addDays, mins, uid, gebInfo, parseIcs, mapsLink, kw, holidayOn, LAENDER } from './util.js'
+import { WD, WD_LONG, MONTHS, COLORS, iso, fromIso, wdIdx, fmtDate, fmtShort, addDays, mins, uid, gebInfo, parseIcs, mapsLink, kw, holidayOn, LAENDER, evDur } from './util.js'
 import { Icon, RowIcon, LogoMark } from './icons.jsx'
 import { MODULES, hasMod, saveTextFile } from './domain.js'
 import { useToast, QuickAdd } from './ui.jsx'
@@ -10,8 +10,8 @@ import { Onboarding, demoData, ProfilePicker } from './onboarding.jsx'
 import { Merkzeug } from './palace.jsx'
 import { EventSheet, MemberSheet, CareSheet, KlientSheet, PTerminSheet, VorlageSheet, VereinSheet, BlitzSheet, BlitzListe, GebForm, WaTemplateRow, SerieWizard, IstWizard, SportPlanForm, ImportRow, WA_DEFAULT } from './sheets.jsx'
 import { Suche } from './Suche.jsx'
-import { buildIndex, longDate } from './search.js'
-import { Abreiss, Planer, NextCard, buildLage, greeting } from './planer.jsx'
+import { buildIndex, longDate, relDay } from './search.js'
+import { Abreiss, Planer, DayBand, NextCard, buildLage, greeting } from './planer.jsx'
 
 const THEME_KEY = 'eselsohr-theme'
 const PLANER_KEY = 'eselsohr-heute-ansicht'
@@ -37,6 +37,32 @@ function RotatingExample({ items }) {
   return <><span className="sp-lead">Frag einfach: </span><span className="sp-ex" key={i}>„{items[i % items.length]}“</span></>
 }
 
+/* Handy-Ansicht: ab dieser Breite zeigt „Heute“ alles auf einen Blick statt Planer-Seite */
+const PHONE_Q = '(max-width: 700px)'
+const isPhoneNow = () => { try { return window.matchMedia(PHONE_Q).matches } catch { return false } }
+
+/* Klappbereich: zugeklappt steht schon das Wichtigste in der Zusammenfassung, aufgeklappt der ganze Inhalt.
+   Der Inhalt entsteht erst beim Aufklappen – die Seite bleibt kurz und schnell. */
+function Klapp({ id, icon, title, summary, badge, open, onToggle, extra, children }) {
+  return (
+    <details className="klapp" id={id} open={open}
+      onToggle={(e) => { if (e.currentTarget.open !== open) onToggle(e.currentTarget.open) }}>
+      <summary>
+        <span className="k-head">
+          <span className="rowico"><Icon name={icon} size={17} /></span>
+          <span className="k-main">
+            <span className="k-title">{title}{badge ? <span className="k-badge">{badge}</span> : null}</span>
+            {summary ? <span className="k-sum">{summary}</span> : null}
+          </span>
+          <span className="k-chev"><Icon name="chevD" size={18} /></span>
+        </span>
+        {extra}
+      </summary>
+      {open && <div className="k-body">{children}</div>}
+    </details>
+  )
+}
+
 /* ================= Haupt-App ================= */
 
 export default function App() {
@@ -52,6 +78,9 @@ export default function App() {
   const [palaceProv, setPalaceProv] = useState(null)
   const [palaceQuery, setPalaceQuery] = useState('')
   const idxCache = useRef({})
+  const [phone, setPhone] = useState(isPhoneNow)
+  const [klapp, setKlapp] = useState([]) // aufgeklappte Bereiche auf dem Handy
+  const swipeRef = useRef(null)
   const [sheet, setSheet] = useState(null)
   const [calCursor, setCalCursor] = useState(() => { const d = new Date(); return { y: d.getFullYear(), m: d.getMonth() } })
   const [selDate, setSelDate] = useState(iso(new Date()))
@@ -226,6 +255,15 @@ export default function App() {
   useEffect(() => {
     const t = setInterval(() => setNowMin(nowMinutes()), 30000)
     return () => clearInterval(t)
+  }, [])
+
+  // Handy oder großer Bildschirm? Folgt auch dem Drehen des Geräts
+  useEffect(() => {
+    let mq
+    try { mq = window.matchMedia(PHONE_Q) } catch { return undefined }
+    const on = () => setPhone(mq.matches)
+    if (mq.addEventListener) mq.addEventListener('change', on); else mq.addListener(on)
+    return () => { if (mq.removeEventListener) mq.removeEventListener('change', on); else mq.removeListener(on) }
   }, [])
 
   // Erscheinungsbild: automatisch (Gerät) oder fest hell/dunkel
@@ -671,20 +709,24 @@ export default function App() {
     toast(has ? 'Eselsohr geglättet' : 'Eselsohr geknickt – der Termin steht jetzt unter „Gemerkt“')
   }
 
-  const EventRow = ({ e: raw, withDate }) => {
+  const EventRow = ({ e: raw, withDate, cls, badge, hint }) => {
     const e = viewEvent(raw)
     const pinned = pins.includes(raw.id)
+    const kidOpen = !e.masked && !e.zust && e.status === 'fix' && byId[e.member_id]?.kind === 'kid'
     return (
-      <div className="row-wrap">
+      <div className={'row-wrap' + (cls ? ' ' + cls : '')}>
         <button className="row" onClick={() => setSheet({ event: raw })}>
           <span className="time">{withDate ? fmtShort(e.on_date) + ' ' : ''}{e.at_time}</span>
           <span className="dot" style={{ background: mcolor(e.member_id) }} />
           <div className="row-main">
             <div className="row-title">{e.title}{e.serie ? ' ↻' : ''}{e.src === 'verein' ? ' ⚽' : ''}</div>
-            <div className="row-meta">{e.masked ? e.meta : mname(e.member_id) + (e.meta ? ' · ' + e.meta : '') + (e.zust ? ' · ✋ ' + mname(e.zust) : '')}</div>
+            <div className="row-meta">
+              {e.masked ? e.meta : mname(e.member_id) + (e.meta ? ' · ' + e.meta : '') + (e.zust ? ' · ✋ ' + mname(e.zust) : '')}
+              {hint && kidOpen && <span className="g-open"> · ✋ noch offen</span>}
+            </div>
           </div>
           {e.status === 'pending' && <span className="chip honey">Anfrage</span>}
-          <span className="chev">›</span>
+          {badge ? <span className="g-in">{badge}</span> : <span className="chev">›</span>}
         </button>
         <button type="button" className={'dogear' + (pinned ? ' on' : '')} onClick={() => togglePin(raw.id)}
           aria-pressed={pinned} aria-label={pinned ? 'Eselsohr glätten' : 'Eselsohr knicken – Termin merken'}
@@ -958,7 +1000,11 @@ export default function App() {
         else if (n.cmd === 'theme-light') setTheme('light')
         else if (n.cmd === 'theme-auto') setTheme('auto')
         else if (n.cmd === 'switch') saveAll({ ...db, active: null })
-        else if (n.cmd === 'geknickt') { setNav('heute'); setDayView(today); scrollToId('geknickt') }
+        else if (n.cmd === 'geknickt') {
+          setNav('heute'); setDayView(today)
+          setKlapp((k) => (k.includes('gemerkt') ? k : [...k, 'gemerkt'])) // Handy: Bereich aufklappen
+          scrollToId('geknickt')
+        }
         break
       }
       default: break
@@ -980,6 +1026,31 @@ export default function App() {
   const sportDone = mySportWeek.filter((e) => e.done).length
   const setAnsicht = (v) => { setHeuteAnsicht(v); writePref(PLANER_KEY, v) }
   const maxCare = Math.max(1, ...adults.map((a) => careCount(a.id)))
+
+  const sugRows = (list) => list.map((s) => (
+    <div className="row" key={s.id}>
+      <span className={'rowico' + (s.id.startsWith('konflikt') ? ' red' : s.id.startsWith('geb') ? ' warn' : '')}><Icon name={sugIcon(s.id)} size={17} /></span>
+      <div className="row-main">
+        <div className="row-title">{s.title}</div>
+        <div className="row-meta">{s.meta}</div>
+      </div>
+      <button className="btn sm" onClick={s.act}>{s.actLabel}</button>
+    </div>
+  ))
+  const balanceEl = (
+    <>
+      <div className="balance">
+        {adults.map((m) => (
+          <div className="bal" key={m.id} style={{ '--c': m.color }}>
+            <div className="bal-n">{careCount(m.id)}×</div>
+            <div className="bal-bar"><i style={{ width: (careCount(m.id) / maxCare) * 100 + '%' }} /></div>
+            <div className="bal-name">{m.name}</div>
+          </div>
+        ))}
+      </div>
+      <div className="sug-note">Bringen, holen, betreuen – jedes „Ich übernehme“ zählt sofort mit.</div>
+    </>
+  )
 
   const screenHeute = (
     <section className="screen heute">
@@ -1084,16 +1155,7 @@ export default function App() {
             <>
               <h3 className="label"><span className="lico"><Icon name="bulb" size={18} /></span>Vorschläge <span className="sub">du entscheidest</span></h3>
               <div className="card sug">
-                {suggestions.map((s) => (
-                  <div className="row" key={s.id}>
-                    <span className={'rowico' + (s.id.startsWith('konflikt') ? ' red' : s.id.startsWith('geb') ? ' warn' : '')}><Icon name={sugIcon(s.id)} size={17} /></span>
-                    <div className="row-main">
-                      <div className="row-title">{s.title}</div>
-                      <div className="row-meta">{s.meta}</div>
-                    </div>
-                    <button className="btn sm" onClick={s.act}>{s.actLabel}</button>
-                  </div>
-                ))}
+                {sugRows(suggestions)}
                 <div className="sug-note">Aus euren eigenen Daten – nichts verlässt das Gerät. Nie mehr als drei auf einmal.</div>
               </div>
             </>
@@ -1131,16 +1193,7 @@ export default function App() {
             <>
               <h3 className="label"><span className="lico"><Icon name="hand" size={18} /></span>Wer übernimmt diese Woche</h3>
               <div className="card">
-                <div className="balance">
-                  {adults.map((m) => (
-                    <div className="bal" key={m.id} style={{ '--c': m.color }}>
-                      <div className="bal-n">{careCount(m.id)}×</div>
-                      <div className="bal-bar"><i style={{ width: (careCount(m.id) / maxCare) * 100 + '%' }} /></div>
-                      <div className="bal-name">{m.name}</div>
-                    </div>
-                  ))}
-                </div>
-                <div className="sug-note">Bringen, holen, betreuen – jedes „Ich übernehme“ zählt sofort mit.</div>
+                {balanceEl}
                 {unclaimed.map((e) => (
                   <div className="row" key={e.id}>
                     <span className="time" style={{ minWidth: 82 }}>{fmtShort(e.on_date)} {e.at_time}</span>
@@ -1155,6 +1208,260 @@ export default function App() {
             </>
           )}
         </aside>
+      </div>
+    </section>
+  )
+
+  /* ---------- Handy: Heute auf einen Blick ----------
+     Der erste Bildschirm beantwortet die Fragen des Morgens: Welcher Tag? Wo sind die Kinder?
+     Was wartet auf mich? Was steht an – und was ist als Nächstes dran? Alles andere ist
+     zugeklappt, verrät aber schon in der Zusammenfassung, was drinsteht. */
+
+  const isTodayView = dayView === today
+  const evEnd = (e) => mins(e.at_time) + Math.max(evDur(e), 30)
+  const dayN = (d) => Math.round((fromIso(d) - fromIso(today)) / 86400000)
+  const pastEvs = isTodayView ? heuteEvs.filter((e) => evEnd(e) <= nowMin) : []
+  const restEvs = isTodayView ? heuteEvs.filter((e) => evEnd(e) > nowMin) : heuteEvs
+  const nextI = isTodayView ? restEvs.findIndex((e) => e.status === 'fix') : -1
+  const inTxt = (e) => {
+    const d = mins(e.at_time) - nowMin
+    if (d <= 0) return 'läuft'
+    if (d < 60) return `in ${d} Min.`
+    return `in ${Math.floor(d / 60)}:${String(d % 60).padStart(2, '0')} Std.`
+  }
+  const isOpen = (k) => klapp.includes(k)
+  const setOpen = (k) => (v) => setKlapp((a) => (v ? (a.includes(k) ? a : [...a, k]) : a.filter((x) => x !== k)))
+
+  // Wo ist das Kind gerade – und was kommt als Nächstes? (kurz genug für eine Zeile)
+  const kidNow = (k) => {
+    const blocks = careOn(k, dayView)
+    const evs = heuteEvs.filter((e) => e.member_id === k.id && e.status === 'fix')
+    const has = (k.care || []).length > 0
+    let line = null
+    let nx
+    if (isTodayView) {
+      const run = evs.find((e) => mins(e.at_time) <= nowMin && nowMin < evEnd(e))
+      const cur = blocks.find((b) => mins(b.from) <= nowMin && nowMin < mins(b.to))
+      const later = blocks.find((b) => mins(b.from) > nowMin)
+      if (run) line = 'jetzt: ' + viewEvent(run).title
+      else if (cur) line = `${cur.label} bis ${cur.to}`
+      else if (later) line = `ab ${later.from} ${later.label}`
+      else if (blocks.length) line = `seit ${blocks[blocks.length - 1].to} zu Hause`
+      else if (has) line = 'heute frei'
+      nx = evs.find((e) => mins(e.at_time) > nowMin)
+    } else {
+      if (blocks.length) line = blocks.map((b) => `${b.label} ${b.from}–${b.to}`).join(', ')
+      else if (has) line = 'frei'
+      nx = evs[0]
+    }
+    const sub = nx
+      ? `${nx.at_time} ${viewEvent(nx).title}`
+      : !isTodayView ? 'keine Termine' : evs.length ? 'danach frei' : 'keine Termine heute'
+    const who = nx ? '✋ ' + (nx.zust ? mname(nx.zust) : 'offen') : null
+    return { line, sub, who, warn: !!nx && !nx.zust, setup: !has && !line && !isKid }
+  }
+
+  // Was auf eine Entscheidung wartet: Anfragen, Kindertermine ohne Begleitung, Geburtstage
+  const waiting = []
+  if (!isKid) {
+    invites.forEach((e) => waiting.push({ k: 'inv' + e.id, s: [dayN(e.on_date), 1, e.at_time], type: 'inv', e }))
+    db.events
+      .filter((e) => e.status === 'fix' && !e.zust && byId[e.member_id]?.kind === 'kid' && e.on_date >= today && e.on_date <= addDays(today, 2) && !(e.on_date === today && evEnd(e) <= nowMin))
+      .forEach((e) => waiting.push({ k: 'own' + e.id, s: [dayN(e.on_date), 0, e.at_time], type: 'claim', e }))
+  }
+  gebSorted.filter((x) => x.info && x.info.days <= 2)
+    .forEach(({ g, info }) => waiting.push({ k: 'geb' + g.id, s: [info.days, 2, ''], type: 'geb', g, info }))
+  waiting.sort((a, b) => a.s[0] - b.s[0] || a.s[1] - b.s[1] || a.s[2].localeCompare(b.s[2]))
+
+  const relShort = (d) => relDay(today, d).replace(/^am /, '')
+  const waitRow = (w) => {
+    if (w.type === 'inv') {
+      const e = w.e
+      return (
+        <div className="row" key={w.k}>
+          <span className="rowico"><Icon name="inbox" size={16} /></span>
+          <div className="row-main">
+            <div className="row-title">{e.title}</div>
+            <div className="row-meta">von {mname(e.created_by)} · {relShort(e.on_date)} {e.at_time}</div>
+          </div>
+          <div className="invite-actions">
+            <button className="btn" onClick={() => answerInvite(e, true)} aria-label={`${e.title} zusagen`}><Icon name="check" size={17} /></button>
+            <button className="btn danger" onClick={() => answerInvite(e, false)} aria-label={`${e.title} ablehnen`}><Icon name="x" size={16} /></button>
+          </div>
+        </div>
+      )
+    }
+    if (w.type === 'claim') {
+      const e = w.e
+      return (
+        <div className="row" key={w.k}>
+          <span className="rowico warn"><Icon name="hand" size={16} /></span>
+          <div className="row-main">
+            <div className="row-title">{viewEvent(e).title}</div>
+            <div className="row-meta">{mname(e.member_id)} · {relShort(e.on_date)} {e.at_time}</div>
+          </div>
+          <button className="btn sm" onClick={() => claimEvent(e)} aria-label={`${viewEvent(e).title} übernehmen`}>Übernehmen</button>
+        </div>
+      )
+    }
+    const { g, info } = w
+    const rel = info.days === 0 ? 'heute' : info.days === 1 ? 'morgen' : 'übermorgen'
+    return (
+      <div className="row" key={w.k}>
+        <span className="rowico warn"><Icon name="gift" size={16} /></span>
+        <div className="row-main">
+          <div className="row-title">{info.age != null ? `${g.name} wird ${info.age}` : `${g.name} hat Geburtstag`}</div>
+          <div className="row-meta">{rel}, {g.date.split('.').slice(0, 2).map((x) => +x).join('.')}.</div>
+        </div>
+        <button className="btn sm ghost" onClick={() => openWa(g)} aria-label={`${g.name} per WhatsApp gratulieren`}><Icon name="message" size={15} />WhatsApp</button>
+      </div>
+    )
+  }
+
+  const fei = holidayOn(dayView, land)
+  const dayCount = heuteEvs.filter((e) => e.status === 'fix').length
+  const restFix = restEvs.filter((e) => e.status === 'fix').length
+  // Ein Satz zum Tag – im Lauf des Tages zählt er mit, was schon geschafft ist
+  const lageText = isTodayView && dayCount > 0 && restFix === 0
+    ? 'Für heute ist alles geschafft.'
+    : isTodayView && restFix < dayCount
+      ? `Noch ${restFix} ${restFix === 1 ? 'Termin' : 'Termine'} heute, ${dayCount - restFix} geschafft.`
+      : (lage[0] || []).map((s) => s.text).join('')
+  const tmrDate = addDays(dayView, 1)
+  const tmrEvs = db.events.filter((e) => e.on_date === tmrDate && e.status === 'fix').sort((a, b) => a.at_time.localeCompare(b.at_time))
+  const tmrCare = kids.flatMap((k) => careOn(k, tmrDate).slice(0, 1).map((b) => ({ k, b }))).sort((a, b) => a.b.from.localeCompare(b.b.from))[0]
+  const tmrSum = [
+    tmrEvs.length ? `${tmrEvs.length} Termin${tmrEvs.length > 1 ? 'e' : ''}, ab ${tmrEvs[0].at_time}` : 'keine Termine',
+    tmrCare ? `${tmrCare.k.name}: ${tmrCare.b.label} ab ${tmrCare.b.from}` : null,
+  ].filter(Boolean).join(' · ')
+  const sugPhone = suggestions.filter((s) => !s.id.startsWith('geb')) // Geburtstage stehen schon unter „Wartet auf dich“
+  const planOpen = heuteAnsicht === 'planer'
+
+  const screenGlance = (
+    <section className="screen glance">
+      <div className="g-head"
+        onPointerDown={(e) => { swipeRef.current = { x: e.clientX, y: e.clientY } }}
+        onPointerUp={(e) => {
+          const s = swipeRef.current
+          swipeRef.current = null
+          if (!s) return
+          const dx = e.clientX - s.x
+          if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(e.clientY - s.y) * 1.5) setDayView(addDays(dayView, dx < 0 ? 1 : -1))
+        }}>
+        <Abreiss mini date={dayView} today={today} land={land} onChange={setDayView} />
+        <div className="g-hello">
+          <h2 className="hero">{greeting(nowMin)}, {me.name}.</h2>
+          <p className="g-sum">
+            {fei ? <b className="g-fei">{fei}. </b> : null}{lageText}
+            {db.demo && <> <span className="chip g-demo">Demo</span></>}
+          </p>
+          {!isTodayView && (
+            <button type="button" className="chip brand g-back" onClick={() => setDayView(today)}><Icon name="today" size={14} />Zurück zu heute</button>
+          )}
+        </div>
+        <div className="g-daynav">
+          <button type="button" onClick={() => setDayView(addDays(dayView, -1))} aria-label="Vorheriger Tag"><Icon name="chevL" size={18} /></button>
+          <button type="button" onClick={() => setDayView(addDays(dayView, 1))} aria-label="Nächster Tag – Blatt abreißen"><Icon name="chevR" size={18} /></button>
+        </div>
+      </div>
+
+      {kids.length > 0 && (
+        <div className="g-kids" role="group" aria-label="Wo die Kinder sind">
+          {kids.map((k) => {
+            const { line, sub, who, warn, setup } = kidNow(k)
+            return (
+              <button type="button" key={k.id} className="g-kid" style={{ '--c': k.color }}
+                aria-label={`${k.name}: ${line || 'keine Betreuungszeiten'}. ${sub}${who ? ', ' + who.replace('✋', 'begleitet von') : ''}`}
+                onClick={() => { if (setup) setCareSheet(k.id); else { setFilterWho([k.id]); openDay(dayView) } }}>
+                <span className="gk-top"><span className="avatar sm member" style={{ background: k.color }}>{k.name[0].toUpperCase()}</span>{k.name}</span>
+                <span className={'gk-line' + (setup ? ' setup' : '')}>{line || (setup ? '+ Betreuungszeiten' : 'keine Zeiten')}</span>
+                <span className="gk-sub"><span className="gk-ev">{sub}</span>{who && <span className={'gk-who' + (warn ? ' warn' : '')}>{who}</span>}</span>
+              </button>
+            )
+          })}
+        </div>
+      )}
+
+      <h3 className="label">
+        <span className="lico"><Icon name="today" size={17} /></span>
+        {isTodayView ? 'Heute' : dayView === addDays(today, 1) ? 'Morgen' : WD_LONG[wdIdx(fromIso(dayView))]}
+        <span className="sub">{dayCount ? `${dayCount} Termin${dayCount > 1 ? 'e' : ''}` : 'frei'}</span>
+        <button type="button" className="lact btn sm ghost" onClick={() => setSheet({ date: dayView })}><Icon name="plus" size={15} />Termin</button>
+      </h3>
+      <div className="card g-day">
+        {pastEvs.length > 1
+          ? (
+            <details className="g-fold">
+              <summary>{pastEvs.length} Termine schon vorbei</summary>
+              {pastEvs.map((e) => <EventRow key={e.id} e={e} cls="past" />)}
+            </details>
+          )
+          : pastEvs.map((e) => <EventRow key={e.id} e={e} cls="past" />)}
+        {isTodayView && heuteEvs.length > 0 && <div className="g-now" role="separator" aria-label={'Jetzt, ' + nowTime + ' Uhr'}><span>{nowTime}</span></div>}
+        {restEvs.map((e, i) => <EventRow key={e.id} e={e} hint cls={i === nextI ? 'is-next' : ''} badge={i === nextI ? inTxt(e) : null} />)}
+        {!heuteEvs.length && <div className="empty">{isTodayView ? 'Heute ist nichts eingetragen – ein freier Tag.' : 'Noch nichts eingetragen.'}</div>}
+        {isTodayView && nextI < 0 && nextEv && nextEv.on_date !== today && (
+          <button type="button" className="row g-after" onClick={() => setSheet({ event: nextEv })}>
+            <span className="time">{nextEv.at_time}</span>
+            <span className="dot" style={{ background: mcolor(nextEv.member_id) }} />
+            <div className="row-main">
+              <div className="row-title">Danach: {viewEvent(nextEv).title}</div>
+              <div className="row-meta">{relShort(nextEv.on_date)} · {mname(nextEv.member_id)}</div>
+            </div>
+            <span className="chev">›</span>
+          </button>
+        )}
+      </div>
+
+      {waiting.length > 0 && (
+        <>
+          <h3 className="label" id="anfragen-karte"><span className="lico"><Icon name="inbox" size={17} /></span>Wartet auf dich <span className="sub">{waiting.length}</span></h3>
+          <div className="card g-wait">
+            {waiting.slice(0, 3).map(waitRow)}
+            {waiting.length > 3 && (
+              <details className="g-fold">
+                <summary>{waiting.length - 3} weitere</summary>
+                {waiting.slice(3).map(waitRow)}
+              </details>
+            )}
+          </div>
+        </>
+      )}
+
+      <div className="klapps">
+        <Klapp id="planer-klapp" icon="users" title="Familienplaner"
+          summary={planOpen ? 'Eine Spalte pro Person' : 'Wer ist wann belegt?'}
+          open={planOpen} onToggle={(v) => setAnsicht(v ? 'planer' : 'liste')}
+          extra={!planOpen && <DayBand date={dayView} columns={db.members} events={db.events} viewEvent={viewEvent} careOn={careOn} nowMin={nowMin} today={today} />}>
+          <Planer compact date={dayView} columns={db.members} events={db.events} viewEvent={viewEvent} careOn={careOn} nowMin={nowMin} today={today} byId={byId} pins={pins} maxH={440} foot={false}
+            onOpen={(e) => setSheet({ event: e })} onCare={(id) => { if (!isKid) setCareSheet(id) }}
+            onAdd={(mid, t) => setSheet({ date: dayView, prefill: { member_id: mid, at_time: t } })} />
+        </Klapp>
+        <Klapp id="morgen-klapp" icon="calendar" title={isTodayView ? 'Morgen' : 'Am Tag danach'} summary={tmrSum}
+          open={isOpen('morgen')} onToggle={setOpen('morgen')}>
+          {dayList(tmrDate)}
+        </Klapp>
+        {sugPhone.length > 0 && (
+          <Klapp id="vorschlaege" icon="bulb" title="Vorschläge" badge={sugPhone.length} summary={sugPhone[0].title}
+            open={isOpen('vorschlaege')} onToggle={setOpen('vorschlaege')}>
+            <div className="sug">{sugRows(sugPhone)}</div>
+            <div className="sug-note">Aus euren eigenen Daten – nichts verlässt das Gerät.</div>
+          </Klapp>
+        )}
+        {pinnedEvs.length > 0 && (
+          <Klapp id="geknickt" icon="knick" title="Gemerkt" badge={pinnedEvs.length}
+            summary={`Als Nächstes: ${fmtShort(pinnedEvs[0].on_date)} ${viewEvent(pinnedEvs[0]).title}`}
+            open={isOpen('gemerkt')} onToggle={setOpen('gemerkt')}>
+            {pinnedEvs.map((e) => <EventRow key={e.id} e={e} withDate />)}
+          </Klapp>
+        )}
+        {!isKid && adults.length > 1 && (
+          <Klapp id="balance-klapp" icon="hand" title="Wer übernimmt diese Woche"
+            summary={adults.map((m) => `${m.name} ${careCount(m.id)}×`).join(' · ')}
+            open={isOpen('balance')} onToggle={setOpen('balance')}>
+            {balanceEl}
+          </Klapp>
+        )}
       </div>
     </section>
   )
@@ -1216,7 +1523,7 @@ export default function App() {
         </div>
       </div>
       <input className="search" value={calQ} onChange={(e) => setCalQ(e.target.value)}
-        placeholder="Termine durchsuchen: Name, Typ, Ort … (z. B. „Nachsorge Müller“)" aria-label="Termine durchsuchen" />
+        placeholder={phone ? 'Termine durchsuchen …' : 'Termine durchsuchen: Name, Typ, Ort … (z. B. „Nachsorge Müller“)'} aria-label="Termine durchsuchen" />
       {calQ.trim() ? (() => {
         const q = calQ.trim().toLowerCase()
         const hits = db.events
@@ -1282,12 +1589,26 @@ export default function App() {
         </div>
         <div className="day-panel">
           <h3 className="label">{fmtDate(selDate)}{selDate === today ? ' · heute' : ''}{holidayOn(selDate, land) ? <span className="sub">{holidayOn(selDate, land)}</span> : null}</h3>
-          {calCols.length > 0 && (
-            <Planer compact date={selDate} columns={calCols} events={visible} viewEvent={viewEvent} careOn={careOn} nowMin={nowMin} today={today} byId={byId} pins={pins} maxH={420} foot={false}
-              onOpen={(e) => setSheet({ event: e })} onCare={(id) => { if (!isKid) setCareSheet(id) }}
-              onAdd={(mid, t) => setSheet({ date: selDate, prefill: { member_id: mid, at_time: t } })} />
-          )}
-          <div className="card">{dayList(selDate)}</div>
+          {/* Handy: erst die Liste, der Tagesplaner klappt bei Bedarf auf */}
+          {phone && <div className="card">{dayList(selDate)}</div>}
+          {calCols.length > 0 && (() => {
+            const planer = (
+              <Planer compact date={selDate} columns={calCols} events={visible} viewEvent={viewEvent} careOn={careOn} nowMin={nowMin} today={today} byId={byId} pins={pins} maxH={420} foot={false}
+                onOpen={(e) => setSheet({ event: e })} onCare={(id) => { if (!isKid) setCareSheet(id) }}
+                onAdd={(mid, t) => setSheet({ date: selDate, prefill: { member_id: mid, at_time: t } })} />
+            )
+            if (!phone) return planer
+            return (
+              <div className="klapps">
+                <Klapp id="kal-planer" icon="users" title="Tagesplaner" summary={`${calCols.length === db.members.length ? 'Alle' : calCols.map((c) => c.name).join(', ')} – eine Spalte pro Person`}
+                  open={isOpen('kalplan')} onToggle={setOpen('kalplan')}
+                  extra={!isOpen('kalplan') && <DayBand date={selDate} columns={calCols} events={visible} viewEvent={viewEvent} careOn={careOn} nowMin={nowMin} today={today} />}>
+                  {planer}
+                </Klapp>
+              </div>
+            )
+          })()}
+          {!phone && <div className="card">{dayList(selDate)}</div>}
         </div>
       </div>
       )}
@@ -1875,10 +2196,15 @@ export default function App() {
     'Wer hat Samstag Zeit?',
   ].filter(Boolean)
   const goNav = (id) => { setNav(id); if (id === 'heute') setDayView(today) }
+  // Rote Zahl = wartet auf dich; graue Zahl = nur zur Info (offene Listenpunkte)
+  const softCnt = { listen: db.items.filter((i) => !i.done).length }
+  const badgeEl = (id, cnt) => (cnt > 0
+    ? <span className="cnt">{cnt}</span>
+    : softCnt[id] > 0 ? <span className="cnt soft" aria-label={`${softCnt[id]} offen`}>{softCnt[id]}</span> : null)
   const tab = ([id, ico, label, cnt, short]) => (
     <button key={id} className={'tab' + (nav === id ? ' active' : '')} onClick={() => goNav(id)} aria-current={nav === id ? 'page' : undefined}>
       <span className="ico"><Icon name={ico} size={22} /></span>{short || label}
-      {cnt > 0 && <span className="cnt">{cnt}</span>}
+      {badgeEl(id, cnt)}
     </button>
   )
 
@@ -1911,7 +2237,7 @@ export default function App() {
         {NAVS.map(([id, ico, label, cnt]) => (
           <button key={id} className={'navbtn' + (nav === id ? ' active' : '')} onClick={() => goNav(id)} aria-current={nav === id ? 'page' : undefined}>
             <span className="ico"><Icon name={ico} size={17} /></span>{label}
-            {cnt > 0 && <span className="cnt">{cnt}</span>}
+            {badgeEl(id, cnt)}
           </button>
         ))}
       </nav>
@@ -1920,7 +2246,7 @@ export default function App() {
           title={pins.length ? `${pins.length} gemerkte Termine` : 'Eselsohr: Ecke eines Termins knicken, um ihn zu merken'} aria-label="Gemerkte Termine">
           {pins.length > 0 && <span className="cnt">{pins.length}</span>}
         </button>
-        {nav === 'heute' && screenHeute}
+        {nav === 'heute' && (phone ? screenGlance : screenHeute)}
         {nav === 'kalender' && screenKalender}
         {nav === 'listen' && screenListen}
         {nav === 'praxis' && !isKid && hasMod(me, 'praxis') && screenPraxis}

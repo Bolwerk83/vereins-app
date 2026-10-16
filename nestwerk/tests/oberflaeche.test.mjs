@@ -139,6 +139,79 @@ await m.locator('button', { hasText: 'Erst mal die Demo ansehen' }).click()
 await m.waitForTimeout(500)
 ok(await m.locator('.dock').isVisible() && !(await m.locator('.register').isVisible()), 'Handy: Dock statt Reiter')
 ok((await m.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)), 'Handy: kein seitliches Scrollen')
+m.on('pageerror', (e) => errs.push(e.message))
+const mStore = () => m.evaluate(() => JSON.parse(localStorage.getItem('eselsohr-v1')))
+
+console.log('— Handy: Heute auf einen Blick')
+ok(await m.locator('.glance').isVisible() && !(await m.locator('.h-grid').count()), 'Handy zeigt „Heute auf einen Blick“ statt der Planer-Seite')
+ok(!(await m.locator('.searchpill').isVisible()), 'Kopfzeile bleibt einzeilig – die Suche sitzt im Dock')
+// Was über dem Dock sichtbar ist, ohne einen Millimeter zu scrollen
+const fold = await m.evaluate(() => {
+  const line = window.innerHeight - document.querySelector('.dock-in').getBoundingClientRect().height - 12
+  const top = (sel) => { const el = document.querySelector(sel); return el ? el.getBoundingClientRect() : null }
+  return {
+    line,
+    kopf: top('.g-head')?.bottom,
+    kinder: top('.g-kids')?.bottom,
+    heute: top('.g-day > :not(.g-now)')?.bottom,
+    hoehe: document.documentElement.scrollHeight,
+  }
+})
+ok(fold.kopf < fold.line && fold.kinder < fold.line && fold.heute < fold.line, 'Tag, Kinder und der heutige Plan stehen ohne Scrollen auf dem ersten Bildschirm', fold)
+ok(fold.hoehe < 1600, 'Die ganze Seite ist kurz (vorher 2674 px)', fold.hoehe)
+ok((await m.textContent('.g-kid >> nth=0')).includes('Emma') && /Schule|jetzt|zu Hause/.test(await m.textContent('.g-kid >> nth=0')), 'Kinder-Kachel sagt, wo Emma ist', await m.textContent('.g-kid >> nth=0'))
+ok((await m.textContent('.g-kid >> nth=1')).includes('Betreuungszeiten'), 'Kinder ohne Zeiten laden zum Anlegen ein')
+ok(await m.locator('.g-day .row-wrap.is-next .g-in').count() === 1 || !(await m.locator('.g-day .row-wrap:not(.past)').count()), 'Der nächste Termin ist hervorgehoben (mit „in … / läuft“)')
+ok((await m.textContent('#anfragen-karte')).includes('Wartet auf dich') && (await m.locator('.g-wait .row').count()) === 3, '„Wartet auf dich“ sammelt Anfrage, offenen Kindertermin und Geburtstag')
+ok((await m.textContent('.tab:has-text("Listen") .cnt.soft')) === '3', 'Listen-Reiter zeigt offene Punkte als graue Zahl')
+
+// Familienplaner: zugeklappt das Tagesband, aufgeklappt der große Planer
+ok(await m.locator('#planer-klapp .band').isVisible() && !(await m.locator('#planer-klapp .planer').count()), 'Zugeklappt zeigt der Familienplaner das Tagesband')
+await m.locator('#planer-klapp > summary').click()
+await m.waitForTimeout(250)
+ok(await m.locator('#planer-klapp .planer').isVisible() && !(await m.locator('#planer-klapp .band').count()), 'Aufklappen öffnet den Planer mit einer Spalte pro Person')
+await m.locator('#planer-klapp > summary').click()
+await m.waitForTimeout(200)
+ok(!(await m.locator('#planer-klapp .planer').count()), 'Zuklappen räumt den Planer wieder weg')
+await m.locator('#morgen-klapp > summary').click()
+await m.waitForTimeout(200)
+ok(await m.locator('#morgen-klapp .k-body .row').count() >= 1, '„Morgen“ klappt mit den Terminen von morgen auf')
+
+// Blättern: Pfeil, „Zurück zu heute“, Wischen über den Kopf
+const tmr = new Date(); tmr.setDate(tmr.getDate() + 1)
+await m.evaluate(() => window.scrollTo(0, 0))
+await m.locator('.g-daynav button[aria-label^="Nächster Tag"]').click()
+await m.waitForTimeout(80)
+ok(await m.locator('.g-head .ab-tear').count() === 1, 'Handy: Auch der kleine Block reißt sein Blatt ab')
+await m.waitForTimeout(700)
+ok((await m.textContent('.g-head .ab-pad .ab-num')) === String(tmr.getDate()) && await m.locator('.g-back').isVisible(), 'Pfeil blättert auf morgen, „Zurück zu heute“ erscheint')
+await m.locator('.g-back').click()
+await m.waitForTimeout(300)
+ok((await m.textContent('.g-head .ab-pad .ab-num')) === String(new Date().getDate()) && !(await m.locator('.g-back').count()), '„Zurück zu heute“ springt zurück')
+const hb = await m.locator('.g-hello').boundingBox()
+await m.mouse.move(hb.x + hb.width - 10, hb.y + 20)
+await m.mouse.down()
+await m.mouse.move(hb.x + 10, hb.y + 24, { steps: 6 })
+await m.mouse.up()
+await m.waitForTimeout(700)
+ok((await m.textContent('.g-head .ab-pad .ab-num')) === String(tmr.getDate()), 'Nach links wischen blättert einen Tag weiter')
+await m.locator('.g-back').click()
+await m.waitForTimeout(300)
+
+// Handeln direkt aus „Wartet auf dich“
+await m.locator('.g-wait .row', { hasText: 'Kinderarzt' }).locator('button', { hasText: 'Übernehmen' }).click()
+await m.waitForTimeout(250)
+const mdb = await mStore()
+ok(mdb.events.find((e) => e.title === 'Kinderarzt Vorsorge').zust === mdb.members.find((x) => x.name === 'Jan').id, '„Übernehmen“ teilt Jan für den Kinderarzt ein')
+ok(!(await m.locator('.g-wait .row', { hasText: 'Kinderarzt' }).count()), '… und die Zeile ist erledigt')
+
+// Kinder-Kachel öffnet den Tag des Kindes im Kalender
+await m.locator('.g-kid', { hasText: 'Emma' }).click()
+await m.waitForTimeout(350)
+ok(await m.locator('.kal .month').isVisible() && (await m.locator('.kal-tools .chip.off').count()) === 3, 'Kachel öffnet den Kalender nur mit Emma')
+ok(await m.locator('.day-panel .card .row').first().isVisible() && await m.locator('#kal-planer .band').isVisible(), 'Kalender am Handy: Tagesliste zuerst, Tagesplaner aufklappbar')
+await m.locator('.chip', { hasText: 'Alle zeigen' }).click()
+
 await m.locator('.tab', { hasText: 'Mehr' }).click()
 await m.waitForTimeout(250)
 ok(await m.locator('.more-tile', { hasText: 'Gedächtnispalast' }).isVisible(), '„Mehr“ führt zu Palast, Familie und Profil')
