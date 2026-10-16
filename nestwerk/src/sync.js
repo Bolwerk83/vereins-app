@@ -42,7 +42,8 @@ export const esPush = (code, data, version) => rpc('es_push', { p_code: code, p_
 
 // Gerätespezifisches (wer bin ich auf DIESEM Gerät) wird nicht mitgesynct
 export function stripLocal(db) {
-  const { active, ...rest } = db
+  const rest = { ...db }
+  delete rest.active
   return rest
 }
 

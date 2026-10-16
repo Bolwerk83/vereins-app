@@ -2,13 +2,40 @@ import React, { useEffect, useRef, useState } from 'react'
 import { loadState, saveState, storageWorks } from './store.js'
 import { fetchVereinData, mapTeamEvents } from './verein.js'
 import { loadSyncMeta, saveSyncMeta, newSyncCode, esCreate, esPull, esPush, stripLocal, mergeDb } from './sync.js'
-import { WD, WD_LONG, MONTHS, COLORS, iso, fromIso, wdIdx, fmtDate, fmtShort, addDays, mins, uid, gebInfo, parseIcs, mapsLink } from './util.js'
+import { WD, WD_LONG, MONTHS, COLORS, iso, fromIso, wdIdx, fmtDate, fmtShort, addDays, mins, uid, gebInfo, parseIcs, mapsLink, kw, holidayOn, LAENDER } from './util.js'
 import { Icon, RowIcon, LogoMark } from './icons.jsx'
-import { PTYPES, MODULES, hasMod, VORLAGEN, fillVorlage } from './domain.js'
+import { MODULES, hasMod, saveTextFile } from './domain.js'
 import { useToast, QuickAdd } from './ui.jsx'
 import { Onboarding, demoData, ProfilePicker } from './onboarding.jsx'
-import { Merkzeug, PersonAvatar } from './palace.jsx'
+import { Merkzeug } from './palace.jsx'
 import { EventSheet, MemberSheet, CareSheet, KlientSheet, PTerminSheet, VorlageSheet, VereinSheet, BlitzSheet, BlitzListe, GebForm, WaTemplateRow, SerieWizard, IstWizard, SportPlanForm, ImportRow, WA_DEFAULT } from './sheets.jsx'
+import { Suche } from './Suche.jsx'
+import { buildIndex, longDate } from './search.js'
+import { Abreiss, Planer, NextCard, buildLage, greeting } from './planer.jsx'
+
+const THEME_KEY = 'eselsohr-theme'
+const PLANER_KEY = 'eselsohr-heute-ansicht'
+const readPref = (k, d) => { try { return localStorage.getItem(k) || d } catch { return d } }
+const writePref = (k, v) => { try { localStorage.setItem(k, v) } catch { /* Speicher gesperrt */ } }
+const nowMinutes = () => { const d = new Date(); return d.getHours() * 60 + d.getMinutes() }
+
+// Vorschläge bekommen gezeichnete Symbole statt Emoji
+const SUG_ICON = { geb: 'gift', care: 'school', ist: 'heart', serie: 'repeat', sport: 'activity', sext: 'repeat', konflikt: 'alert', backup: 'archive', blitz: 'bolt' }
+const sugIcon = (id) => SUG_ICON[Object.keys(SUG_ICON).find((k) => id.startsWith(k))] || 'bulb'
+
+/* Im Suchfeld wechseln Beispiel-Fragen aus den eigenen Daten */
+function RotatingExample({ items }) {
+  const [i, setI] = useState(0)
+  useEffect(() => {
+    if (items.length < 2) return undefined
+    let still = false
+    try { still = window.matchMedia('(prefers-reduced-motion: reduce)').matches } catch { /* egal */ }
+    if (still) return undefined
+    const t = setInterval(() => setI((x) => (x + 1) % items.length), 4200)
+    return () => clearInterval(t)
+  }, [items.length])
+  return <><span className="sp-lead">Frag einfach: </span><span className="sp-ex" key={i}>„{items[i % items.length]}“</span></>
+}
 
 /* ================= Haupt-App ================= */
 
@@ -16,6 +43,15 @@ export default function App() {
   const [toast, toastEl] = useToast()
   const [db, setDb] = useState(() => loadState())
   const [nav, setNav] = useState('heute')
+  const [suche, setSuche] = useState(null) // null | { q }
+  const [dayView, setDayView] = useState(() => iso(new Date()))
+  const [nowMin, setNowMin] = useState(nowMinutes)
+  const [mehr, setMehr] = useState(false)
+  const [theme, setThemeState] = useState(() => readPref(THEME_KEY, 'auto'))
+  const [heuteAnsicht, setHeuteAnsicht] = useState(() => readPref(PLANER_KEY, typeof window !== 'undefined' && window.innerWidth < 640 ? 'liste' : 'planer'))
+  const [palaceProv, setPalaceProv] = useState(null)
+  const [palaceQuery, setPalaceQuery] = useState('')
+  const idxCache = useRef({})
   const [sheet, setSheet] = useState(null)
   const [calCursor, setCalCursor] = useState(() => { const d = new Date(); return { y: d.getFullYear(), m: d.getMonth() } })
   const [selDate, setSelDate] = useState(iso(new Date()))
@@ -183,6 +219,40 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  // Neuer Bereich oder neues Profil beginnt oben
+  useEffect(() => { window.scrollTo(0, 0) }, [nav, db?.active])
+
+  // Die Jetzt-Linie im Planer läuft mit
+  useEffect(() => {
+    const t = setInterval(() => setNowMin(nowMinutes()), 30000)
+    return () => clearInterval(t)
+  }, [])
+
+  // Erscheinungsbild: automatisch (Gerät) oder fest hell/dunkel
+  useEffect(() => {
+    const root = document.documentElement
+    if (theme === 'light' || theme === 'dark') root.setAttribute('data-theme', theme)
+    else root.removeAttribute('data-theme')
+  }, [theme])
+  function setTheme(t) {
+    setThemeState(t)
+    writePref(THEME_KEY, t)
+    toast(t === 'dark' ? 'Dunkles Erscheinungsbild an' : t === 'light' ? 'Helles Erscheinungsbild an' : 'Erscheinungsbild folgt jetzt deinem Gerät')
+  }
+
+  // Suche von überall: ⌘K / Strg+K oder „/“
+  useEffect(() => {
+    const onKey = (e) => {
+      if (!dbRef.current?.active) return
+      const tag = (e.target?.tagName || '').toLowerCase()
+      const typing = tag === 'input' || tag === 'textarea' || tag === 'select' || e.target?.isContentEditable
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); setSuche((s) => (s ? null : { q: '' })) }
+      else if (e.key === '/' && !typing && !e.metaKey && !e.ctrlKey) { e.preventDefault(); setSuche({ q: '' }) }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
+
   if (!db) {
     return (
       <>
@@ -227,28 +297,36 @@ export default function App() {
 
   /* ---------- Aktionen ---------- */
 
+  // Neuer Termin nach der Outlook-Regel: eigene und Kinder-Termine gelten sofort,
+  // für andere Erwachsene direkt nur mit Recht und freiem Platz – sonst als Anfrage
+  function createEvent(data) {
+    const target = byId[data.member_id] || me
+    let status = 'fix'
+    let msg
+    if (target.id === me.id || target.kind === 'kid') {
+      msg = data.serie ? `${data.title} eingetragen – jede Woche, 8 Wochen` : `${data.title} eingetragen · ${fmtShort(data.on_date)} ${data.at_time}`
+    } else if (me.can_direct && isFree(target.id, data.on_date, data.at_time)) {
+      msg = `Direkt eingetragen für ${target.name}`
+    } else if (me.can_direct) {
+      status = 'pending'
+      msg = `${target.name} ist da schon belegt – als Anfrage gesendet`
+    } else {
+      status = 'pending'
+      msg = `Anfrage an ${target.name} gesendet – muss erst zusagen`
+    }
+    const rows = (data.serie ? Array.from({ length: 8 }, (_, k) => addDays(data.on_date, k * 7)) : [data.on_date])
+      .map((dateStr) => ({ id: uid(), meta: '', zust: null, ...data, member_id: target.id, on_date: dateStr, status, created_by: me.id }))
+    saveAll({ ...db, events: [...db.events, ...rows] })
+    toast(msg)
+    return rows
+  }
+
   function saveEvent(data) {
     if (sheet.event) {
       saveAll({ ...db, events: db.events.map((e) => (e.id === sheet.event.id ? { ...e, ...data, serie: e.serie } : e)) })
-      toast('Gespeichert ✓ – die ganze Familie sieht den neuen Stand')
+      toast('Gespeichert – die ganze Familie sieht den neuen Stand')
     } else {
-      const target = byId[data.member_id]
-      let status = 'fix', msg
-      if (data.member_id === me.id || target.kind === 'kid') {
-        msg = data.serie ? 'Serientermin angelegt ↻ (8 Wochen)' : 'Termin angelegt ✓'
-      } else if (me.can_direct && isFree(data.member_id, data.on_date, data.at_time)) {
-        msg = `Direkt eingetragen ✓ für ${target.name}`
-      } else if (me.can_direct) {
-        status = 'pending'
-        msg = `${target.name} ist da schon belegt – als Anfrage gesendet 📩`
-      } else {
-        status = 'pending'
-        msg = `Anfrage an ${target.name} gesendet 📩 – muss erst zusagen`
-      }
-      const rows = (data.serie ? Array.from({ length: 8 }, (_, k) => addDays(data.on_date, k * 7)) : [data.on_date])
-        .map((dateStr) => ({ id: uid(), ...data, on_date: dateStr, status, created_by: me.id }))
-      saveAll({ ...db, events: [...db.events, ...rows] })
-      toast(msg)
+      createEvent(data)
     }
     setSheet(null)
   }
@@ -575,28 +653,43 @@ export default function App() {
   // Privatsphäre: fremde Praxis- und Arbeitstermine erscheinen nur als belegter Block
   const viewEvent = (e) => {
     if (e.klid && e.created_by !== me.id) {
-      return { ...e, title: '🩺 Praxis · belegt', meta: mname(e.member_id) + ' · Details privat', masked: true, serie: false }
+      return { ...e, title: 'Praxis · belegt', meta: mname(e.member_id) + ' · Details privat', masked: true, serie: false }
     }
     if (e.src === 'work' && e.member_id !== me.id) {
       const bis = (e.meta || '').split(' · ').find((p) => p.startsWith('bis '))
-      return { ...e, title: '💼 Arbeit', meta: [mname(e.member_id), bis].filter(Boolean).join(' · '), masked: true }
+      return { ...e, title: 'Arbeit', meta: [mname(e.member_id), bis].filter(Boolean).join(' · '), masked: true }
     }
     return e
   }
 
-  const EventRow = ({ e: raw }) => {
+  /* ---------- Eselsohr knicken: Termine persönlich merken ---------- */
+
+  const pins = me.pins || []
+  function togglePin(id) {
+    const has = pins.includes(id)
+    saveAll({ ...db, members: db.members.map((m) => (m.id === me.id ? { ...m, pins: has ? pins.filter((x) => x !== id) : [...pins, id] } : m)) })
+    toast(has ? 'Eselsohr geglättet' : 'Eselsohr geknickt – der Termin steht jetzt unter „Gemerkt“')
+  }
+
+  const EventRow = ({ e: raw, withDate }) => {
     const e = viewEvent(raw)
+    const pinned = pins.includes(raw.id)
     return (
-      <button className="row" onClick={() => setSheet({ event: raw })}>
-        <span className="time">{e.at_time}</span>
-        <span className="dot" style={{ background: mcolor(e.member_id) }} />
-        <div className="row-main">
-          <div className="row-title">{e.title}{e.serie ? ' ↻' : ''}{e.src === 'verein' ? ' ⚽' : ''}{e.sport ? ' 🏃' : ''}</div>
-          <div className="row-meta">{e.masked ? e.meta : mname(e.member_id) + (e.meta ? ' · ' + e.meta : '') + (e.zust ? ' · ✋ ' + mname(e.zust) : '')}</div>
-        </div>
-        {e.status === 'pending' && <span className="chip honey">📩 Anfrage</span>}
-        <span className="chev">›</span>
-      </button>
+      <div className="row-wrap">
+        <button className="row" onClick={() => setSheet({ event: raw })}>
+          <span className="time">{withDate ? fmtShort(e.on_date) + ' ' : ''}{e.at_time}</span>
+          <span className="dot" style={{ background: mcolor(e.member_id) }} />
+          <div className="row-main">
+            <div className="row-title">{e.title}{e.serie ? ' ↻' : ''}{e.src === 'verein' ? ' ⚽' : ''}</div>
+            <div className="row-meta">{e.masked ? e.meta : mname(e.member_id) + (e.meta ? ' · ' + e.meta : '') + (e.zust ? ' · ✋ ' + mname(e.zust) : '')}</div>
+          </div>
+          {e.status === 'pending' && <span className="chip honey">Anfrage</span>}
+          <span className="chev">›</span>
+        </button>
+        <button type="button" className={'dogear' + (pinned ? ' on' : '')} onClick={() => togglePin(raw.id)}
+          aria-pressed={pinned} aria-label={pinned ? 'Eselsohr glätten' : 'Eselsohr knicken – Termin merken'}
+          title={pinned ? 'Gemerkt – zum Glätten klicken' : 'Ecke knicken: Termin merken'} />
+      </div>
     )
   }
 
@@ -612,7 +705,7 @@ export default function App() {
             <span className="time">{b.from}</span>
             <span className="dot" style={{ background: k.color }} />
             <div className="row-main">
-              <div className="row-title">🏫 {k.name} · {b.label}</div>
+              <div className="row-title">{k.name} · {b.label}</div>
               <div className="row-meta">in Betreuung bis {b.to}</div>
             </div>
           </button>
@@ -696,7 +789,7 @@ export default function App() {
       id: 'geb' + nextGeb.g.id, ico: '🎂',
       title: `${nextGeb.g.name} hat ${nextGeb.info.days === 0 ? 'heute' : nextGeb.info.days === 1 ? 'morgen' : `in ${nextGeb.info.days} Tagen`} Geburtstag`,
       meta: (nextGeb.info.age != null ? `Wird ${nextGeb.info.age}. ` : '') + 'Deine WhatsApp-Vorlage ist fertig – Name & Familie schon eingesetzt.',
-      actLabel: '💬 Glückwunsch', act: () => openWa(nextGeb.g),
+      actLabel: 'Glückwunsch', act: () => openWa(nextGeb.g),
     })
     // Betreuungszeiten fehlen
     kids.filter((k) => !(k.care || []).length).forEach((k) => out.push({
@@ -778,7 +871,7 @@ export default function App() {
       id: 'backup', ico: '🛟',
       title: db.lastBackup ? 'Deine letzte Sicherung ist über einen Monat her' : 'Noch nie gesichert – ein Klick reicht',
       meta: cloud.on ? 'Der Familien-Sync läuft, aber ein Backup zusätzlich schadet nie.' : 'Eure Daten leben nur in diesem Browser. Ein Backup macht sie unkaputtbar.',
-      actLabel: '🛟 Backup', act: exportBackup,
+      actLabel: 'Sichern', act: exportBackup,
     })
     // Blitzzettel sammeln sich
     if (myInbox.length >= 3) out.push({
@@ -790,173 +883,316 @@ export default function App() {
     return out.slice(0, 3) // nie mehr als 3 auf einmal – Kopf schonen
   })()
 
+  /* ---------- Suche: Index, Kontext und was Treffer auslösen ---------- */
+
+  const land = db.family.land || 'NW'
+  const nowTime = String(Math.floor(nowMin / 60)).padStart(2, '0') + ':' + String(nowMin % 60).padStart(2, '0')
+  const navDocs = [
+    { id: 'heute', title: 'Heute', sub: 'Abreißkalender, Tageslage und Familienplaner', kw: 'start uebersicht tag planer', to: 'heute' },
+    { id: 'kalender', title: 'Kalender', sub: 'Monatsblatt mit Kalenderwochen und Feiertagen', kw: 'monat woche kw kalenderwoche feiertage', to: 'kalender' },
+    { id: 'listen', title: 'Listen', sub: 'Einkaufen, Zu erledigen, Geburtstage', kw: 'einkauf einkaufen todo geburtstage liste', to: 'listen' },
+    !isKid && { id: 'palast', title: 'Gedächtnispalast', sub: 'Dein verschlüsseltes Gedächtnis', kw: 'palast gedaechtnis notizen personen kontakte dokumente', to: 'merkzeug' },
+    !isKid && hasMod(me, 'praxis') && { id: 'praxis', title: 'Praxis', sub: 'Klientinnen, Soll/Ist-Zeiten, Dokumente', kw: 'praxis klientin hebamme nachsorge abrechnung', to: 'praxis' },
+    !isKid && { id: 'familie', title: 'Familie', sub: 'Mitglieder, Sync, Backup, Papierkorb, Feiertage', kw: 'familie mitglieder sync backup papierkorb rechte bundesland', to: 'familie' },
+    { id: 'profil', title: 'Mein Profil', sub: 'Farbe, Module, Erscheinungsbild', kw: 'profil farbe module einstellungen sport', to: 'profil' },
+    { id: 'new', title: 'Neuer Termin', sub: 'Formular öffnen', kw: 'termin anlegen eintragen neu', cmd: 'new' },
+    !isKid && { id: 'blitz', title: 'Blitzzettel schreiben', sub: 'Gedanken festhalten, bevor sie weg sind', kw: 'blitz notiz gedanke merken idee', cmd: 'blitz' },
+    !isKid && { id: 'backup', title: 'Backup exportieren', sub: 'Alle Daten sichern', kw: 'backup sicherung export datensicherung', cmd: 'backup' },
+    { id: 'theme-dark', title: 'Dunkles Erscheinungsbild', sub: 'Angenehm am Abend', kw: 'dunkel nacht nachtmodus dark', cmd: 'theme-dark' },
+    { id: 'theme-light', title: 'Helles Erscheinungsbild', sub: 'Klar bei Tageslicht', kw: 'hell tag light', cmd: 'theme-light' },
+    { id: 'theme-auto', title: 'Erscheinungsbild automatisch', sub: 'Folgt deinem Gerät', kw: 'automatisch system auto', cmd: 'theme-auto' },
+    { id: 'switch', title: 'Profil wechseln', sub: 'Andere Person auf diesem Gerät', kw: 'wechseln abmelden benutzer profil', cmd: 'switch' },
+    pins.length > 0 && { id: 'geknickt', title: 'Gemerkte Termine', sub: `${pins.length} mit Eselsohr markiert`, kw: 'eselsohr knick gemerkt merken', cmd: 'geknickt' },
+  ].filter(Boolean)
+  const searchCtx = { today, nowMin, nowTime, me, meId: me.id, byId, members: db.members, kids, events: db.events, viewEvent, isFree, praxis: !isKid && hasMod(me, 'praxis'), klienten: praxis.klienten }
+  if (idxCache.current.db !== db || idxCache.current.me !== me.id || idxCache.current.today !== today) {
+    idxCache.current = { db, me: me.id, today, index: buildIndex(db, { ...searchCtx, navs: navDocs }) }
+  }
+  const searchIndex = idxCache.current.index
+
+  function openDay(d) {
+    const x = fromIso(d)
+    setSelDate(d)
+    setCalCursor({ y: x.getFullYear(), m: x.getMonth() })
+    setCalQ('')
+    setNav('kalender')
+  }
+  const scrollToId = (id) => setTimeout(() => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 140)
+  function addBlitz(text) {
+    const d = new Date()
+    saveAll({ ...db, inbox: [...(db.inbox || []), { id: uid(), member_id: me.id, text, ts: Date.now(), date: `${d.getDate()}.${d.getMonth() + 1}.${d.getFullYear()}` }] })
+    toast('Festgehalten – der Blitzzettel ist sicher.')
+  }
+
+  // Alles, was Suche, Tageslage und Antworten auslösen können
+  function runAct(a) {
+    if (!a) return false
+    const ev = a.id ? db.events.find((x) => x.id === a.id) : null
+    switch (a.type) {
+      case 'openEvent': if (ev) setSheet({ event: ev }); break
+      case 'claim': if (ev) claimEvent(ev); break
+      case 'openWa': { const g = gebs.find((x) => x.id === a.id); if (g) openWa(g); break }
+      case 'care': if (!isKid) setCareSheet(a.id); break
+      case 'member': setFilterWho([a.id]); openDay(today); break
+      case 'klient': setPraxisSel(a.id); setNav('praxis'); break
+      case 'item': setNav('listen'); break
+      case 'zettel': setBlitzList(true); break
+      case 'create':
+        createEvent({ title: a.data.title, member_id: a.data.member_id, on_date: a.data.on_date, at_time: a.data.at_time, serie: !!a.data.serie })
+        if (nav === 'heute') setDayView(a.data.on_date)
+        break
+      case 'form': setSheet({ date: a.data.on_date || today, prefill: a.data }); break
+      case 'list': addItem(a.list, a.text); toast(`„${a.text}“ steht auf der ${a.list === 'einkauf' ? 'Einkaufsliste' : 'To-do-Liste'}`); break
+      case 'blitz': addBlitz(a.text); break
+      case 'day': openDay(a.date); break
+      case 'invites': setNav('heute'); scrollToId('anfragen-karte'); break
+      case 'palace': setPalaceQuery(a.q); setNav('merkzeug'); break
+      case 'palaceHit': if (palaceProv) palaceProv.open(a.ref); break
+      case 'nav': {
+        const n = a.nav || {}
+        if (n.to) setNav(n.to)
+        else if (n.cmd === 'new') setSheet({ date: today })
+        else if (n.cmd === 'blitz') setBlitz(true)
+        else if (n.cmd === 'backup') exportBackup()
+        else if (n.cmd === 'theme-dark') setTheme('dark')
+        else if (n.cmd === 'theme-light') setTheme('light')
+        else if (n.cmd === 'theme-auto') setTheme('auto')
+        else if (n.cmd === 'switch') saveAll({ ...db, active: null })
+        else if (n.cmd === 'geknickt') { setNav('heute'); setDayView(today); scrollToId('geknickt') }
+        break
+      }
+      default: break
+    }
+    return false
+  }
+
   /* ---------- Bildschirme ---------- */
 
+  const heuteEvs = db.events.filter((e) => e.on_date === dayView).sort((a, b) => a.at_time.localeCompare(b.at_time))
+  const nextEv = db.events
+    .filter((e) => e.status === 'fix' && (e.on_date > today || (e.on_date === today && mins(e.at_time) + 10 >= nowMin)))
+    .sort((a, b) => a.on_date.localeCompare(b.on_date) || a.at_time.localeCompare(b.at_time))[0]
+  const lage = buildLage({
+    day: dayView, today, nowMin, me, kids, careOn, evs: heuteEvs, viewEvent, byId, invites: invites.length, gebSorted,
+    sportToday: hasMod(me, 'sport') ? db.events.find((e) => e.sport && e.member_id === me.id && e.on_date === dayView && e.status === 'fix') : null,
+  })
+  const pinnedEvs = db.events.filter((e) => pins.includes(e.id) && e.on_date >= today).sort((a, b) => a.on_date.localeCompare(b.on_date) || a.at_time.localeCompare(b.at_time))
+  const sportDone = mySportWeek.filter((e) => e.done).length
+  const setAnsicht = (v) => { setHeuteAnsicht(v); writePref(PLANER_KEY, v) }
+  const maxCare = Math.max(1, ...adults.map((a) => careCount(a.id)))
+
   const screenHeute = (
-    <section className="screen">
-      <h2 className="screen-title">Hallo {me.name}! 👋</h2>
-      <p className="screen-sub">{fmtDate(today)} · {db.family.name}{db.demo ? ' · 🎬 Demo-Modus (Beispieldaten – Beenden unter „Familie“)' : ''}</p>
+    <section className="screen heute">
+      <div className="h-top">
+        <Abreiss date={dayView} today={today} land={land} onChange={setDayView} />
+        <div className="h-hero">
+          <p className="eyebrow">{db.family.name}{db.demo ? ' · Demo mit Beispieldaten' : ''}</p>
+          <h2 className="hero">{greeting(nowMin)}, {me.name}.</h2>
+        </div>
+        <p className="lage">
+          {lage.map((sentence, si) => (
+            <React.Fragment key={si}>
+              {si > 0 && ' '}
+              {sentence.map((seg, i) => (seg.mark
+                ? <button type="button" key={i} className={'mark lage-mark' + (seg.warn ? ' warn' : '')} onClick={() => runAct(seg.act)}>{seg.text}</button>
+                : seg.who
+                  ? <span key={i} className="who" style={{ color: `color-mix(in oklab, ${seg.who} 72%, var(--ink))` }}>{seg.text}</span>
+                  : <React.Fragment key={i}>{seg.text}</React.Fragment>))}
+            </React.Fragment>
+          ))}
+        </p>
+        <div className="h-act">
+          <button className="btn" onClick={() => setSheet({ date: dayView })}><Icon name="plus" size={17} />Termin</button>
+          <button className="btn ghost wide-only" onClick={() => setSuche({ q: '' })}><Icon name="search" size={17} />Fragen</button>
+          {!isKid && <button className="btn ghost" onClick={() => setBlitz(true)}><Icon name="bolt" size={17} />Blitzzettel</button>}
+        </div>
+        <NextCard ev={nextEv} viewEvent={viewEvent} byId={byId} nowMin={nowMin} today={today}
+          onOpen={(e) => setSheet({ event: e })} onAdd={() => setSheet({ date: today })} />
+      </div>
+
       <div className="kpis">
-        <button className="kpi accent" onClick={() => {
-          const d = fromIso(today)
-          setSelDate(today); setCalCursor({ y: d.getFullYear(), m: d.getMonth() }); setCalQ(''); setNav('kalender')
-        }} aria-label="Zum heutigen Tag im Kalender">
-          <div className="num">{db.events.filter((e) => e.on_date === today && e.status === 'fix').length}</div>
-          <div className="cap">Termine heute ›</div>
+        <button className="kpi accent" onClick={() => openDay(today)} aria-label="Zum heutigen Tag im Kalender">
+          <span className="num">{db.events.filter((e) => e.on_date === today && e.status === 'fix').length}</span>
+          <span className="cap">Termine heute</span>
         </button>
         <button className={'kpi' + (invites.length ? ' alert' : '')} onClick={() => {
-          if (invites.length) document.getElementById('anfragen-karte')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-          else toast('Keine offenen Anfragen – alles beantwortet 🎉')
+          if (invites.length) scrollToId('anfragen-karte')
+          else toast('Keine offenen Anfragen – alles beantwortet')
         }} aria-label="Zu deinen Anfragen">
-          <div className="num">{invites.length}</div>
-          <div className="cap">Anfragen an dich ›</div>
+          <span className="num">{invites.length}</span>
+          <span className="cap">Anfragen an dich</span>
         </button>
         <button className="kpi" onClick={() => setNav('listen')} aria-label="Zu den Familienlisten">
-          <div className="num">{db.items.filter((i) => !i.done).length}</div>
-          <div className="cap">Offene Listenpunkte ›</div>
+          <span className="num">{db.items.filter((i) => !i.done).length}</span>
+          <span className="cap">Offene Listenpunkte</span>
         </button>
         {hasMod(me, 'sport') && (
-          <button className={'kpi' + (mySportWeek.filter((e) => e.done).length >= sportGoal ? ' accent' : '')} onClick={() => {
-            setNav('profil')
-            setTimeout(() => document.getElementById('sport-bereich')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 120)
-          }} aria-label="Zu deinem Sport-Bereich">
-            <div className="num">{mySportWeek.filter((e) => e.done).length}/{sportGoal}</div>
-            <div className="cap">🏃 Sport diese Woche ›</div>
+          <button className={'kpi' + (sportDone >= sportGoal ? ' accent' : '')} onClick={() => { setNav('profil'); scrollToId('sport-bereich') }} aria-label="Zu deinem Sport-Bereich">
+            <span className="num">{sportDone}/{sportGoal}</span>
+            <span className="cap">Sport diese Woche</span>
           </button>
         )}
       </div>
 
-      {suggestions.length > 0 && (
-        <>
-          <p className="label">✨ Assistent · schlägt vor, du entscheidest</p>
-          <div className="card">
-            {suggestions.map((s) => (
-              <div className="row" key={s.id}>
-                <span style={{ fontSize: 20, width: 28, textAlign: 'center', flexShrink: 0 }}>{s.ico}</span>
-                <div className="row-main">
-                  <div className="row-title">{s.title}</div>
-                  <div className="row-meta">{s.meta}</div>
-                </div>
-                <button className="btn sm" onClick={s.act}>{s.actLabel}</button>
-              </div>
-            ))}
-            <div className="row"><span className="row-meta">Nutzt nur Daten, die schon in Eselsohr sind – nichts verlässt dein Gerät. Und nie mehr als 3 Vorschläge auf einmal.</span></div>
-          </div>
-        </>
-      )}
+      <div className="h-grid">
+        <div className="h-main">
+          <h3 className="label">
+            Familienplaner <span className="sub">{dayView === today ? 'heute' : longDate(dayView)}</span>
+            <span className="lact themeseg" role="group" aria-label="Darstellung">
+              <button type="button" className={heuteAnsicht === 'planer' ? 'on' : ''} onClick={() => setAnsicht('planer')}>Planer</button>
+              <button type="button" className={heuteAnsicht === 'liste' ? 'on' : ''} onClick={() => setAnsicht('liste')}>Liste</button>
+            </span>
+          </h3>
+          {heuteAnsicht === 'planer'
+            ? <Planer date={dayView} columns={db.members} events={db.events} viewEvent={viewEvent} careOn={careOn} nowMin={nowMin} today={today} byId={byId} pins={pins}
+                onOpen={(e) => setSheet({ event: e })} onCare={(id) => { if (!isKid) setCareSheet(id) }}
+                onAdd={(mid, t) => setSheet({ date: dayView, prefill: { member_id: mid, at_time: t } })} />
+            : <div className="card">{dayList(dayView)}</div>}
+          {pinnedEvs.length > 0 && (
+            <>
+              <h3 className="label" id="geknickt"><span className="lico"><Icon name="knick" size={18} /></span>Gemerkt <span className="sub">mit Eselsohr markiert</span></h3>
+              <div className="card">{pinnedEvs.map((e) => <EventRow key={e.id} e={e} withDate />)}</div>
+            </>
+          )}
+          <h3 className="label">{dayView === today ? 'Morgen schon im Blick' : 'Am Tag danach'} <span className="sub">{fmtDate(addDays(dayView, 1))}</span></h3>
+          <div className="card">{dayList(addDays(dayView, 1))}</div>
+        </div>
 
-      {!isKid && kids.length > 0 && (
-        <>
-          <p className="label">🏫 Wann sind die Kinder in der Betreuung?</p>
-          <div className="card">
-            {kids.map((k) => {
-              const heute = careText(k, today)
-              const morgen = careText(k, addDays(today, 1))
-              const letzter = careOn(k, today).slice(-1)[0]
-              const angelegt = (k.care || []).length > 0
-              return (
-                <button className="row" key={k.id} onClick={() => setCareSheet(k.id)}>
-                  <span className="avatar member" style={{ background: k.color }}>{k.name[0].toUpperCase()}</span>
-                  <div className="row-main">
-                    <div className="row-title">{k.name}: {heute || (angelegt ? 'heute keine Betreuung' : 'noch keine Zeiten hinterlegt')}</div>
-                    <div className="row-meta">
-                      {angelegt
-                        ? (heute ? `ab ${letzter.to} zu Hause` : 'heute übernimmt die Familie') + ' · morgen: ' + (morgen || 'keine Betreuung')
-                        : 'Antippen und Kita-/Schulzeiten anlegen – dann steht hier die Antwort'}
+        <aside className="h-side">
+          {invites.length > 0 && (
+            <>
+              <h3 className="label" id="anfragen-karte"><span className="lico"><Icon name="inbox" size={18} /></span>Anfragen an dich</h3>
+              <div className="card">
+                {invites.map((e) => (
+                  <div className="row" key={e.id}>
+                    <span className="time">{fmtShort(e.on_date)} {e.at_time}</span>
+                    <div className="row-main">
+                      <div className="row-title">{e.title}</div>
+                      <div className="row-meta">von {mname(e.created_by)}{e.meta ? ' · ' + e.meta : ''}</div>
+                    </div>
+                    <div className="invite-actions">
+                      <button className="btn" onClick={() => answerInvite(e, true)} aria-label="Zusagen"><Icon name="check" size={17} /></button>
+                      <button className="btn danger" onClick={() => answerInvite(e, false)} aria-label="Ablehnen"><Icon name="x" size={16} /></button>
                     </div>
                   </div>
-                  <span className="chev">›</span>
-                </button>
-              )
-            })}
-          </div>
-        </>
-      )}
+                ))}
+              </div>
+            </>
+          )}
 
-      {!isKid && (adults.length > 1 || unclaimed.length > 0) && (
-        <>
-          <p className="label">✋ Kinder & Alltag · wer übernimmt diese Woche</p>
-          <div className="card">
-            <div className="row" style={{ gap: 8, flexWrap: 'wrap' }}>
-              {adults.map((m) => (
-                <span key={m.id} className="chip">
-                  <i className="dot" style={{ background: m.color, width: 8, height: 8, borderRadius: '50%' }} />
-                  {m.name}: {careCount(m.id)}×
-                </span>
-              ))}
-              <span className="row-meta" style={{ flexBasis: '100%' }}>Entlastung sichtbar gemacht – ein „✋ Ich übernehme“ zählt sofort mit.</span>
-            </div>
-            {unclaimed.map((e) => (
-              <div className="row" key={e.id}>
-                <span className="time" style={{ minWidth: 76 }}>{fmtShort(e.on_date)} {e.at_time}</span>
-                <div className="row-main">
-                  <div className="row-title">{e.title}</div>
-                  <div className="row-meta">{mname(e.member_id)} · noch niemand eingeteilt</div>
-                </div>
-                <button className="btn sm" onClick={() => claimEvent(e)}>✋ Ich übernehme</button>
+          {suggestions.length > 0 && (
+            <>
+              <h3 className="label"><span className="lico"><Icon name="bulb" size={18} /></span>Vorschläge <span className="sub">du entscheidest</span></h3>
+              <div className="card sug">
+                {suggestions.map((s) => (
+                  <div className="row" key={s.id}>
+                    <span className={'rowico' + (s.id.startsWith('konflikt') ? ' red' : s.id.startsWith('geb') ? ' warn' : '')}><Icon name={sugIcon(s.id)} size={17} /></span>
+                    <div className="row-main">
+                      <div className="row-title">{s.title}</div>
+                      <div className="row-meta">{s.meta}</div>
+                    </div>
+                    <button className="btn sm" onClick={s.act}>{s.actLabel}</button>
+                  </div>
+                ))}
+                <div className="sug-note">Aus euren eigenen Daten – nichts verlässt das Gerät. Nie mehr als drei auf einmal.</div>
               </div>
-            ))}
-          </div>
-        </>
-      )}
-      {invites.length > 0 && (
-        <>
-          <p className="label" id="anfragen-karte">📩 Anfragen an dich</p>
-          <div className="card">
-            {invites.map((e) => (
-              <div className="row" key={e.id}>
-                <span className="time">{fmtShort(e.on_date)} {e.at_time}</span>
-                <div className="row-main">
-                  <div className="row-title">{e.title}</div>
-                  <div className="row-meta">von {mname(e.created_by)}{e.meta ? ' · ' + e.meta : ''}</div>
-                </div>
-                <div className="invite-actions">
-                  <button className="btn" onClick={() => answerInvite(e, true)} aria-label="Zusagen">✓</button>
-                  <button className="btn danger" onClick={() => answerInvite(e, false)} aria-label="Ablehnen">✕</button>
-                </div>
+            </>
+          )}
+
+          {!isKid && kids.length > 0 && (
+            <>
+              <h3 className="label"><span className="lico"><Icon name="school" size={18} /></span>Wann sind die Kinder in der Betreuung?</h3>
+              <div className="card">
+                {kids.map((k) => {
+                  const heute = careText(k, today)
+                  const morgen = careText(k, addDays(today, 1))
+                  const letzter = careOn(k, today).slice(-1)[0]
+                  const angelegt = (k.care || []).length > 0
+                  return (
+                    <button className="row" key={k.id} onClick={() => setCareSheet(k.id)}>
+                      <span className="avatar member" style={{ background: k.color }}>{k.name[0].toUpperCase()}</span>
+                      <div className="row-main">
+                        <div className="row-title">{k.name}: {heute || (angelegt ? 'heute keine Betreuung' : 'noch keine Zeiten hinterlegt')}</div>
+                        <div className="row-meta">
+                          {angelegt
+                            ? (heute ? `ab ${letzter.to} zu Hause` : 'heute übernimmt die Familie') + ' · morgen: ' + (morgen || 'keine Betreuung')
+                            : 'Antippen und Kita- oder Schulzeiten anlegen'}
+                        </div>
+                      </div>
+                      <span className="chev">›</span>
+                    </button>
+                  )
+                })}
               </div>
-            ))}
-          </div>
-        </>
-      )}
-      <div className="cols two">
-        <div>
-          <p className="label">Heute <span className="lact"><button className="btn ghost sm" onClick={() => setSheet({ date: today })}>+ Termin</button></span></p>
-          <div className="card">{dayList(today)}</div>
-        </div>
-        <div>
-          <p className="label">Morgen schon im Blick</p>
-          <div className="card">{dayList(addDays(today, 1))}</div>
-        </div>
+            </>
+          )}
+
+          {!isKid && (adults.length > 1 || unclaimed.length > 0) && (
+            <>
+              <h3 className="label"><span className="lico"><Icon name="hand" size={18} /></span>Wer übernimmt diese Woche</h3>
+              <div className="card">
+                <div className="balance">
+                  {adults.map((m) => (
+                    <div className="bal" key={m.id} style={{ '--c': m.color }}>
+                      <div className="bal-n">{careCount(m.id)}×</div>
+                      <div className="bal-bar"><i style={{ width: (careCount(m.id) / maxCare) * 100 + '%' }} /></div>
+                      <div className="bal-name">{m.name}</div>
+                    </div>
+                  ))}
+                </div>
+                <div className="sug-note">Bringen, holen, betreuen – jedes „Ich übernehme“ zählt sofort mit.</div>
+                {unclaimed.map((e) => (
+                  <div className="row" key={e.id}>
+                    <span className="time" style={{ minWidth: 82 }}>{fmtShort(e.on_date)} {e.at_time}</span>
+                    <div className="row-main">
+                      <div className="row-title">{e.title}</div>
+                      <div className="row-meta">{mname(e.member_id)} · noch niemand eingeteilt</div>
+                    </div>
+                    <button className="btn sm" onClick={() => claimEvent(e)}><Icon name="hand" size={15} />Ich übernehme</button>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+        </aside>
       </div>
     </section>
   )
 
   const cal = (() => {
     const { y, m } = calCursor
-    const first = new Date(y, m, 1)
-    const daysIn = new Date(y, m + 1, 0).getDate()
-    const cells = []
-    for (let i = 0; i < wdIdx(first); i++) cells.push(null)
-    for (let d = 1; d <= daysIn; d++) cells.push(iso(new Date(y, m, d)))
-    return { y, m, cells }
+    const first = iso(new Date(y, m, 1))
+    const last = iso(new Date(y, m + 1, 0))
+    const weeks = []
+    let d = addDays(first, -wdIdx(fromIso(first)))
+    while (d <= last) {
+      const week = []
+      for (let i = 0; i < 7; i++) { week.push(d); d = addDays(d, 1) }
+      weeks.push(week)
+    }
+    return { y, m, weeks }
   })()
+  const calCols = filterWho.length ? db.members.filter((x) => filterWho.includes(x.id)) : db.members
+  const shiftMonth = (n) => setCalCursor(({ y, m }) => { const t = new Date(y, m + n, 1); return { y: t.getFullYear(), m: t.getMonth() } })
 
   const screenKalender = (
-    <section className="screen">
-      <div className="title-row">
+    <section className="screen kal">
+      <div className="kal-head">
         <div>
-          <h2 className="screen-title">Gemeinschaftskalender</h2>
-          <p className="screen-sub">Termine antippen zum Bearbeiten · Namen antippen zum Filtern, auch mehrere</p>
+          <p className="eyebrow">Gemeinschaftskalender · KW {kw(cal.weeks[0][0])}–{kw(cal.weeks[cal.weeks.length - 1][0])}</p>
+          <h2 className="screen-title">{MONTHS[cal.m]} <span className="yr">{cal.y}</span></h2>
         </div>
-        <button className="btn" onClick={() => setSheet({ date: selDate })}>+ Termin</button>
+        <div className="calbar">
+          <div className="seg" role="group" aria-label="Monat wechseln">
+            <button type="button" onClick={() => shiftMonth(-1)} aria-label="Voriger Monat"><Icon name="chevL" size={17} /></button>
+            <button type="button" onClick={() => { const t = new Date(); setCalCursor({ y: t.getFullYear(), m: t.getMonth() }); setSelDate(today) }}>Heute</button>
+            <button type="button" onClick={() => shiftMonth(1)} aria-label="Nächster Monat"><Icon name="chevR" size={17} /></button>
+          </div>
+          <button className="btn" onClick={() => setSheet({ date: selDate })}><Icon name="plus" size={17} />Termin</button>
+        </div>
       </div>
-      <div className="calbar">
-        <button className="btn ghost sm" onClick={() => setCalCursor(({ y, m }) => (m ? { y, m: m - 1 } : { y: y - 1, m: 11 }))} aria-label="Voriger Monat">‹</button>
-        <b style={{ minWidth: 140, textAlign: 'center' }}>{MONTHS[cal.m]} {cal.y}</b>
-        <button className="btn ghost sm" onClick={() => setCalCursor(({ y, m }) => (m < 11 ? { y, m: m + 1 } : { y: y + 1, m: 0 }))} aria-label="Nächster Monat">›</button>
-        <span style={{ flex: 1 }} />
-        <div className="legend" style={{ margin: 0 }}>
+      <div className="kal-tools">
+        <div className="legend">
           {!isKid && kids.length > 0 && (() => {
             const fam = [me.id, ...kids.map((k) => k.id)]
             const active = filterWho.length === fam.length && fam.every((id) => filterWho.includes(id))
@@ -964,7 +1200,7 @@ export default function App() {
               <button className={'chip' + (active ? ' brand' : '')}
                 title="Deine Termine und die der Kinder – ohne den Rest"
                 onClick={() => setFilterWho(active ? [] : fam)}>
-                ✋ Ich + Kinder
+                <Icon name="hand" size={14} />Ich + Kinder
               </button>
             )
           })()}
@@ -975,7 +1211,7 @@ export default function App() {
             </button>
           ))}
           {filterWho.length > 0 && (
-            <button className="chip" onClick={() => setFilterWho([])}>✕ Alle zeigen</button>
+            <button className="chip" onClick={() => setFilterWho([])}><Icon name="x" size={13} />Alle zeigen</button>
           )}
         </div>
       </div>
@@ -996,7 +1232,7 @@ export default function App() {
               const e = viewEvent(raw)
               return (
                 <button className="row" key={e.id} onClick={() => setSheet({ event: raw })}>
-                  <span className="time" style={{ minWidth: 76 }}>{fmtShort(e.on_date)} {e.at_time}</span>
+                  <span className="time" style={{ minWidth: 82 }}>{fmtShort(e.on_date)} {e.at_time}</span>
                   <span className="dot" style={{ background: mcolor(e.member_id) }} />
                   <div className="row-main">
                     <div className="row-title">{e.title}</div>
@@ -1006,30 +1242,51 @@ export default function App() {
                 </button>
               )
             })}
-            {!hits.length && <div className="empty">Kein Termin passt zu „{calQ}“.</div>}
+            {!hits.length && <div className="empty">Kein Termin passt zu „{calQ}“. Die große Suche oben findet auch Geburtstage, Listen und mehr.</div>}
           </div>
         )
       })() : (
       <div className="calgrid">
         <div>
           <div className="month">
-            {WD.map((n) => <div className="mh" key={n}>{n}</div>)}
-            {cal.cells.map((dateStr, i) => dateStr ? (
-              <button key={dateStr}
-                className={'mday' + (dateStr === selDate ? ' sel' : '') + (dateStr === today ? ' today' : '')}
-                onClick={() => setSelDate(dateStr)}>
-                <div className="dnum">{+dateStr.slice(8, 10)}</div>
-                <div className="dots">{eventsOn(dateStr).slice(0, 4).map((e) => <i key={e.id} style={{ background: mcolor(e.member_id) }} />)}</div>
-              </button>
-            ) : <div className="mday pad" key={'p' + i} />)}
+            <div className="mh">KW</div>
+            {WD.map((n, i) => <div className={'mh' + (i === 6 ? ' so' : '')} key={n}>{n}</div>)}
+            {cal.weeks.map((week) => (
+              <React.Fragment key={week[0]}>
+                <div className="kw">{kw(week[0])}</div>
+                {week.map((dateStr) => {
+                  const x = fromIso(dateStr)
+                  const fei = holidayOn(dateStr, land)
+                  const evs = eventsOn(dateStr)
+                  const perMember = calCols.map((mm) => ({ mm, n: evs.filter((e) => e.member_id === mm.id).length })).filter((p) => p.n)
+                  const cls = ['mday', x.getMonth() !== cal.m ? 'other' : '', wdIdx(x) === 6 ? 'so' : '', fei ? 'fei' : '', dateStr === selDate ? 'sel' : '', dateStr === today ? 'today' : ''].filter(Boolean).join(' ')
+                  return (
+                    <button key={dateStr} className={cls} onClick={() => setSelDate(dateStr)}
+                      aria-label={`${fmtDate(dateStr)}${fei ? ', ' + fei : ''}, ${evs.length} Termine`}>
+                      <span className="dnum">{x.getDate()}</span>
+                      {fei && <span className="dfei">{fei}</span>}
+                      <span className="bars">
+                        {perMember.slice(0, 3).map(({ mm, n }) => <i key={mm.id} style={{ '--c': mm.color, width: Math.min(100, 30 + n * 22) + '%' }} />)}
+                        {perMember.length > 3 && <em>+{perMember.length - 3}</em>}
+                      </span>
+                    </button>
+                  )
+                })}
+              </React.Fragment>
+            ))}
           </div>
           <div className="legend">
-            <span className="chip brand">↻ Serie</span>
-            <span className="chip honey">📩 Anfrage – wartet auf Zusage</span>
+            <span className="chip"><i className="dot" style={{ background: 'var(--red)' }} />Sonn- und Feiertage ({LAENDER[land]})</span>
+            <span className="chip honey">Anfrage – wartet auf Zusage</span>
           </div>
         </div>
-        <div>
-          <p className="label">{fmtDate(selDate)}{selDate === today ? ' · heute' : ''}</p>
+        <div className="day-panel">
+          <h3 className="label">{fmtDate(selDate)}{selDate === today ? ' · heute' : ''}{holidayOn(selDate, land) ? <span className="sub">{holidayOn(selDate, land)}</span> : null}</h3>
+          {calCols.length > 0 && (
+            <Planer compact date={selDate} columns={calCols} events={visible} viewEvent={viewEvent} careOn={careOn} nowMin={nowMin} today={today} byId={byId} pins={pins} maxH={420} foot={false}
+              onOpen={(e) => setSheet({ event: e })} onCare={(id) => { if (!isKid) setCareSheet(id) }}
+              onAdd={(mid, t) => setSheet({ date: selDate, prefill: { member_id: mid, at_time: t } })} />
+          )}
           <div className="card">{dayList(selDate)}</div>
         </div>
       </div>
@@ -1037,9 +1294,9 @@ export default function App() {
     </section>
   )
 
-  const listCard = (list, title, ph) => (
+  const listCard = (list, title, ph, ico) => (
     <div>
-      <p className="label">{title}</p>
+      <h3 className="label"><span className="lico"><Icon name={ico} size={18} /></span>{title} <span className="sub">{db.items.filter((i) => i.list === list && !i.done).length} offen</span></h3>
       <div className="card">
         {db.items.filter((i) => i.list === list).map((it) => (
           <div className="row" key={it.id}>
@@ -1051,7 +1308,7 @@ export default function App() {
             <button className="xdel" onClick={() => deleteItem(it)} aria-label="Eintrag löschen">✕</button>
           </div>
         ))}
-        {!db.items.filter((i) => i.list === list).length && <div className="empty">Alles erledigt 🎉</div>}
+        {!db.items.filter((i) => i.list === list).length && <div className="empty">Alles erledigt. Schön.</div>}
         <QuickAdd placeholder={ph} onAdd={(v) => addItem(list, v)} />
       </div>
     </div>
@@ -1062,30 +1319,30 @@ export default function App() {
       <h2 className="screen-title">Familienlisten</h2>
       <p className="screen-sub">Für alle – auch die Kinder. Eintippen, fertig.</p>
       <div className="cols two">
-        {listCard('einkauf', '🛒 Einkaufen', 'Was fehlt? (Enter)')}
-        {listCard('todo', '✅ Zu erledigen', 'Was ist zu tun? (Enter)')}
+        {listCard('einkauf', 'Einkaufen', 'Was fehlt? (Enter)', 'list')}
+        {listCard('todo', 'Zu erledigen', 'Was ist zu tun? (Enter)', 'check')}
       </div>
-      <p className="label">🎂 Geburtstage · nie wieder vergessen</p>
+      <h3 className="label"><span className="lico"><Icon name="gift" size={18} /></span>Geburtstage <span className="sub">nie wieder vergessen</span></h3>
       <div className="card">
         {gebSorted.map(({ g, info }) => (
           <div className="row" key={g.id}>
-            <span style={{ fontSize: 20, width: 28, textAlign: 'center', flexShrink: 0 }}>🎂</span>
+            <span className={'rowico' + (info && info.days <= 3 ? ' warn' : '')}><Icon name="gift" size={17} /></span>
             <div className="row-main">
               <div className="row-title">{g.name}</div>
               <div className="row-meta">
                 {g.date}
-                {info && ' · ' + (info.days === 0 ? 'heute! 🎉' : info.days === 1 ? 'morgen' : `in ${info.days} Tagen`)}
+                {info && ' · ' + (info.days === 0 ? 'heute!' : info.days === 1 ? 'morgen' : `in ${info.days} Tagen`)}
                 {info?.age != null && ` · wird ${info.age}`}
               </div>
             </div>
-            <button className="btn sm" onClick={() => openWa(g)}>💬 WhatsApp</button>
+            <button className="btn sm" onClick={() => openWa(g)}><Icon name="message" size={15} />WhatsApp</button>
             {!isKid && <button className="xdel" onClick={() => deleteGeb(g)} aria-label={g.name + ' löschen'}>✕</button>}
           </div>
         ))}
         {!gebs.length && <div className="empty">Noch keine Geburtstage gemerkt – unten eintragen, Eselsohr erinnert rechtzeitig.</div>}
         {!isKid && <GebForm onAdd={addGeb} />}
         {!isKid && <WaTemplateRow key={db.waTemplate || 'std'} value={db.waTemplate || WA_DEFAULT}
-          onSave={(v) => { saveAll({ ...db, waTemplate: v }); toast('💬 Vorlage gespeichert ✓') }} />}
+          onSave={(v) => { saveAll({ ...db, waTemplate: v }); toast('Vorlage gespeichert') }} />}
       </div>
     </section>
   )
@@ -1102,18 +1359,18 @@ export default function App() {
           <h2 className="screen-title serif">{k.name}</h2>
           <p className="screen-sub">{kt.length} Termin{kt.length === 1 ? '' : 'e'} · {done.reduce((a, t) => a + (+t.ist || 0), 0)} Min. dokumentiert</p>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 14 }}>
-            {k.adresse && <a className="btn" href={mapsLink(k.adresse)} target="_blank" rel="noreferrer">🚗 Anfahrt</a>}
-            {k.telefon && <a className="btn ghost" href={'tel:' + k.telefon}>📞 Anrufen</a>}
-            <button className="btn ghost" onClick={() => setPTerminSheet({ klid: k.id })}>➕ Termin</button>
-            <button className="btn ghost" onClick={() => setVorlageSheet(k.id)}>📄 Dokument</button>
-            <button className="btn ghost" onClick={() => setKlientSheet(k.id)}>✏️ Bearbeiten</button>
+            {k.adresse && <a className="btn" href={mapsLink(k.adresse)} target="_blank" rel="noreferrer"><Icon name="arrow" size={16} />Anfahrt</a>}
+            {k.telefon && <a className="btn ghost" href={'tel:' + k.telefon}>Anrufen</a>}
+            <button className="btn ghost" onClick={() => setPTerminSheet({ klid: k.id })}><Icon name="plus" size={16} />Termin</button>
+            <button className="btn ghost" onClick={() => setVorlageSheet(k.id)}><Icon name="file" size={16} />Dokument</button>
+            <button className="btn ghost" onClick={() => setKlientSheet(k.id)}><Icon name="pencil" size={16} />Bearbeiten</button>
           </div>
           <div className="card">
             <div className="fact"><b>Telefon</b><span>{k.telefon || '—'}</span></div>
             <div className="fact"><b>Adresse</b><span>{k.adresse || '—'}</span></div>
             <div className="fact"><b>Notiz</b><span>{k.notiz || '—'}</span></div>
           </div>
-          <p className="label">Termin-Historie · Ist-Zeit direkt eintragen</p>
+          <h3 className="label">Termin-Historie <span className="sub">Ist-Zeit direkt eintragen</span></h3>
           <div className="card">
             {kt.map((t) => (
               <div className="row" key={t.id}>
@@ -1132,7 +1389,7 @@ export default function App() {
                 </label>
               </div>
             ))}
-            {!kt.length && <div className="empty">Noch keine Termine – oben „➕ Termin“ antippen.</div>}
+            {!kt.length && <div className="empty">Noch keine Termine – oben „Termin“ antippen.</div>}
           </div>
         </section>
       )
@@ -1157,7 +1414,7 @@ export default function App() {
           placeholder="Nach Namen suchen …" aria-label="Klientinnen durchsuchen" />
         <div className="cols two">
           <div>
-            <p className="label">Klientinnen</p>
+            <h3 className="label">Klientinnen</h3>
             <div className="card">
               {hits.map((k) => {
                 const kt = klientTermine(k.id)
@@ -1184,7 +1441,7 @@ export default function App() {
             </div>
           </div>
           <div>
-            <p className="label">Nächste Praxistermine</p>
+            <h3 className="label">Nächste Praxistermine</h3>
             <div className="card">
               {upcoming.map((e) => (
                 <button className="row" key={e.id} onClick={() => { if (e.klid) setPraxisSel(e.klid) }}>
@@ -1218,7 +1475,7 @@ export default function App() {
         <button className="btn ghost" onClick={() => saveAll({ ...db, active: null })}>⇄ Profil wechseln</button>
       </div>
 
-      <p className="label">Meine Farbe · färbt deine ganze App</p>
+      <h3 className="label">Meine Farbe <span className="sub">färbt deine ganze App</span></h3>
       <div className="card">
         <div className="row">
           <div className="colorpick">
@@ -1233,9 +1490,16 @@ export default function App() {
         </div>
       </div>
 
+      <h3 className="label">Erscheinungsbild <span className="sub">nur auf diesem Gerät</span></h3>
+      <div className="themeseg" role="group" aria-label="Erscheinungsbild">
+        {[['auto', 'monitor', 'Automatisch'], ['light', 'sun', 'Hell'], ['dark', 'moon', 'Dunkel']].map(([k, ico, l]) => (
+          <button type="button" key={k} className={theme === k ? 'on' : ''} onClick={() => setTheme(k)}><Icon name={ico} size={15} />{l}</button>
+        ))}
+      </div>
+
       {!isKid && (
         <>
-          <p className="label">Meine Module · nur du siehst deren Inhalte</p>
+          <h3 className="label">Meine Module <span className="sub">nur du siehst deren Inhalte</span></h3>
           <div className="card">
             {MODULES.map((mod) => hasMod(me, mod.id) ? (
               <div className="row" key={mod.id}>
@@ -1250,17 +1514,17 @@ export default function App() {
               <button className="row" key={mod.id} onClick={() => toggleModule(mod.id)}>
                 <RowIcon name={mod.ico} />
                 <div className="row-main">
-                  <div className="row-title">➕ {mod.name}</div>
+                  <div className="row-title">{mod.name}</div>
                   <div className="row-meta">{mod.desc}</div>
                 </div>
-                <span className="chev">›</span>
+                <span className="chip brand"><Icon name="plus" size={13} />Hinzufügen</span>
               </button>
             ))}
           </div>
 
           {hasMod(me, 'praxis') && (
             <>
-              <p className="label">🩺 Praxis</p>
+              <h3 className="label">Praxis</h3>
               <div className="card">
                 <button className="row" onClick={() => setNav('praxis')}>
                   <RowIcon name="heart" />
@@ -1276,7 +1540,7 @@ export default function App() {
 
           {hasMod(me, 'sport') && (
             <>
-              <p className="label" id="sport-bereich">🏃 Sport · dein Ausgleich, fest eingeplant</p>
+              <h3 className="label" id="sport-bereich">Sport <span className="sub">dein Ausgleich, fest eingeplant</span></h3>
               <div className="card">
                 <div className="row">
                   <RowIcon name="activity" />
@@ -1298,7 +1562,7 @@ export default function App() {
                         <input type="checkbox" className="check" checked={!!e.done} onChange={() => toggleSportDone(e)} aria-label={'Gemacht: ' + e.title} />
                         <div className="row-main">
                           <div className={'row-title' + (e.done ? ' done-text' : '')}>{e.title}</div>
-                          <div className="row-meta">{fmtShort(e.on_date)} {e.at_time} · abhaken, wenn gemacht 💪</div>
+                          <div className="row-meta">{fmtShort(e.on_date)} {e.at_time} · abhaken, wenn gemacht</div>
                         </div>
                       </label>
                     ))}
@@ -1310,7 +1574,7 @@ export default function App() {
 
           {hasMod(me, 'verein') && (
             <>
-              <p className="label">⚽ Vereins-App</p>
+              <h3 className="label">Vereins-App</h3>
               <div className="card">
                 {(db.verein?.links || []).map((l) => (
                   <div className="row" key={l.tid}>
@@ -1346,7 +1610,7 @@ export default function App() {
 
           {hasMod(me, 'arbeit') && (
             <>
-              <p className="label">Arbeitskalender</p>
+              <h3 className="label">Arbeitskalender</h3>
               <div className="card">
                 <button className="row" onClick={() => icsInput.current?.click()}>
                   <RowIcon name="upload" />
@@ -1374,7 +1638,7 @@ export default function App() {
 
           {hasMod(me, 'connect') && (
             <>
-              <p className="label">Anbindungen · deine Daten in anderen Programmen</p>
+              <h3 className="label">Anbindungen <span className="sub">deine Daten in anderen Programmen</span></h3>
               <div className="card">
                 <button className="row" onClick={exportIcs}>
                   <RowIcon name="calendar" />
@@ -1439,7 +1703,7 @@ export default function App() {
       {db.demo && (
         <div className="card" style={{ marginBottom: 4 }}>
           <div className="row">
-            <span style={{ fontSize: 20, width: 28, textAlign: 'center', flexShrink: 0 }}>🎬</span>
+            <span className="rowico"><Icon name="info" size={17} /></span>
             <div className="row-main">
               <div className="row-title">Demo-Modus</div>
               <div className="row-meta">Alles hier sind Beispieldaten. Profil wechseln lohnt sich: Anne hat das Praxis-Modul, die Kinder sehen nur ihren Teil.</div>
@@ -1448,7 +1712,7 @@ export default function App() {
           </div>
         </div>
       )}
-      <p className="label">Mitglieder</p>
+      <h3 className="label"><span className="lico"><Icon name="users" size={18} /></span>Mitglieder</h3>
       <div className="card">
         {db.members.map((m) => (
           <div className="row" key={m.id}>
@@ -1468,7 +1732,7 @@ export default function App() {
             )}
             {m.kind === 'kid' && (
               <button className="btn sm ghost" onClick={() => setCareSheet(m.id)}>
-                🏫 Betreuung{(m.care || []).length ? ` · ${m.care.length}` : ''}
+                <Icon name="school" size={14} />Betreuung{(m.care || []).length ? ` · ${m.care.length}` : ''}
               </button>
             )}
           </div>
@@ -1484,12 +1748,12 @@ export default function App() {
           </button>
         )}
       </div>
-      <p className="label">🔗 Familien-Sync · alle Geräte, ein Stand</p>
+      <h3 className="label"><span className="lico"><Icon name="cloud" size={18} /></span>Familien-Sync <span className="sub">alle Geräte, ein Stand</span></h3>
       <div className="card">
         {cloud.on ? (
           <>
             <div className="row">
-              <span style={{ fontSize: 20, width: 28, textAlign: 'center', flexShrink: 0 }}>{cloud.error ? '⚠️' : '🔗'}</span>
+              <span className={'rowico' + (cloud.error ? ' warn' : ' ok')}><Icon name={cloud.error ? 'alert' : 'cloud'} size={17} /></span>
               <div className="row-main">
                 <div className="row-title">{cloud.error ? 'Sync gestört – Daten bleiben lokal sicher' : 'Sync läuft'}</div>
                 <div className="row-meta">
@@ -1512,7 +1776,7 @@ export default function App() {
           </>
         ) : (
           <button className="row" onClick={enableCloud}>
-            <span style={{ fontSize: 20, width: 28, textAlign: 'center', flexShrink: 0 }}>🔗</span>
+            <span className="rowico"><Icon name="cloud" size={17} /></span>
             <div className="row-main">
               <div className="row-title">Familien-Sync einschalten</div>
               <div className="row-meta">Damit sehen alle in der Familie denselben Stand – auf jedem Handy. Du bekommst einen Familien-Code zum Teilen.</div>
@@ -1523,11 +1787,11 @@ export default function App() {
       </div>
       {(db.trash || []).length > 0 && (
         <>
-          <p className="label">🗑️ Papierkorb <span className="lact"><button className="btn ghost sm" onClick={emptyTrash}>Leeren</button></span></p>
+          <h3 className="label" id="papierkorb"><span className="lico"><Icon name="trash" size={18} /></span>Papierkorb <span className="sub">30 Tage wiederherstellbar</span><span className="lact"><button className="btn ghost sm" onClick={emptyTrash}>Leeren</button></span></h3>
           <div className="card">
             {(db.trash || []).map((t) => (
               <div className="row" key={t.id}>
-                <span style={{ fontSize: 18, width: 28, textAlign: 'center', flexShrink: 0 }}>{{ event: '📅', item: '✅', zettel: '⚡', geb: '🎂' }[t.kind] || '🗑️'}</span>
+                <span className="rowico"><Icon name={{ event: 'calendar', item: 'list', zettel: 'bolt', geb: 'gift' }[t.kind] || 'trash'} size={17} /></span>
                 <div className="row-main">
                   <div className="row-title">{t.row.title || t.row.text || t.row.name || '—'}</div>
                   <div className="row-meta">gelöscht am {fmtShort(t.delAt)} · verschwindet nach 30 Tagen endgültig</div>
@@ -1538,7 +1802,20 @@ export default function App() {
           </div>
         </>
       )}
-      <p className="label">Sicherung</p>
+      <h3 className="label"><span className="lico"><Icon name="today" size={18} /></span>Feiertage <span className="sub">rot im Kalender</span></h3>
+      <div className="card">
+        <div className="row">
+          <div className="row-main">
+            <div className="row-title">Bundesland</div>
+            <div className="row-meta">Gesetzliche Feiertage erscheinen rot im Abreißkalender und im Monatsblatt.</div>
+          </div>
+          <select className="search" style={{ width: 'auto', margin: 0, height: 40 }} value={land} aria-label="Bundesland für Feiertage"
+            onChange={(e) => { saveAll({ ...db, family: { ...db.family, land: e.target.value } }); toast('Feiertage für ' + LAENDER[e.target.value]) }}>
+            {Object.entries(LAENDER).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+          </select>
+        </div>
+      </div>
+      <h3 className="label"><span className="lico"><Icon name="archive" size={18} /></span>Sicherung</h3>
       <div className="card">
         <button className="row" onClick={exportBackup}>
           <RowIcon name="download" />
@@ -1559,7 +1836,7 @@ export default function App() {
           }
         }} />
       </div>
-      <p className="label">Hinweis</p>
+      <h3 className="label">Hinweis</h3>
       <div className="card">
         <div className="row">
           <RowIcon name={persistent ? 'archive' : 'alert'} />
@@ -1567,7 +1844,7 @@ export default function App() {
             <div className="row-title">{persistent ? 'Daten liegen nur in diesem Browser' : 'Achtung: Speichern in diesem Browser nicht möglich'}</div>
             <div className="row-meta">
               {persistent
-                ? 'Keine Datenbank, kein Server. Regelmäßig ein Backup exportieren – die Cloud-Synchronisierung kommt in Stufe 2.'
+                ? (cloud.on ? 'Der Familien-Sync hält alle Geräte auf einem Stand. Ein Backup ab und zu schadet trotzdem nie.' : 'Ohne Familien-Sync bleibt alles auf diesem Gerät. Regelmäßig ein Backup exportieren – oder oben den Sync einschalten.')
                 : 'Daten leben nur in dieser Sitzung. Exportiere ein Backup, bevor du die Seite schließt.'}
             </div>
           </div>
@@ -1577,72 +1854,130 @@ export default function App() {
   )
 
   const NAVS = [
-    ['heute', 'home', 'Heute', invites.length],
+    ['heute', 'today', 'Heute', invites.length],
     ['kalender', 'calendar', 'Kalender', 0],
-    ['listen', 'cart', 'Listen', 0],
+    ['listen', 'list', 'Listen', 0],
     ...(!isKid ? [
       ...(hasMod(me, 'praxis') ? [['praxis', 'heart', 'Praxis', 0]] : []),
       ['merkzeug', 'landmark', 'Gedächtnispalast', 0, 'Palast'],
       ['familie', 'users', 'Familie', 0],
     ] : []),
   ]
+  const DOCK = NAVS.filter(([id]) => id === 'heute' || id === 'kalender' || id === 'listen')
+  const MORE = NAVS.filter(([id]) => !['heute', 'kalender', 'listen'].includes(id))
+  const MORE_SUB = { praxis: 'Klientinnen und Abrechnung', merkzeug: 'Verschlüsselt, nur für dich', familie: 'Mitglieder, Sync, Backup' }
+  const exampleQ = [
+    kids[0] && `Wo ist ${kids[0].name} gerade?`,
+    'Was ist morgen?',
+    gebSorted.find((x) => x.info) && `Wann hat ${gebSorted.find((x) => x.info).g.name} Geburtstag?`,
+    kids[0] && `Wer holt ${kids[0].name} heute?`,
+    'Milch auf die Liste',
+    'Wer hat Samstag Zeit?',
+  ].filter(Boolean)
+  const goNav = (id) => { setNav(id); if (id === 'heute') setDayView(today) }
+  const tab = ([id, ico, label, cnt, short]) => (
+    <button key={id} className={'tab' + (nav === id ? ' active' : '')} onClick={() => goNav(id)} aria-current={nav === id ? 'page' : undefined}>
+      <span className="ico"><Icon name={ico} size={22} /></span>{short || label}
+      {cnt > 0 && <span className="cnt">{cnt}</span>}
+    </button>
+  )
 
   return (
     <div className="shell">
-      <aside className="side">
-        <div className="logo serif"><LogoMark size={28} />Esels<span className="nest">ohr</span></div>
-        {NAVS.map(([id, ico, label, cnt]) => (
-          <button key={id} className={'navbtn' + (nav === id ? ' active' : '')} onClick={() => setNav(id)}>
-            <span className="ico"><Icon name={ico} /></span>{label}
-            {cnt > 0 && <span className="cnt">{cnt}</span>}
-          </button>
-        ))}
-        <div className="spacer" />
-        <div className="demonote">{db.family.name} · {db.members.length} Mitglieder · Daten nur auf diesem Gerät</div>
-      </aside>
-      <div className="mainwrap">
-        <header className="topbar">
-          <h1 className="wordmark serif"><LogoMark size={25} />Esels<span className="nest">ohr</span></h1>
-          <span className="sp" />
+      <header className="mast">
+        <button type="button" className="brand" onClick={() => { setNav('heute'); setDayView(today) }} aria-label="Eselsohr – zu Heute">
+          <LogoMark size={36} /><span className="brand-word">Esels<em>ohr</em></span>
+        </button>
+        <button type="button" className="searchpill" onClick={() => setSuche({ q: '' })} aria-label="Suchen, fragen oder eintragen (Strg+K)">
+          <Icon name="search" size={19} />
+          <span className="sp-text"><RotatingExample items={exampleQ} /></span>
+          <kbd>⌘K</kbd>
+        </button>
+        <div className="mast-act">
+          {cloud.on && <span className={'syncdot' + (cloud.error ? ' err' : '')} title={cloud.error ? 'Sync gestört – Daten bleiben lokal sicher' : 'Familien-Sync aktiv'} />}
           {!isKid && (
-            <button className="iconbtn" aria-label="Blitzzettel – schnell festhalten" title="Blitzzettel" onClick={() => setBlitz(true)}>⚡</button>
+            <button className="iconbtn" aria-label="Blitzzettel – schnell festhalten" title="Blitzzettel" onClick={() => setBlitz(true)}>
+              <Icon name="bolt" size={19} />
+              {myInbox.length > 0 && <span className="cnt" style={{ position: 'absolute', top: -6, right: -6 }}>{myInbox.length}</span>}
+            </button>
           )}
           <button className="userchip" onClick={() => setNav('profil')} aria-label="Mein Profil">
             <span className="avatar sm member" style={{ background: me.color }}>{me.name[0].toUpperCase()}</span>
-            {me.name}
+            <span className="uc-name">{me.name}</span>
           </button>
-        </header>
-        <main>
-          {nav === 'heute' && screenHeute}
-          {nav === 'kalender' && screenKalender}
-          {nav === 'listen' && screenListen}
-          {nav === 'praxis' && !isKid && hasMod(me, 'praxis') && screenPraxis}
-          {nav === 'profil' && screenProfil}
-          {nav === 'merkzeug' && !isKid && (
-            <Merkzeug
-              blob={db.memories[me.id] || null}
-              onSaveBlob={(blob, opts) => saveAll({ ...db, memories: { ...db.memories, [me.id]: blob }, ...(opts?.clearInbox ? { inbox: (db.inbox || []).filter((i) => i.member_id !== me.id) } : {}) })}
-              ownerName={me.name}
-              toast={toast}
-              inbox={(db.inbox || []).filter((i) => i.member_id === me.id)}
-              onImportInbox={() => saveAll({ ...db, inbox: (db.inbox || []).filter((i) => i.member_id !== me.id) })}
-            />
-          )}
-          {nav === 'familie' && !isKid && screenFamilie}
-          <footer className="note">Eselsohr · eure Daten gehören euch · Gedächtnispalast Ende-zu-Ende-verschlüsselt</footer>
-        </main>
-        <nav className="tabs">
-          <div className="inner">
-            {NAVS.map(([id, ico, label, , short]) => (
-              <button key={id} className={'tab' + (nav === id ? ' active' : '')} onClick={() => setNav(id)}>
-                <span className="ico"><Icon name={ico} /></span>{short || label}
+        </div>
+      </header>
+      <nav className="register" aria-label="Bereiche">
+        {NAVS.map(([id, ico, label, cnt]) => (
+          <button key={id} className={'navbtn' + (nav === id ? ' active' : '')} onClick={() => goNav(id)} aria-current={nav === id ? 'page' : undefined}>
+            <span className="ico"><Icon name={ico} size={17} /></span>{label}
+            {cnt > 0 && <span className="cnt">{cnt}</span>}
+          </button>
+        ))}
+      </nav>
+      <main className="blatt">
+        <button type="button" className="blatt-ohr" onClick={() => runAct({ type: 'nav', nav: { cmd: 'geknickt' } })}
+          title={pins.length ? `${pins.length} gemerkte Termine` : 'Eselsohr: Ecke eines Termins knicken, um ihn zu merken'} aria-label="Gemerkte Termine">
+          {pins.length > 0 && <span className="cnt">{pins.length}</span>}
+        </button>
+        {nav === 'heute' && screenHeute}
+        {nav === 'kalender' && screenKalender}
+        {nav === 'listen' && screenListen}
+        {nav === 'praxis' && !isKid && hasMod(me, 'praxis') && screenPraxis}
+        {nav === 'profil' && screenProfil}
+        {nav === 'merkzeug' && !isKid && (
+          <Merkzeug
+            blob={db.memories[me.id] || null}
+            onSaveBlob={(blob, opts) => saveAll({ ...db, memories: { ...db.memories, [me.id]: blob }, ...(opts?.clearInbox ? { inbox: (db.inbox || []).filter((i) => i.member_id !== me.id) } : {}) })}
+            ownerName={me.name}
+            toast={toast}
+            inbox={(db.inbox || []).filter((i) => i.member_id === me.id)}
+            initialQuery={palaceQuery}
+            onQueryUsed={() => setPalaceQuery('')}
+            onProvider={setPalaceProv}
+          />
+        )}
+        {nav === 'familie' && !isKid && screenFamilie}
+      </main>
+      <footer className="note">Eselsohr · eure Daten gehören euch · Gedächtnispalast Ende-zu-Ende-verschlüsselt</footer>
+      <nav className="dock" aria-label="Bereiche">
+        <div className="dock-in">
+          {DOCK.slice(0, 2).map(tab)}
+          <button className="tab dock-search" onClick={() => setSuche({ q: '' })} aria-label="Suchen, fragen oder eintragen">
+            <span className="ico"><Icon name="search" size={24} /></span><span>Suche</span>
+          </button>
+          {DOCK.slice(2).map(tab)}
+          {MORE.length > 0
+            ? <button className={'tab' + (MORE.some(([id]) => id === nav) || nav === 'profil' ? ' active' : '')} onClick={() => setMehr(true)}><span className="ico"><Icon name="more" size={22} /></span>Mehr</button>
+            : <button className={'tab' + (nav === 'profil' ? ' active' : '')} onClick={() => setNav('profil')}><span className="ico"><Icon name="user" size={22} /></span>Ich</button>}
+        </div>
+      </nav>
+      {mehr && (
+        <div className="overlay" onClick={(e) => { if (e.target === e.currentTarget) setMehr(false) }}>
+          <div className="sheet">
+            <h3>Mehr<button type="button" className="x" onClick={() => setMehr(false)} aria-label="Schließen">✕</button></h3>
+            <div className="more-grid">
+              {MORE.map(([id, ico, label]) => (
+                <button key={id} type="button" className="more-tile" onClick={() => { setNav(id); setMehr(false) }}>
+                  <span className="rowico"><Icon name={ico} size={19} /></span>{label}<small>{MORE_SUB[id]}</small>
+                </button>
+              ))}
+              <button type="button" className="more-tile" onClick={() => { setNav('profil'); setMehr(false) }}>
+                <span className="rowico"><Icon name="user" size={19} /></span>Mein Profil<small>Farbe, Module, Erscheinungsbild</small>
               </button>
-            ))}
+            </div>
           </div>
-        </nav>
-      </div>
+        </div>
+      )}
+      {suche && (
+        <Suche initial={suche.q} onClose={() => setSuche(null)} db={db} index={searchIndex} ctx={searchCtx}
+          api={{ run: runAct }} palace={nav === 'merkzeug' ? palaceProv : null} />
+      )}
       {sheet && (
-        <EventSheet initial={sheet} members={db.members} me={me} stats={titleStats}
+        <EventSheet key={sheet.event ? sheet.event.id : `neu-${sheet.date || ''}-${sheet.prefill?.member_id || ''}-${sheet.prefill?.at_time || ''}`}
+          initial={sheet} members={db.members} me={me} stats={titleStats}
+          pinned={sheet.event ? pins.includes(sheet.event.id) : false}
+          onPin={sheet.event ? () => togglePin(sheet.event.id) : null}
           onSave={saveEvent} onDelete={deleteEvent} onClose={() => setSheet(null)} />
       )}
       {blitz && (

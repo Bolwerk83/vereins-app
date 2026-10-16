@@ -39,10 +39,40 @@ Auf einer echten Domain (z. B. Vercel) ist Eselsohr installierbar: Safari/Chrome
 → „Zum Home-Bildschirm“. Eigenes Icon, Vollbild, funktioniert nach dem ersten
 Besuch auch offline (Service Worker, Netz-zuerst-Strategie).
 
+## Bedienung auf einen Blick
+
+- **Heute** ist ein Familienplaner: links der Abreißkalender (Pfeil oder Wischen
+  reißt das Blatt ab, Sonn- und Feiertage rot, mit Kalenderwoche), daneben die
+  **Tageslage** – der Tag in ein paar Sätzen, wichtige Stellen markiert und
+  anklickbar. Darunter eine **Spalte pro Person** mit Betreuungszeiten,
+  offenen Kinderterminen und roter Jetzt-Linie; Klick in eine Spalte trägt für
+  genau diese Person ein.
+- **Suche (⌘K, Strg+K oder „/“)** – ein Feld für alles:
+  - *Finden* trotz Tippfehlern, ß/ss und Umlauten, mit Synonymen
+    („Doktor“ findet den Kinderarzt) und Markierung der Treffer.
+  - *Fragen*: „Wo ist Emma gerade?“, „Wer holt Ben heute?“,
+    „Wer hat Samstag um 15 Uhr Zeit?“, „Wann hat Oma Geburtstag?“, „Was ist morgen?“
+  - *Eintragen*: „Ben Dienstag 17 Uhr Fußball“, „jeden Freitag 15:30 Klavier“,
+    „Milch auf die Liste“, „Notiz: Reifen wechseln“ – die Outlook-Regel gilt auch hier.
+  - Erkannte Namen, Tage und Uhrzeiten färben sich schon beim Tippen,
+    Tab ergänzt Wörter. Der Gedächtnispalast wird nur durchsucht, solange er offen ist.
+- **Eselsohr knicken:** Die Ecke einer Terminzeile umknicken merkt den Termin
+  persönlich vor; das gelbe Eselsohr am Blatt führt zu allen gemerkten Terminen.
+- **Kalender** mit Kalenderwochen, Feiertagen je Bundesland (unter *Familie*)
+  und farbigen Belegungsstrichen pro Person; die Tagesansicht folgt dem
+  Personen-Filter („Ich + Kinder“ zeigt genau diese Spalten).
+- **Erscheinungsbild** automatisch, hell oder dunkel (im Profil); das ganze
+  Design färbt sich nach der Profilfarbe.
+
+Schriften: Bricolage Grotesque und Instrument Sans (SIL Open Font License,
+liegen in `src/fonts/`) – die App braucht dafür keinen Internetzugang.
+Die Einzeldatei-Demo entsteht mit `npm run build && node scripts/einzeldatei.mjs`.
+
 ## Tests
 
-Siehe [`tests/`](tests/) – vier End-zu-End-Suiten (Playwright) für
-Betreuungszeiten, Assistent/Demo/Geburtstage und Sync/Papierkorb/Serien.
+Siehe [`tests/`](tests/) – sechs Suiten: Such-Engine (läuft direkt in Node),
+Oberfläche, Gedächtnispalast, Betreuungszeiten, Assistent/Demo/Geburtstage und
+Sync/Papierkorb/Serien (Playwright).
 
 ## Lokal starten
 

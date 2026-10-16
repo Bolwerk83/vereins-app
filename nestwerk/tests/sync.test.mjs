@@ -53,7 +53,7 @@ server.row?.data?.active === undefined ? ok('Gerätespezifisches (active) wird n
 
 // Termin anlegen → Push (debounced)
 await a.locator('.navbtn', { hasText: 'Heute' }).click()
-await a.locator('button', { hasText: '+ Termin' }).first().click()
+await a.locator('.h-act .btn', { hasText: 'Termin' }).first().click()
 await a.fill('#f-title', 'Zahnarzt')
 await a.locator('.sheet button[type="submit"], .sheet .btn').filter({ hasText: /Speichern|anlegen|Eintragen/ }).first().click().catch(() => a.locator('.sheet form button.btn').last().click())
 await a.waitForTimeout(2500)
@@ -89,7 +89,7 @@ await a.waitForTimeout(300)
 
 /* ---------- Papierkorb: löschen → wiederherstellen ---------- */
 await a.locator('.navbtn', { hasText: 'Heute' }).click()
-await a.locator('.row', { hasText: 'Zahnarzt' }).first().click()
+await a.locator('.pl-ev', { hasText: 'Zahnarzt' }).first().click()
 await a.waitForTimeout(200)
 await a.locator('.sheet button', { hasText: 'Löschen' }).click()
 await a.waitForTimeout(400)

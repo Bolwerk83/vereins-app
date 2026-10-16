@@ -1,9 +1,10 @@
 // Gedächtnispalast: Ende-zu-Ende-verschlüsseltes zweites Gedächtnis
 import React, { useEffect, useRef, useState } from 'react'
 import { newSalt, deriveKey, encryptJson, decryptJson } from './crypto.js'
-import { uid, gebInfo, mapsLink, fmtDate, fmtShort, iso } from './util.js'
+import { uid, gebInfo, iso } from './util.js'
 import { Icon, RowIcon } from './icons.jsx'
 import { QuickAdd } from './ui.jsx'
+import { norm, normMap } from './search.js'
 
 /* ================= Gedächtnispalast (E2E-verschlüsselt, lokal) ================= */
 
@@ -149,7 +150,32 @@ function PageView({ text, onToggleLine, onLink, onTag }) {
   )
 }
 
-function Merkzeug({ blob, onSaveBlob, ownerName, toast, inbox = [], onImportInbox }) {
+// Für die große Suche: nur aufrufbar, solange der Palast entsperrt ist
+function palaceSearch(mem, query) {
+  const words = norm(query).split(/[^a-z0-9]+/).filter((w) => w.length >= 2)
+  if (!words.length) return []
+  const hit = (text) => { const n = norm(text); return words.every((w) => n.includes(w)) }
+  const hl = (text) => {
+    const { text: n, map } = normMap(text)
+    const r = []
+    for (const w of words) { const i = n.indexOf(w); if (i >= 0) r.push([map[i], map[i + w.length - 1] + 1]) }
+    return r.sort((a, b) => a[0] - b[0])
+  }
+  const out = []
+  for (const p of mem.persons || []) {
+    const hay = [p.name, p.ctx, p.firma, p.gruppe, p.themen, p.familie, p.faden, p.kennengelernt, (p.notizen || []).join(' ')].join(' ')
+    if (hit(hay)) out.push({ key: 'pp:' + p.id, kind: 'palace', icon: 'user', title: p.name || 'Person', hl: { title: hl(p.name || '') }, sub: [p.ctx, p.firma, p.gruppe].filter(Boolean).join(' · ') || 'Person im Gedächtnispalast', act: { type: 'palaceHit', ref: { type: 'person', id: p.id } } })
+  }
+  for (const s of mem.sections || []) {
+    for (const pg of s.pages || []) {
+      if (hit((pg.title || '') + ' ' + (pg.text || ''))) out.push({ key: 'pg:' + pg.id, kind: 'palace', icon: 'file', title: pg.title || 'Unbenannte Seite', hl: { title: hl(pg.title || '') }, sub: `Seite in „${s.name}“`, act: { type: 'palaceHit', ref: { type: 'page', sid: s.id, pid: pg.id } } })
+    }
+  }
+  for (const d of mem.docs || []) if (hit(d.name)) out.push({ key: 'pd:' + d.id, kind: 'palace', icon: 'archive', title: d.name, hl: { title: hl(d.name) }, sub: 'Dokument · verschlüsselt', act: { type: 'palaceHit', ref: { type: 'doc', id: d.id } } })
+  return out.slice(0, 8)
+}
+
+function Merkzeug({ blob, onSaveBlob, ownerName, toast, inbox = [], initialQuery, onQueryUsed, onProvider }) {
   const [state, setState] = useState('locked')
   const [pw, setPw] = useState('')
   const [err, setErr] = useState(null)
@@ -171,6 +197,30 @@ function Merkzeug({ blob, onSaveBlob, ownerName, toast, inbox = [], onImportInbo
   const pendingMem = useRef(null)
   const [addName, setAddName] = useState('')
   const [addCtx, setAddCtx] = useState('')
+  const memRef = useRef(mem)
+  memRef.current = mem
+
+  // Suchbegriff aus der großen Suche übernehmen, sobald der Palast offen ist
+  useEffect(() => {
+    if (state === 'open' && initialQuery) { setQ(initialQuery); if (onQueryUsed) onQueryUsed() }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state, initialQuery])
+
+  // Solange entsperrt, darf die große Suche hier mitsuchen – beim Sperren ist das sofort vorbei
+  useEffect(() => {
+    if (state !== 'open' || !onProvider) return undefined
+    onProvider({
+      search: (query) => palaceSearch(memRef.current, query),
+      open: (ref) => {
+        setQ('')
+        if (ref.type === 'person') setSel(ref.id)
+        else if (ref.type === 'page') { setSel(null); setSec(ref.sid); setPageId(ref.pid); setPageMode('view') }
+        else if (ref.type === 'doc') { setSel(null); setSec('_dokumente'); setDocSel(ref.id) }
+      },
+    })
+    return () => onProvider(null)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state])
 
   async function unlock(e) {
     e.preventDefault()
@@ -261,7 +311,7 @@ function Merkzeug({ blob, onSaveBlob, ownerName, toast, inbox = [], onImportInbo
   function lock() {
     flushPersist()
     setKey(null); setMem(EMPTY_MEMORY); setSel(null); setDocSel(null); setPageId(null); setState('locked'); setQ('')
-    toast('Gesperrt 🔒')
+    toast('Gesperrt – ohne Passwort unlesbar')
   }
 
   async function addDoc(file) {
@@ -310,7 +360,7 @@ function Merkzeug({ blob, onSaveBlob, ownerName, toast, inbox = [], onImportInbo
         <h2 className="screen-title">Gedächtnispalast</h2>
         <p className="screen-sub">{ownerName}s privates Gedächtnis – Ende-zu-Ende-verschlüsselt</p>
         <form className="card lockbox" onSubmit={unlock}>
-          <div className="lock-ico">🔐</div>
+          <div className="lock-ico"><Icon name="key" size={30} /></div>
           <h3>Nur du hast den Schlüssel</h3>
           <p>Entschlüsselt wird ausschließlich auf diesem Gerät. Es gibt kein „Passwort vergessen“ – das ist der Sinn der Sache.</p>
           {err && <div className="authmsg err" style={{ maxWidth: 320, margin: '0 auto 12px' }}>{err}</div>}
@@ -319,6 +369,7 @@ function Merkzeug({ blob, onSaveBlob, ownerName, toast, inbox = [], onImportInbo
             <button className="btn" disabled={state === 'busy'}>{state === 'busy' ? '…' : 'Entsperren'}</button>
           </div>
           <div className="hint">{blob ? 'Gib dein Gedächtnis-Passwort ein.' : 'Beim ersten Mal legst du mit deinem Passwort ein neues Gedächtnis an.'}</div>
+          {initialQuery && <div className="hint">Danach suche ich hier nach „{initialQuery}“.</div>}
         </form>
       </section>
     )
@@ -484,7 +535,7 @@ function Merkzeug({ blob, onSaveBlob, ownerName, toast, inbox = [], onImportInbo
           <h2 className="screen-title">Gedächtnispalast</h2>
           <p className="screen-sub">{mem.persons.length} Personen · {sections.reduce((a, s) => a + s.pages.length, 0)} Seiten · {(mem.docs || []).length} Dokumente · alles verschlüsselt</p>
         </div>
-        <button className="btn ghost sm" onClick={lock}>🔒 Sperren</button>
+        <button className="btn ghost sm" onClick={lock}><Icon name="lock" size={15} />Sperren</button>
       </div>
       {isNew && (
         <div className="qcard" style={{ marginBottom: 14 }}>

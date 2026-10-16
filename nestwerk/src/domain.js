@@ -89,4 +89,4 @@ async function saveTextFile(filename, text, toast) {
   }
 }
 
-export { PTYPES, MODULES, hasMod, VORLAGEN, fillVorlage }
+export { PTYPES, MODULES, hasMod, VORLAGEN, fillVorlage, saveTextFile }

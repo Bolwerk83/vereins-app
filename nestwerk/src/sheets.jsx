@@ -1,20 +1,20 @@
 // Alle Formulare, Sheets und Assistent-Wizards
-import React, { useEffect, useRef, useState } from 'react'
-import { WD, WD_LONG, MONTHS, COLORS, iso, fromIso, wdIdx, fmtDate, fmtShort, addDays, mins, uid, gebInfo } from './util.js'
-import { Icon, RowIcon, LogoMark } from './icons.jsx'
-import { PTYPES, MODULES, hasMod, VORLAGEN, fillVorlage } from './domain.js'
+import React, { useEffect, useState } from 'react'
+import { WD, WD_LONG, COLORS, fromIso, wdIdx, fmtDate, uid, gebInfo } from './util.js'
+import { Icon, RowIcon } from './icons.jsx'
+import { PTYPES, VORLAGEN, fillVorlage, saveTextFile } from './domain.js'
 import { fetchVereinData, teamInfo } from './verein.js'
 
 /* ================= Termin-Formular ================= */
 
-function EventSheet({ initial, members, me, stats, onSave, onDelete, onClose }) {
+function EventSheet({ initial, members, me, stats, pinned, onPin, onSave, onDelete, onClose }) {
   const e = initial.event
   if (e && ((e.klid && e.created_by !== me.id) || (e.src === 'work' && e.member_id !== me.id))) {
     const isPraxis = !!e.klid
     return (
       <div className="overlay" onClick={(ev) => { if (ev.target === ev.currentTarget) onClose() }}>
         <div className="sheet">
-          <h3>{isPraxis ? '🩺 Praxis · belegt' : '💼 Arbeit'}<button type="button" className="x" onClick={onClose} aria-label="Schließen">✕</button></h3>
+          <h3>{isPraxis ? 'Praxis · belegt' : 'Arbeit'}<button type="button" className="x" onClick={onClose} aria-label="Schließen">✕</button></h3>
           <div className="card" style={{ marginBottom: 12 }}>
             <div className="fact"><b>Wann</b><span>{fmtDate(e.on_date)} · {e.at_time} Uhr</span></div>
             <div className="fact"><b>Wer</b><span>{members.find((m) => m.id === e.member_id)?.name || '—'}</span></div>
@@ -31,7 +31,7 @@ function EventSheet({ initial, members, me, stats, onSave, onDelete, onClose }) 
     return (
       <div className="overlay" onClick={(ev) => { if (ev.target === ev.currentTarget) onClose() }}>
         <div className="sheet">
-          <h3>⚽ {e.title}<button type="button" className="x" onClick={onClose} aria-label="Schließen">✕</button></h3>
+          <h3>{e.title}<button type="button" className="x" onClick={onClose} aria-label="Schließen">✕</button></h3>
           <div className="card" style={{ marginBottom: 12 }}>
             <div className="fact"><b>Wann</b><span>{fmtDate(e.on_date)} · {e.at_time} Uhr</span></div>
             <div className="fact"><b>Details</b><span>{e.meta}</span></div>
@@ -47,13 +47,20 @@ function EventSheet({ initial, members, me, stats, onSave, onDelete, onClose }) 
       </div>
     )
   }
-  const [title, setTitle] = useState(e ? e.title : '')
-  const [memberId, setMemberId] = useState(e ? e.member_id : me.id)
-  const [date, setDate] = useState(e ? e.on_date : initial.date)
-  const [time, setTime] = useState(e ? e.at_time : '15:00')
+  return <EventForm initial={initial} members={members} me={me} stats={stats} pinned={pinned} onPin={onPin} onSave={onSave} onDelete={onDelete} onClose={onClose} />
+}
+
+// Eigene Komponente, damit ihre Hooks immer in derselben Reihenfolge laufen
+function EventForm({ initial, members, me, stats, pinned, onPin, onSave, onDelete, onClose }) {
+  const e = initial.event
+  const pre = initial.prefill || {}
+  const [title, setTitle] = useState(e ? e.title : pre.title || '')
+  const [memberId, setMemberId] = useState(e ? e.member_id : pre.member_id || me.id)
+  const [date, setDate] = useState(e ? e.on_date : pre.on_date || initial.date)
+  const [time, setTime] = useState(e ? e.at_time : pre.at_time || '15:00')
   const [meta, setMeta] = useState(e ? e.meta : '')
   const [zust, setZust] = useState(e?.zust || '')
-  const [serie, setSerie] = useState(false)
+  const [serie, setSerie] = useState(!!pre.serie)
   const [autoFilled, setAutoFilled] = useState(false)
 
   const changeTitle = (v) => {
@@ -76,15 +83,20 @@ function EventSheet({ initial, members, me, stats, onSave, onDelete, onClose }) 
         if (title.trim()) onSave({ title: title.trim(), member_id: memberId, on_date: date, at_time: time, meta: meta.trim(), zust: zust || null, serie })
       }}>
         <h3>{e ? 'Termin bearbeiten' : 'Neuer Termin'}<button type="button" className="x" onClick={onClose} aria-label="Schließen">✕</button></h3>
+        {e && onPin && (
+          <button type="button" className={'btn ghost sm knickbtn' + (pinned ? ' on' : '')} style={{ marginBottom: 14 }} onClick={onPin} aria-pressed={!!pinned}>
+            <Icon name="knick" size={15} />{pinned ? 'Mit Eselsohr gemerkt' : 'Eselsohr knicken – merken'}
+          </button>
+        )}
         <div className="field">
           <label htmlFor="f-title">Titel</label>
-          <input id="f-title" autoFocus required value={title} onChange={(ev) => changeTitle(ev.target.value)}
+          <input id="f-title" autoFocus={!pre.title} required value={title} onChange={(ev) => changeTitle(ev.target.value)}
             placeholder="z. B. Fußballtraining" list="f-title-suggest" autoComplete="off" />
           <datalist id="f-title-suggest">
             {stats && Object.values(stats).filter((s) => s.count >= 2).sort((a, b) => b.count - a.count).slice(0, 8)
               .map((s) => <option key={s.title} value={s.title} />)}
           </datalist>
-          {autoFilled && <p className="hint" style={{ margin: '4px 0 0' }}>✨ Assistent: Uhrzeit & Person aus früheren Terminen vorausgefüllt – anpassen jederzeit möglich.</p>}
+          {autoFilled && <p className="hint" style={{ margin: '6px 0 0' }}>Uhrzeit und Person aus früheren Terminen übernommen – du kannst alles anpassen.</p>}
         </div>
         <div className="grid2">
           <div className="field">
@@ -101,10 +113,10 @@ function EventSheet({ initial, members, me, stats, onSave, onDelete, onClose }) 
         <div className="grid2">
           <div className="field">
             <label htmlFor="f-time">Uhrzeit</label>
-            <input id="f-time" type="time" required value={time} onChange={(ev) => setTime(ev.target.value)} />
+            <input id="f-time" type="time" required value={time} autoFocus={!!pre.title && !pre.at_time} onChange={(ev) => setTime(ev.target.value)} />
           </div>
           <div className="field">
-            <label htmlFor="f-zust">✋ Wer übernimmt? (bringt/holt/betreut)</label>
+            <label htmlFor="f-zust">Wer übernimmt? (bringt, holt, betreut)</label>
             <select id="f-zust" value={zust} onChange={(ev) => setZust(ev.target.value)}>
               <option value="">– noch offen –</option>
               {members.filter((m) => m.kind !== 'kid').map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
@@ -118,7 +130,7 @@ function EventSheet({ initial, members, me, stats, onSave, onDelete, onClose }) 
         {!e && (
           <div className="field checkline">
             <input type="checkbox" id="f-serie" checked={serie} onChange={(ev) => setSerie(ev.target.checked)} />
-            <label htmlFor="f-serie">↻ Serientermin – die nächsten 8 Wochen</label>
+            <label htmlFor="f-serie">Jede Woche wiederholen – die nächsten 8 Wochen</label>
           </div>
         )}
         <div className="actions">
@@ -184,7 +196,7 @@ function CareSheet({ kid, onSave, onClose }) {
   return (
     <div className="overlay" onClick={(e) => { if (e.target === e.currentTarget) onClose() }}>
       <form className="sheet" onSubmit={(e) => { e.preventDefault(); onSave(blocks) }}>
-        <h3>🏫 Betreuung · {kid.name}<button type="button" className="x" onClick={onClose} aria-label="Schließen">✕</button></h3>
+        <h3>Betreuung · {kid.name}<button type="button" className="x" onClick={onClose} aria-label="Schließen">✕</button></h3>
         <p className="hint" style={{ marginTop: 0 }}>
           Feste Zeiten, in denen {kid.name} versorgt ist – Kita, Schule, Hort … Alle sehen dann
           auf einen Blick, wann kein Elternteil einspringen muss.
@@ -247,11 +259,11 @@ function KlientSheet({ existing, onSave, onClose }) {
         </div>
         <div className="field">
           <label htmlFor="k-tel">Telefon</label>
-          <input id="k-tel" type="tel" value={telefon} onChange={(e) => setTelefon(e.target.value)} placeholder="für 📞 Anrufen per Knopfdruck" />
+          <input id="k-tel" type="tel" value={telefon} onChange={(e) => setTelefon(e.target.value)} placeholder="zum Anrufen per Knopfdruck" />
         </div>
         <div className="field">
           <label htmlFor="k-adr">Adresse</label>
-          <input id="k-adr" value={adresse} onChange={(e) => setAdresse(e.target.value)} placeholder="für 🚗 Anfahrt per Knopfdruck" />
+          <input id="k-adr" value={adresse} onChange={(e) => setAdresse(e.target.value)} placeholder="für die Anfahrt per Knopfdruck" />
         </div>
         <div className="field">
           <label htmlFor="k-notiz">Notiz (optional)</label>
@@ -274,9 +286,9 @@ function PTerminSheet({ klienten, initialKlid, today, onSave, onClose, onNeedKli
     return (
       <div className="overlay" onClick={(e) => { if (e.target === e.currentTarget) onClose() }}>
         <div className="sheet">
-          <h3>🩺 Praxistermin<button type="button" className="x" onClick={onClose} aria-label="Schließen">✕</button></h3>
+          <h3>Praxistermin<button type="button" className="x" onClick={onClose} aria-label="Schließen">✕</button></h3>
           <p style={{ margin: '0 0 14px', fontSize: 14, color: 'var(--ink-soft)' }}>Zuerst brauchst du eine Klientin.</p>
-          <button className="btn" style={{ width: '100%' }} onClick={onNeedKlient}>➕ Neue Klientin anlegen</button>
+          <button className="btn" style={{ width: '100%' }} onClick={onNeedKlient}>Neue Klientin anlegen</button>
         </div>
       </div>
     )
@@ -336,7 +348,7 @@ function VorlageSheet({ klient, termine, meName, toast, onClose }) {
   return (
     <div className="overlay" onClick={(e) => { if (e.target === e.currentTarget) onClose() }}>
       <div className="sheet">
-        <h3>📄 Dokument aus Vorlage<button type="button" className="x" onClick={onClose} aria-label="Schließen">✕</button></h3>
+        <h3>Dokument aus Vorlage<button type="button" className="x" onClick={onClose} aria-label="Schließen">✕</button></h3>
         <div className="field">
           <label htmlFor="v-vorlage">Vorlage · Name und Daten von {klient.name} sind schon eingesetzt</label>
           <select id="v-vorlage" value={vid} onChange={(e) => {
@@ -387,7 +399,7 @@ function VereinSheet({ members, me, onLink, onClose }) {
         const team = data.teams.find((t) => t.id === tid)
         onLink(tid, team?.name || 'Team', memberId)
       }}>
-        <h3>⚽ Vereins-App verknüpfen<button type="button" className="x" onClick={onClose} aria-label="Schließen">✕</button></h3>
+        <h3>Vereins-App verknüpfen<button type="button" className="x" onClick={onClose} aria-label="Schließen">✕</button></h3>
         {state === 'loading' && <div className="empty">Verbinde mit der Vereins-App …</div>}
         {state === 'error' && (
           <>
@@ -432,7 +444,7 @@ function BlitzSheet({ onSave, onClose, count = 0, onList }) {
   return (
     <div className="overlay" onClick={(e) => { if (e.target === e.currentTarget) onClose() }}>
       <form className="sheet" onSubmit={(e) => { e.preventDefault(); if (text.trim()) onSave(text.trim()) }}>
-        <h3>⚡ Blitzzettel<button type="button" className="x" onClick={onClose} aria-label="Schließen">✕</button></h3>
+        <h3>Blitzzettel<button type="button" className="x" onClick={onClose} aria-label="Schließen">✕</button></h3>
         <div className="field">
           <textarea rows={4} autoFocus value={text} onChange={(e) => setText(e.target.value)}
             placeholder="Einfach raus damit – Stichworte reichen. Sortieren kannst du später. Oder nie."
@@ -444,7 +456,7 @@ function BlitzSheet({ onSave, onClose, count = 0, onList }) {
             Deine Zettel ansehen & sortieren ({count})
           </button>
         )}
-        <p className="hint">Wandert beim nächsten Entsperren automatisch verschlüsselt in deinen Gedächtnispalast (📥 Eingang). Bis dahin liegt der Zettel unverschlüsselt nur auf diesem Gerät.</p>
+        <p className="hint">Wandert beim nächsten Entsperren automatisch verschlüsselt in deinen Gedächtnispalast (Eingang). Bis dahin liegt der Zettel unverschlüsselt nur auf diesem Gerät.</p>
       </form>
     </div>
   )
@@ -457,7 +469,7 @@ function BlitzListe({ items, onDelete, onTodo, onClose }) {
   return (
     <div className="overlay" onClick={(e) => { if (e.target === e.currentTarget) onClose() }}>
       <div className="sheet">
-        <h3>⚡ Deine Blitzzettel ({items.length})<button type="button" className="x" onClick={onClose} aria-label="Schließen">✕</button></h3>
+        <h3>Deine Blitzzettel ({items.length})<button type="button" className="x" onClick={onClose} aria-label="Schließen">✕</button></h3>
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10 }}>
           {[['neu', 'Neueste zuerst'], ['alt', 'Älteste zuerst'], ['az', 'A–Z']].map(([k, l]) => (
             <button type="button" key={k} className={'btn sm ' + (sort === k ? '' : 'ghost')} onClick={() => setSort(k)}>{l}</button>
@@ -473,8 +485,8 @@ function BlitzListe({ items, onDelete, onTodo, onClose }) {
             <button type="button" className="xdel" onClick={() => onDelete(z)} aria-label="Zettel löschen">✕</button>
           </div>
         ))}
-        {!items.length && <div className="empty">Keine Zettel – Kopf frei 🎉</div>}
-        <p className="hint">Beim nächsten Entsperren des Gedächtnispalasts wandern alle Zettel automatisch verschlüsselt in den 📥 Eingang. Sortieren ist optional – nie Pflicht.</p>
+        {!items.length && <div className="empty">Keine Zettel – Kopf frei.</div>}
+        <p className="hint">Beim nächsten Entsperren des Gedächtnispalasts wandern alle Zettel automatisch verschlüsselt in den Eingang. Sortieren ist optional – nie Pflicht.</p>
       </div>
     </div>
   )
@@ -513,7 +525,7 @@ function WaTemplateRow({ value, onSave }) {
   if (!open) {
     return (
       <button className="row" onClick={() => { setV(value); setOpen(true) }}>
-        <span style={{ fontSize: 20, width: 28, textAlign: 'center', flexShrink: 0 }}>💬</span>
+        <span className="rowico ok"><Icon name="message" size={17} /></span>
         <div className="row-main">
           <div className="row-title">WhatsApp-Vorlage bearbeiten</div>
           <div className="row-meta">„{value.length > 64 ? value.slice(0, 64) + '…' : value}“</div>
@@ -542,7 +554,7 @@ function SerieWizard({ base, count, memberName, onCreate, onClose }) {
   return (
     <div className="overlay" onClick={(e) => { if (e.target === e.currentTarget) onClose() }}>
       <div className="sheet">
-        <h3>↻ Serie anlegen<button type="button" className="x" onClick={onClose} aria-label="Schließen">✕</button></h3>
+        <h3>Serie anlegen<button type="button" className="x" onClick={onClose} aria-label="Schließen">✕</button></h3>
         <div className="card" style={{ marginBottom: 12 }}>
           <div className="fact"><b>Muster</b><span>„{base.title}“ gab es schon {count}×</span></div>
           <div className="fact"><b>Wann</b><span>{WD_LONG[wdIdx(fromIso(base.on_date))]}s um {base.at_time} Uhr</span></div>
@@ -556,7 +568,7 @@ function SerieWizard({ base, count, memberName, onCreate, onClose }) {
             ))}
           </div>
         </div>
-        <button className="btn" style={{ width: '100%' }} onClick={() => onCreate(weeks)}>↻ Ab nächster Woche eintragen</button>
+        <button className="btn" style={{ width: '100%' }} onClick={() => onCreate(weeks)}>Ab nächster Woche eintragen</button>
         <p className="hint">Bereits vorhandene Termine bleiben unberührt – der Assistent füllt nur die Lücken. Einzelne Ausnahmen löschst du einfach im Kalender.</p>
       </div>
     </div>
@@ -578,7 +590,7 @@ function IstWizard({ list, klientById, onSaveIst, onDone, onClose }) {
   return (
     <div className="overlay" onClick={(ev) => { if (ev.target === ev.currentTarget) onClose() }}>
       <form className="sheet" onSubmit={(ev) => { ev.preventDefault(); onSaveIst(e.id, +ist || 0); next(true) }}>
-        <h3>🩺 Ist-Zeiten · {i + 1} von {list.length}<button type="button" className="x" onClick={onClose} aria-label="Schließen">✕</button></h3>
+        <h3>Ist-Zeiten · {i + 1} von {list.length}<button type="button" className="x" onClick={onClose} aria-label="Schließen">✕</button></h3>
         <div className="card" style={{ marginBottom: 12 }}>
           <div className="fact"><b>Klientin</b><span>{klientById(e.klid)?.name || '—'}</span></div>
           <div className="fact"><b>Termin</b><span>{fmtDate(e.on_date)} · {e.at_time} Uhr · {e.ptype}</span></div>
