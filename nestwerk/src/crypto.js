@@ -5,8 +5,15 @@
 const te = new TextEncoder()
 const td = new TextDecoder()
 
-const b64 = (buf) => btoa(String.fromCharCode(...new Uint8Array(buf)))
-const unb64 = (s) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0))
+// Stückweise umwandeln: ein einziger Aufruf mit Millionen Argumenten
+// sprengt den Stack – große Gedächtnisse und Dokumente scheiterten daran.
+export function b64(buf) {
+  const bytes = buf instanceof Uint8Array ? buf : new Uint8Array(buf)
+  let s = ''
+  for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000))
+  return btoa(s)
+}
+export const unb64 = (s) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0))
 
 export function newSalt() {
   return b64(crypto.getRandomValues(new Uint8Array(16)))
@@ -32,4 +39,15 @@ export async function encryptJson(key, obj) {
 export async function decryptJson(key, ivB64, cipherB64) {
   const pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: unb64(ivB64) }, key, unb64(cipherB64))
   return JSON.parse(td.decode(pt))
+}
+
+// Dateien (Scans, PDFs) als Bytes verschlüsseln – ohne Umweg über Text
+export async function encryptBytes(key, bytes) {
+  const iv = crypto.getRandomValues(new Uint8Array(12))
+  const data = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, bytes)
+  return { iv, data }
+}
+
+export async function decryptBytes(key, iv, data) {
+  return new Uint8Array(await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, data))
 }

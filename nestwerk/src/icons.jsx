@@ -49,6 +49,14 @@ const ICON_PATHS = {
   pencil: <><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16Z" /><path d="m13.5 6.5 4 4" /></>,
   inbox: <><path d="M3.5 13.5 6 5h12l2.5 8.5V19H3.5Z" /><path d="M3.5 13.5h5l1.5 2.5h4l1.5-2.5h5" /></>,
   key: <><circle cx="8" cy="15" r="4" /><path d="m11 12 8.5-8.5M16 7l2.5 2.5M14 9l2 2" /></>,
+  // Ablage
+  steuer: <><path d="M6 3.5h8.5L19 8v12.5H6Z" /><path d="M14.5 3.5V8H19" /><path d="m9.5 17 5.5-6.5" /><circle cx="10" cy="11.5" r="1.1" /><circle cx="14.5" cy="16.5" r="1.1" /></>,
+  receipt: <><path d="M6 3h12v18l-2.5-1.6L13 21l-2-1.6L8.5 21 6 19.4Z" /><path d="M9 8h6M9 11.5h6M9 15h3.5" /></>,
+  folder: <path d="M3.5 7a2 2 0 0 1 2-2h4l2 2.2h7a2 2 0 0 1 2 2V17a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2Z" />,
+  shield: <path d="M12 3.2 5 6v5.6c0 4.3 2.9 8 7 9.2 4.1-1.2 7-4.9 7-9.2V6Z" />,
+  car: <><path d="M4.5 16.5V12l1.8-4.6A2 2 0 0 1 8.2 6h7.6a2 2 0 0 1 1.9 1.4l1.8 4.6v4.5" /><path d="M3.5 16.5h17" /><circle cx="8" cy="16.5" r="1.9" /><circle cx="16" cy="16.5" r="1.9" /><path d="M5 12h14" /></>,
+  euro: <><path d="M17.5 6.8A6.5 6.5 0 1 0 17.5 17.2" /><path d="M4.5 10.2h8.5M4.5 13.8h8.5" /></>,
+  share: <><path d="M12 3.5v11" /><path d="m7.8 7.7 4.2-4.2 4.2 4.2" /><path d="M7 11H5.5v9.5h13V11H17" /></>,
 }
 function Icon({ name, size = 19 }) {
   return (

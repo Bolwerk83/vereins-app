@@ -1,5 +1,5 @@
 // Alle Formulare, Sheets und Assistent-Wizards
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { WD, WD_LONG, COLORS, fromIso, wdIdx, fmtDate, uid, gebInfo } from './util.js'
 import { Icon, RowIcon } from './icons.jsx'
 import { PTYPES, VORLAGEN, fillVorlage, saveTextFile } from './domain.js'
@@ -631,13 +631,14 @@ function SportPlanForm({ onPlan }) {
 function ImportRow({ onImport }) {
   const [open, setOpen] = useState(false)
   const [v, setV] = useState('')
+  const fileRef = useRef()
   if (!open) {
     return (
       <button className="row" onClick={() => setOpen(true)}>
         <RowIcon name="upload" />
         <div className="row-main">
           <div className="row-title">Backup einspielen</div>
-          <div className="row-meta">Gespeicherten Backup-Text einfügen</div>
+          <div className="row-meta">Backup-Datei wählen oder Backup-Text einfügen</div>
         </div>
         <span className="chev">›</span>
       </button>
@@ -645,10 +646,19 @@ function ImportRow({ onImport }) {
   }
   return (
     <div className="row" style={{ alignItems: 'stretch', flexDirection: 'column', gap: 8 }}>
-      <textarea value={v} onChange={(e) => setV(e.target.value)} rows={4} placeholder='Backup-Text hier einfügen ({"family":…})'
-        style={{ font: 'inherit', fontSize: 13, borderRadius: 10, border: '1px solid var(--hairline)', background: 'var(--ground)', color: 'var(--ink)', padding: 10, width: '100%' }} />
+      <button type="button" className="btn ghost" onClick={() => fileRef.current?.click()}><Icon name="upload" size={16} />Backup-Datei wählen (.json)</button>
+      <input ref={fileRef} type="file" accept=".json,application/json" style={{ display: 'none' }} aria-label="Backup-Datei"
+        onChange={async (e) => {
+          const f = e.target.files?.[0]
+          e.target.value = ''
+          if (!f) return
+          onImport(await f.text())
+          setOpen(false)
+        }} />
+      <textarea value={v} onChange={(e) => setV(e.target.value)} rows={3} placeholder='… oder Backup-Text hier einfügen ({"family":…})'
+        style={{ font: 'inherit', fontSize: 13, borderRadius: 10, border: '1px solid var(--line-2)', background: 'var(--sheet)', color: 'var(--ink)', padding: 10, width: '100%' }} />
       <div style={{ display: 'flex', gap: 8 }}>
-        <button className="btn sm" onClick={() => { onImport(v); setOpen(false); setV('') }}>Einspielen</button>
+        <button className="btn sm" onClick={() => { onImport(v); setOpen(false); setV('') }} disabled={!v.trim()}>Einspielen</button>
         <button className="btn ghost sm" onClick={() => setOpen(false)}>Abbrechen</button>
       </div>
     </div>

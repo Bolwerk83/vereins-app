@@ -9,6 +9,7 @@ npm install                       # einmalig (bringt playwright-core mit)
 node tests/suche.test.mjs         # Such-Engine: Verstehen, Finden, Antworten (ohne Browser)
 node tests/oberflaeche.test.mjs   # Suche, Heute, Planer, Eselsohr, Kalender, Handy („auf einen Blick“)
 node tests/palast.test.mjs        # 🏛️ Gedächtnispalast (E2E-Verschlüsselung)
+node tests/ablage.test.mjs        # 📄 Dokumente: Steuer-Angabe, ZIP, Teilen, Backup, Umzug alter Dateien
 node tests/betreuung.test.mjs     # 🏫 Betreuungszeiten
 node tests/assistent.test.mjs     # ✨ Assistent, Wizards, Demo, 🎂 Geburtstage
 node tests/sync.test.mjs          # 🔗 Familien-Sync, 🗑️ Papierkorb, ↻ Serien-Wächter

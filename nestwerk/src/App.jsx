@@ -12,6 +12,7 @@ import { EventSheet, MemberSheet, CareSheet, KlientSheet, PTerminSheet, VorlageS
 import { Suche } from './Suche.jsx'
 import { buildIndex, longDate, relDay } from './search.js'
 import { Abreiss, Planer, DayBand, NextCard, buildLage, greeting } from './planer.jsx'
+import { exportFiles, importFiles, clearFiles } from './docstore.js'
 
 const THEME_KEY = 'eselsohr-theme'
 const PLANER_KEY = 'eselsohr-heute-ansicht'
@@ -77,6 +78,7 @@ export default function App() {
   const [heuteAnsicht, setHeuteAnsicht] = useState(() => readPref(PLANER_KEY, typeof window !== 'undefined' && window.innerWidth < 640 ? 'liste' : 'planer'))
   const [palaceProv, setPalaceProv] = useState(null)
   const [palaceQuery, setPalaceQuery] = useState('')
+  const [palaceSec, setPalaceSec] = useState(null) // z. B. direkt in die Dokumente springen
   const idxCache = useRef({})
   const [phone, setPhone] = useState(isPhoneNow)
   const [klapp, setKlapp] = useState([]) // aufgeklappte Bereiche auf dem Handy
@@ -552,8 +554,9 @@ export default function App() {
     toast('→ Als To-do übernommen ✓')
   }
 
-  function endDemo() {
+  async function endDemo() {
     try { localStorage.removeItem('eselsohr-v1') } catch { /* egal */ }
+    await clearFiles().catch(() => {}) // in der Demo abgelegte Dokumente gehen mit
     location.reload()
   }
 
@@ -664,16 +667,21 @@ export default function App() {
   async function exportBackup() {
     const next = { ...db, lastBackup: today }
     saveAll(next)
-    const json = JSON.stringify(next, null, 2)
-    try {
-      await navigator.clipboard?.writeText(json)
-    } catch { /* Zwischenablage gesperrt */ }
+    // Abgelegte Dokumente kommen mit – weiterhin verschlüsselt, nur als Text verpackt
+    const docFiles = await exportFiles()
+    const nDocs = Object.keys(docFiles).length
+    const json = JSON.stringify(nDocs ? { ...next, docFiles } : next, null, nDocs ? 0 : 2)
+    const small = json.length < 900000 // große Backups nicht in die Zwischenablage drücken
+    if (small) {
+      try { await navigator.clipboard?.writeText(json) } catch { /* Zwischenablage gesperrt */ }
+    }
+    const extra = (nDocs ? ` · mit ${nDocs} Dokument${nDocs === 1 ? '' : 'en'}` : '') + (small ? ' (auch in der Zwischenablage)' : '')
     if (window.claude?.downloads) {
       try {
         await window.claude.downloads.save({ filename: 'eselsohr-backup.json', data: json })
-        toast('Backup gespeichert ✓ (und in die Zwischenablage kopiert)')
+        toast('Backup gespeichert ✓' + extra)
       } catch (e) {
-        toast(e?.code === 'declined' ? 'Speichern abgebrochen – Backup liegt in der Zwischenablage' : 'Backup in Zwischenablage kopiert ✓')
+        toast(e?.code === 'declined' ? 'Speichern abgebrochen' + (small ? ' – Backup liegt in der Zwischenablage' : '') : small ? 'Backup in Zwischenablage kopiert ✓' : 'Speichern hier nicht möglich')
       }
       return
     }
@@ -683,7 +691,20 @@ export default function App() {
       a.download = 'eselsohr-backup.json'
       a.click()
     } catch { /* Download gesperrt */ }
-    toast('Backup als Datei gespeichert und in die Zwischenablage kopiert ✓')
+    toast('Backup als Datei gespeichert ✓' + extra)
+  }
+
+  async function importBackup(json) {
+    try {
+      const obj = JSON.parse(json)
+      if (!obj.family || !obj.members) throw new Error('Kein Eselsohr-Backup')
+      const { docFiles, ...rest } = obj
+      const n = docFiles ? await importFiles(docFiles) : 0
+      saveAll(rest)
+      toast('Backup eingespielt ✓' + (n ? ` · ${n} Dokument${n === 1 ? '' : 'e'} zurück` : ''))
+    } catch (e) {
+      toast('Import fehlgeschlagen: ' + e.message)
+    }
   }
 
   /* ---------- Bausteine ---------- */
@@ -933,7 +954,8 @@ export default function App() {
     { id: 'heute', title: 'Heute', sub: 'Abreißkalender, Tageslage und Familienplaner', kw: 'start uebersicht tag planer', to: 'heute' },
     { id: 'kalender', title: 'Kalender', sub: 'Monatsblatt mit Kalenderwochen und Feiertagen', kw: 'monat woche kw kalenderwoche feiertage', to: 'kalender' },
     { id: 'listen', title: 'Listen', sub: 'Einkaufen, Zu erledigen, Geburtstage', kw: 'einkauf einkaufen todo geburtstage liste', to: 'listen' },
-    !isKid && { id: 'palast', title: 'Gedächtnispalast', sub: 'Dein verschlüsseltes Gedächtnis', kw: 'palast gedaechtnis notizen personen kontakte dokumente', to: 'merkzeug' },
+    !isKid && { id: 'palast', title: 'Gedächtnispalast', sub: 'Dein verschlüsseltes Gedächtnis', kw: 'palast gedaechtnis notizen personen kontakte', to: 'merkzeug' },
+    !isKid && { id: 'ablage', title: 'Dokumente & Steuerordner', sub: 'Papierlos ablegen, steuerrelevant markieren, als ZIP teilen', kw: 'dokumente dokument ablage papierlos scan pdf rechnung beleg belege steuer steuerordner steuererklaerung finanzamt quittung', to: 'merkzeug', doc: true },
     !isKid && hasMod(me, 'praxis') && { id: 'praxis', title: 'Praxis', sub: 'Klientinnen, Soll/Ist-Zeiten, Dokumente', kw: 'praxis klientin hebamme nachsorge abrechnung', to: 'praxis' },
     !isKid && { id: 'familie', title: 'Familie', sub: 'Mitglieder, Sync, Backup, Papierkorb, Feiertage', kw: 'familie mitglieder sync backup papierkorb rechte bundesland', to: 'familie' },
     { id: 'profil', title: 'Mein Profil', sub: 'Farbe, Module, Erscheinungsbild', kw: 'profil farbe module einstellungen sport', to: 'profil' },
@@ -992,7 +1014,7 @@ export default function App() {
       case 'palaceHit': if (palaceProv) palaceProv.open(a.ref); break
       case 'nav': {
         const n = a.nav || {}
-        if (n.to) setNav(n.to)
+        if (n.to) { setNav(n.to); if (n.doc) setPalaceSec('_dokumente') }
         else if (n.cmd === 'new') setSheet({ date: today })
         else if (n.cmd === 'blitz') setBlitz(true)
         else if (n.cmd === 'backup') exportBackup()
@@ -2146,16 +2168,7 @@ export default function App() {
           </div>
           <span className="chev">›</span>
         </button>
-        <ImportRow onImport={(json) => {
-          try {
-            const obj = JSON.parse(json)
-            if (!obj.family || !obj.members) throw new Error('Kein Eselsohr-Backup')
-            saveAll(obj)
-            toast('Backup eingespielt ✓')
-          } catch (e) {
-            toast('Import fehlgeschlagen: ' + e.message)
-          }
-        }} />
+        <ImportRow onImport={importBackup} />
       </div>
       <h3 className="label">Hinweis</h3>
       <div className="card">
@@ -2186,7 +2199,7 @@ export default function App() {
   ]
   const DOCK = NAVS.filter(([id]) => id === 'heute' || id === 'kalender' || id === 'listen')
   const MORE = NAVS.filter(([id]) => !['heute', 'kalender', 'listen'].includes(id))
-  const MORE_SUB = { praxis: 'Klientinnen und Abrechnung', merkzeug: 'Verschlüsselt, nur für dich', familie: 'Mitglieder, Sync, Backup' }
+  const MORE_SUB = { praxis: 'Klientinnen und Abrechnung', merkzeug: 'Notizen, Kontakte, Dokumente – verschlüsselt', familie: 'Mitglieder, Sync, Backup' }
   const exampleQ = [
     kids[0] && `Wo ist ${kids[0].name} gerade?`,
     'Was ist morgen?',
@@ -2260,6 +2273,8 @@ export default function App() {
             inbox={(db.inbox || []).filter((i) => i.member_id === me.id)}
             initialQuery={palaceQuery}
             onQueryUsed={() => setPalaceQuery('')}
+            startSec={palaceSec}
+            onSecUsed={() => setPalaceSec(null)}
             onProvider={setPalaceProv}
           />
         )}

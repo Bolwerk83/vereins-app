@@ -1,10 +1,12 @@
 // Gedächtnispalast: Ende-zu-Ende-verschlüsseltes zweites Gedächtnis
 import React, { useEffect, useRef, useState } from 'react'
-import { newSalt, deriveKey, encryptJson, decryptJson } from './crypto.js'
-import { uid, gebInfo, iso } from './util.js'
+import { newSalt, deriveKey, encryptJson, decryptJson, encryptBytes, unb64 } from './crypto.js'
+import { uid, gebInfo, iso, addDays } from './util.js'
 import { Icon, RowIcon } from './icons.jsx'
 import { QuickAdd } from './ui.jsx'
 import { norm, normMap } from './search.js'
+import { Ablage, docTitle, docDate, ordnerName, artName, deDate } from './ablage.jsx'
+import { putFile, delFile, filesWork } from './docstore.js'
 
 /* ================= Gedächtnispalast (E2E-verschlüsselt, lokal) ================= */
 
@@ -171,11 +173,42 @@ function palaceSearch(mem, query) {
       if (hit((pg.title || '') + ' ' + (pg.text || ''))) out.push({ key: 'pg:' + pg.id, kind: 'palace', icon: 'file', title: pg.title || 'Unbenannte Seite', hl: { title: hl(pg.title || '') }, sub: `Seite in „${s.name}“`, act: { type: 'palaceHit', ref: { type: 'page', sid: s.id, pid: pg.id } } })
     }
   }
-  for (const d of mem.docs || []) if (hit(d.name)) out.push({ key: 'pd:' + d.id, kind: 'palace', icon: 'archive', title: d.name, hl: { title: hl(d.name) }, sub: 'Dokument · verschlüsselt', act: { type: 'palaceHit', ref: { type: 'doc', id: d.id } } })
+  for (const d of mem.docs || []) {
+    if (d.deleted || !hit(docHay(d))) continue
+    out.push({ key: 'pd:' + d.id, kind: 'palace', icon: 'archive', title: docTitle(d), hl: { title: hl(docTitle(d)) }, sub: docSub(d), act: { type: 'palaceHit', ref: { type: 'doc', id: d.id } } })
+  }
   return out.slice(0, 8)
 }
 
-function Merkzeug({ blob, onSaveBlob, ownerName, toast, inbox = [], initialQuery, onQueryUsed, onProvider }) {
+// Wonach man ein Dokument findet: Titel, Datei, Ordner, Notiz – und „Steuer 2026“
+const docHay = (d) => [docTitle(d), d.name, ordnerName(d.ordner), d.notiz, d.steuer ? `steuer steuerrelevant ${d.steuerJahr} ${artName(d.steuerArt)}` : ''].join(' ')
+const docSub = (d) => ['Dokument', ordnerName(d.ordner), deDate(docDate(d)), d.steuer ? `Steuer ${d.steuerJahr}` : null].filter(Boolean).join(' · ')
+
+// Beim Entsperren: alte, im Palast eingebettete Dateien in die Browser-Datenbank
+// umziehen (verschlüsselt) und Papierkorb-Einträge nach 30 Tagen endgültig löschen
+async function tidyDocs(key, docs) {
+  let changed = false
+  const limit = addDays(iso(new Date()), -30)
+  const out = []
+  const idb = docs.some((d) => d.b64) ? await filesWork() : false
+  for (const d of docs) {
+    if (d.deleted && d.deleted < limit) { changed = true; delFile(d.id).catch(() => {}); continue }
+    if (d.b64 && idb) {
+      try {
+        await putFile(d.id, await encryptBytes(key, unb64(d.b64)))
+        const moved = { ...d, stored: 'idb' }
+        delete moved.b64
+        out.push(moved)
+        changed = true
+        continue
+      } catch { /* bleibt eingebettet, nichts geht verloren */ }
+    }
+    out.push(d)
+  }
+  return changed ? out : null
+}
+
+function Merkzeug({ blob, onSaveBlob, ownerName, toast, inbox = [], initialQuery, onQueryUsed, onProvider, startSec, onSecUsed }) {
   const [state, setState] = useState('locked')
   const [pw, setPw] = useState('')
   const [err, setErr] = useState(null)
@@ -192,19 +225,25 @@ function Merkzeug({ blob, onSaveBlob, ownerName, toast, inbox = [], initialQuery
   const [personSheet, setPersonSheet] = useState(null) // 'new' | Personen-ID
   const [gFilter, setGFilter] = useState(null)
   const [docSel, setDocSel] = useState(null)
-  const docInput = useRef()
   const flushTimer = useRef()
   const pendingMem = useRef(null)
   const [addName, setAddName] = useState('')
   const [addCtx, setAddCtx] = useState('')
   const memRef = useRef(mem)
   memRef.current = mem
+  const saveSeq = useRef(0)
 
   // Suchbegriff aus der großen Suche übernehmen, sobald der Palast offen ist
   useEffect(() => {
     if (state === 'open' && initialQuery) { setQ(initialQuery); if (onQueryUsed) onQueryUsed() }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state, initialQuery])
+
+  // Direkt in einen Bereich springen (z. B. „Dokumente & Steuerordner“ aus der Suche)
+  useEffect(() => {
+    if (state === 'open' && startSec) { setSel(null); setSec(startSec); setPageId(null); if (onSecUsed) onSecUsed() }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state, startSec])
 
   // Solange entsperrt, darf die große Suche hier mitsuchen – beim Sperren ist das sofort vorbei
   useEffect(() => {
@@ -234,6 +273,8 @@ function Merkzeug({ blob, onSaveBlob, ownerName, toast, inbox = [], initialQuery
           const obj = await decryptJson(k, blob.iv, blob.cipher)
           setKey(k); setSalt(blob.salt)
           let merged = { persons: obj.persons || [], docs: obj.docs || [], sections: obj.sections || [] }
+          const tidied = await tidyDocs(k, merged.docs)
+          if (tidied) merged = { ...merged, docs: tidied }
           // Blitzzettel jetzt verschlüsselt in den 📥 Eingang übernehmen
           if (inbox.length) {
             let secs = merged.sections
@@ -244,9 +285,11 @@ function Merkzeug({ blob, onSaveBlob, ownerName, toast, inbox = [], initialQuery
               updated: i.date, ts: i.ts,
             }))
             merged = { ...merged, sections: secs.map((x) => (x.id === ein.id ? { ...x, pages: [...pages, ...x.pages] } : x)) }
+          }
+          if (inbox.length || tidied) {
             const enc2 = await encryptJson(k, merged)
-            onSaveBlob({ salt: blob.salt, ...enc2 }, { clearInbox: true })
-            toast(`⚡ ${inbox.length} Blitzzettel verschlüsselt in den Eingang übernommen`)
+            onSaveBlob({ salt: blob.salt, ...enc2 }, inbox.length ? { clearInbox: true } : undefined)
+            if (inbox.length) toast(`⚡ ${inbox.length} Blitzzettel verschlüsselt in den Eingang übernommen`)
           }
           setMem(merged)
           setIsNew(false); setState('open')
@@ -280,9 +323,14 @@ function Merkzeug({ blob, onSaveBlob, ownerName, toast, inbox = [], initialQuery
     }
   }
 
+  // Nur der neueste Stand wird gespeichert – zwei Verschlüsselungen, die sich
+  // überholen, dürfen keinen älteren Stand zurückschreiben
   async function persist(next) {
     setMem(next)
+    memRef.current = next
+    const seq = ++saveSeq.current
     const enc = await encryptJson(key, next)
+    if (seq !== saveSeq.current) return
     onSaveBlob({ salt, ...enc })
   }
 
@@ -314,44 +362,15 @@ function Merkzeug({ blob, onSaveBlob, ownerName, toast, inbox = [], initialQuery
     toast('Gesperrt – ohne Passwort unlesbar')
   }
 
-  async function addDoc(file) {
-    if (file.size > 1_500_000) {
-      toast('Zu groß (max. 1,5 MB) – größere Archive kommen mit der Cloud-Stufe')
-      return
-    }
-    const b64 = await new Promise((res, rej) => {
-      const r = new FileReader()
-      r.onload = () => res(String(r.result).split(',')[1] || '')
-      r.onerror = rej
-      r.readAsDataURL(file)
-    })
-    await persist({
-      ...mem,
-      docs: [{ id: uid(), name: file.name, mime: file.type || 'application/octet-stream', size: file.size, b64, added: iso(new Date()) }, ...(mem.docs || [])],
-    })
-    toast('Hochgeladen & verschlüsselt ✓ – ohne Passwort unlesbar')
-  }
-
-  async function saveDoc(doc) {
-    const bytes = Uint8Array.from(atob(doc.b64), (c) => c.charCodeAt(0))
-    if (window.claude?.downloads) {
-      try {
-        await window.claude.downloads.save({ filename: doc.name, data: bytes })
-        toast('Gespeichert ✓')
-      } catch (e) {
-        toast(e?.code === 'declined' ? 'Speichern abgebrochen' : 'Speichern hier nicht möglich – in der installierten App klappt es')
-      }
-      return
-    }
-    try {
-      const a = document.createElement('a')
-      a.href = URL.createObjectURL(new Blob([bytes], { type: doc.mime }))
-      a.download = doc.name
-      a.click()
-      toast('Gespeichert ✓')
-    } catch {
-      toast('Speichern fehlgeschlagen')
-    }
+  // Ablage ändert ihre Dokumentenliste immer über den neuesten Stand –
+  // auch wenn gerade noch Tipp-Änderungen auf ihre Speicherung warten
+  function changeDocs(fn) {
+    const base = pendingMem.current || memRef.current
+    pendingMem.current = null
+    clearTimeout(flushTimer.current)
+    const next = { ...base, docs: fn(base.docs || []) }
+    memRef.current = next
+    persist(next)
   }
 
   if (state !== 'open') {
@@ -370,6 +389,7 @@ function Merkzeug({ blob, onSaveBlob, ownerName, toast, inbox = [], initialQuery
           </div>
           <div className="hint">{blob ? 'Gib dein Gedächtnis-Passwort ein.' : 'Beim ersten Mal legst du mit deinem Passwort ein neues Gedächtnis an.'}</div>
           {initialQuery && <div className="hint">Danach suche ich hier nach „{initialQuery}“.</div>}
+          {startSec === '_dokumente' && !initialQuery && <div className="hint">Danach geht es direkt zu deinen Dokumenten.</div>}
         </form>
       </section>
     )
@@ -525,15 +545,16 @@ function Merkzeug({ blob, onSaveBlob, ownerName, toast, inbox = [], initialQuery
   const search = ql ? {
     persons: mem.persons.filter((p) => [p.name, p.ctx, p.firma, p.gruppe, p.telefon, p.email, p.adresse, p.kennengelernt, p.familie, p.themen, p.faden, p.geb, (p.notizen || []).join(' ')].join(' ').toLowerCase().includes(ql)),
     pages: sections.flatMap((s) => s.pages.filter((p) => (p.title + ' ' + p.text).toLowerCase().includes(ql)).map((p) => ({ s, p }))),
-    docs: (mem.docs || []).filter((d) => d.name.toLowerCase().includes(ql)),
+    docs: (mem.docs || []).filter((d) => !d.deleted && norm(docHay(d)).includes(norm(ql))),
   } : null
+  const docCount = (mem.docs || []).filter((d) => !d.deleted).length
 
   return (
     <section className="screen">
       <div className="title-row">
         <div>
           <h2 className="screen-title">Gedächtnispalast</h2>
-          <p className="screen-sub">{mem.persons.length} Personen · {sections.reduce((a, s) => a + s.pages.length, 0)} Seiten · {(mem.docs || []).length} Dokumente · alles verschlüsselt</p>
+          <p className="screen-sub">{mem.persons.length} Personen · {sections.reduce((a, s) => a + s.pages.length, 0)} Seiten · {docCount} Dokumente · alles verschlüsselt</p>
         </div>
         <button className="btn ghost sm" onClick={lock}><Icon name="lock" size={15} />Sperren</button>
       </div>
@@ -571,8 +592,8 @@ function Merkzeug({ blob, onSaveBlob, ownerName, toast, inbox = [], initialQuery
           ))}
           {search.docs.map((d) => (
             <button className="row" key={d.id} onClick={() => { setQ(''); setSec('_dokumente'); setDocSel(d.id) }}>
-              <RowIcon name='file' />
-              <div className="row-main"><div className="row-title">{d.name}</div><div className="row-meta">Dokument</div></div>
+              <RowIcon name={d.steuer ? 'steuer' : 'file'} />
+              <div className="row-main"><div className="row-title">{docTitle(d)}</div><div className="row-meta">{docSub(d)}</div></div>
               <span className="chev">›</span>
             </button>
           ))}
@@ -587,7 +608,7 @@ function Merkzeug({ blob, onSaveBlob, ownerName, toast, inbox = [], initialQuery
             <span className="osec-bar" style={{ background: '#2FBF71' }} /><Icon name="user" size={15} /> Personen<span className="osec-cnt">{mem.persons.length}</span>
           </button>
           <button className={'osec' + (sec === '_dokumente' ? ' active' : '')} onClick={() => { setSec('_dokumente'); setPageId(null) }}>
-            <span className="osec-bar" style={{ background: '#3D7BFF' }} /><Icon name="file" size={15} /> Dokumente<span className="osec-cnt">{(mem.docs || []).length}</span>
+            <span className="osec-bar" style={{ background: '#3D7BFF' }} /><Icon name="file" size={15} /> Dokumente<span className="osec-cnt">{docCount}</span>
           </button>
           {sections.map((s) => (
             <button key={s.id} className={'osec' + (sec === s.id ? ' active' : '')}
@@ -683,29 +704,8 @@ function Merkzeug({ blob, onSaveBlob, ownerName, toast, inbox = [], initialQuery
         )}
 
         {sec === '_dokumente' && (
-          <div className="on-wide card">
-            {(mem.docs || []).map((d) => (
-              <button className="row" key={d.id} onClick={() => setDocSel(d.id)}>
-                <RowIcon name='file' />
-                <div className="row-main">
-                  <div className="row-title">{d.name}</div>
-                  <div className="row-meta">{Math.round(d.size / 1024)} KB · {d.added} · 🔒 verschlüsselt gespeichert</div>
-                </div>
-                <span className="chev">›</span>
-              </button>
-            ))}
-            {!(mem.docs || []).length && <div className="empty">Noch keine Dokumente. Scans und PDFs werden vor dem Speichern verschlüsselt – ohne dein Passwort sind sie unlesbar.</div>}
-            <button className="row" onClick={() => docInput.current?.click()}>
-              <RowIcon name="upload" />
-              <div className="row-main">
-                <div className="row-title">Dokument hinzufügen</div>
-                <div className="row-meta">Foto, Scan oder PDF (max. 1,5 MB in dieser Stufe)</div>
-              </div>
-              <span className="chev">›</span>
-            </button>
-            <input ref={docInput} type="file" accept="image/*,application/pdf" style={{ display: 'none' }}
-              onChange={(e) => { const f = e.target.files?.[0]; if (f) addDoc(f); e.target.value = '' }} />
-          </div>
+          <Ablage docs={mem.docs || []} cryptoKey={key} onDocsChange={changeDocs} toast={toast} ownerName={ownerName}
+            openId={docSel} setOpenId={setDocSel} />
         )}
 
         {curSec && (
@@ -779,29 +779,6 @@ function Merkzeug({ blob, onSaveBlob, ownerName, toast, inbox = [], initialQuery
         <PersonSheet existing={personSheet === 'new' ? null : mem.persons.find((x) => x.id === personSheet)}
           onSave={savePerson} onClose={() => setPersonSheet(null)} toast={toast} />
       )}
-      {docSel && (() => {
-        const d = (mem.docs || []).find((x) => x.id === docSel)
-        if (!d) return null
-        return (
-          <div className="overlay" onClick={(e) => { if (e.target === e.currentTarget) setDocSel(null) }}>
-            <div className="sheet">
-              <h3>{d.mime.startsWith('image/') ? '🖼️' : '📄'} {d.name}<button type="button" className="x" onClick={() => setDocSel(null)} aria-label="Schließen">✕</button></h3>
-              {d.mime.startsWith('image/') && (
-                <img src={`data:${d.mime};base64,${d.b64}`} alt={d.name}
-                  style={{ maxWidth: '100%', borderRadius: 12, border: '1px solid var(--hairline)', marginBottom: 12 }} />
-              )}
-              <div style={{ display: 'flex', gap: 8 }}>
-                <button className="btn" style={{ flex: 1 }} onClick={() => saveDoc(d)}>Speichern / Öffnen</button>
-                <button className="btn danger" style={{ flex: 1 }} onClick={() => {
-                  persist({ ...mem, docs: mem.docs.filter((x) => x.id !== d.id) })
-                  setDocSel(null)
-                  toast('Dokument gelöscht')
-                }}>Löschen</button>
-              </div>
-            </div>
-          </div>
-        )
-      })()}
     </section>
   )
 }

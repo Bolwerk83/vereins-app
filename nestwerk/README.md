@@ -65,6 +65,18 @@ Besuch auch offline (Service Worker, Netz-zuerst-Strategie).
     „Milch auf die Liste“, „Notiz: Reifen wechseln“ – die Outlook-Regel gilt auch hier.
   - Erkannte Namen, Tage und Uhrzeiten färben sich schon beim Tippen,
     Tab ergänzt Wörter. Der Gedächtnispalast wird nur durchsucht, solange er offen ist.
+- **Dokumente – das papierlose Büro** (im Gedächtnispalast, Ende-zu-Ende-verschlüsselt):
+  *Ablegen* nimmt Fotos, Scans und PDFs (auch mehrere auf einmal oder per Ziehen),
+  schlägt aus dem Dateinamen Titel, Datum und Ordner vor und fragt
+  **„Steuerrelevant?“** – mit Steuerjahr, Art (Handwerker & Haushalt,
+  Kinderbetreuung, Werbungskosten, Krankheitskosten, Spenden, Vorsorge,
+  Bescheinigungen) und Betrag. Die Liste ist nach Monaten gruppiert, filterbar
+  nach Alle/Steuer, Jahr und Ordner; der **Steuerordner** zeigt Summen je Art.
+  Einzelne Dokumente lassen sich *teilen* (Teilen-Menü des Geräts) und
+  *herunterladen*; jede Auswahl – etwa „Steuer 2026“ – geht mit einem Tipp als
+  **ZIP mit Übersicht.csv** an Steuerberatung oder ELSTER. Gelöschtes bleibt
+  30 Tage im Papierkorb. Die Dateien liegen verschlüsselt in der
+  Browser-Datenbank (bis 25 MB pro Datei) und kommen im Backup mit.
 - **Eselsohr knicken:** Die Ecke einer Terminzeile umknicken merkt den Termin
   persönlich vor; das gelbe Eselsohr am Blatt führt zu allen gemerkten Terminen.
 - **Kalender** mit Kalenderwochen, Feiertagen je Bundesland (unter *Familie*)
@@ -79,9 +91,9 @@ Die Einzeldatei-Demo entsteht mit `npm run build && node scripts/einzeldatei.mjs
 
 ## Tests
 
-Siehe [`tests/`](tests/) – sechs Suiten: Such-Engine (läuft direkt in Node),
-Oberfläche, Gedächtnispalast, Betreuungszeiten, Assistent/Demo/Geburtstage und
-Sync/Papierkorb/Serien (Playwright).
+Siehe [`tests/`](tests/) – sieben Suiten: Such-Engine (läuft direkt in Node),
+Oberfläche, Gedächtnispalast, Dokumente/Steuerordner, Betreuungszeiten,
+Assistent/Demo/Geburtstage und Sync/Papierkorb/Serien (Playwright).
 
 ## Lokal starten
 
@@ -121,7 +133,11 @@ erkannt (Build `npm run build`, Output `dist`).
 - **Gedächtnispalast (E2E):** Eigenes Gedächtnis-Passwort pro Person → PBKDF2
   (310 000 Runden) → AES-256-GCM im Browser. Personen-Spickzettel und
   Dokumentenarchiv (Scans/PDFs) werden vor dem Speichern verschlüsselt;
-  nicht einmal Dateinamen liegen im Klartext.
+  nicht einmal Dateinamen liegen im Klartext. Die Dateien selbst liegen einzeln
+  verschlüsselt in IndexedDB (`src/docstore.js`), Titel/Ordner/Steuer-Angaben
+  im verschlüsselten Palast; der ZIP-Export (`src/zip.js`) braucht keine
+  Fremdbibliothek. Dokumente werden nicht über den Familien-Sync verteilt
+  (zu groß) – dafür ins Backup aufgenommen.
 
 ## Herkunft
 

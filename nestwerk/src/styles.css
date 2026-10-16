@@ -971,6 +971,13 @@ button.chip.off { opacity: .45; border-style: dashed; }
 .on-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; align-items: start; }
 @media (min-width: 1000px) { .on-grid { grid-template-columns: 210px 250px minmax(0, 1fr); } .on-wide { grid-column: 2 / span 2; } .on-rail { flex-direction: column; } }
 .on-rail { display: flex; flex-wrap: wrap; gap: 6px; min-width: 0; }
+/* Handy: Bereiche des Palasts in einer wischbaren Zeile statt drei Reihen */
+@media (max-width: 700px) {
+  .on-rail { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin-inline: -16px; padding: 2px 16px 4px; }
+  .on-rail::-webkit-scrollbar { display: none; }
+  .on-rail > * { flex: none; }
+  .on-rail .quickadd input { width: 150px; }
+}
 .osec {
   display: flex; align-items: center; gap: 9px; padding: 9px 11px; border-radius: 11px; cursor: pointer; text-align: left;
   border: 1px solid transparent; background: var(--sheet-2); color: var(--ink); font-weight: 600; font-size: 14px;
@@ -1010,6 +1017,107 @@ button.chip.off { opacity: .45; border-style: dashed; }
 .oe-hint { font-size: 12.5px; color: var(--ink-3); }
 .oe-hint code { background: var(--sheet-2); border-radius: 5px; padding: 1px 5px; font-size: 12px; }
 .backlinks { border-top: 1px solid var(--line); padding-top: 10px; margin-top: 4px; }
+
+/* ================= Dokumente: papierlose Ablage ================= */
+.dk { position: relative; min-width: 0; }
+.dk-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+.dk-head { min-width: 0; }
+.dk-head h3 { font: 700 21px/1.15 var(--f-display); letter-spacing: -0.02em; margin: 2px 0 3px; }
+.dk-head p { margin: 0; font-size: 13.5px; color: var(--ink-2); }
+.dk-filter { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 10px; }
+.dk-filter .themeseg button { gap: 6px; }
+.dk-n { font-size: 11.5px; font-weight: 700; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.themeseg button.on .dk-n { color: var(--accent-text); }
+.dk-year { height: 42px; padding: 0 12px; border-radius: 12px; border: 1px solid var(--line-2); background: var(--sheet); color: var(--ink); font-weight: 600; font-size: 14px; }
+.dk-chips { display: flex; gap: 6px; flex-wrap: wrap; margin: 0 0 12px; }
+.dk-chips .chip .dk-n { margin-left: 2px; }
+@media (max-width: 700px) {
+  .dk-chips { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin-inline: -16px; padding: 0 16px 2px; }
+  .dk-chips::-webkit-scrollbar { display: none; }
+  .dk-chips .chip { flex: none; }
+}
+
+/* Liste: nach Monat (oder im Steuerordner nach Art) gruppiert */
+.dk-list .row-wrap > .row { padding-right: 14px; }
+.dk-group {
+  display: flex; align-items: center; gap: 8px; padding: 10px 16px 6px; border-top: 1px solid var(--line);
+  font: 650 var(--t-micro) var(--f-ui); font-stretch: 88%; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3);
+  background: color-mix(in oklab, var(--ink) 2%, transparent);
+}
+.dk-group:first-child { border-top: 0; }
+.dk-group span { margin-left: auto; letter-spacing: 0; font-variant-numeric: tabular-nums; }
+@media (max-width: 700px) {
+  .dk-size { display: none; }
+  .dk-list .row { gap: 10px; padding: 11px 12px; }
+  .dk-type { width: 32px; height: 40px; font-size: 9px; }
+}
+.dk-type {
+  flex: none; width: 38px; height: 46px; border-radius: 7px 11px 7px 7px; display: grid; place-items: center;
+  font: 800 10px/1 var(--f-ui); letter-spacing: .04em; color: #fff; background: #6B7280; position: relative; overflow: hidden;
+}
+.dk-type::after { content: ''; position: absolute; top: 0; right: 0; width: 11px; height: 11px; background: linear-gradient(225deg, var(--card-bg) 0 50%, rgba(255, 255, 255, 0.45) 50%); }
+.dk-type.pdf { background: #D2382E; }
+.dk-type.bild { background: #2F7FD8; }
+.dk-type.big { width: 54px; height: 66px; font-size: 12.5px; }
+.dk-right { flex: none; display: flex; flex-direction: column; align-items: flex-end; gap: 5px; }
+.dk-amt { font-weight: 700; font-size: 14px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.dk-badge { font-size: 11.5px; padding: 2px 8px; gap: 4px; }
+.dk-trash-acts { display: flex; gap: 8px; flex-wrap: wrap; padding: 0 16px 12px 66px; }
+.dk-empty { display: flex; gap: 14px; align-items: flex-start; padding: 20px 18px; }
+.dk-empty b { display: block; font: 650 16px var(--f-display); margin: 4px 0 4px; }
+.dk-empty p { margin: 0 0 12px; color: var(--ink-2); font-size: 14px; max-width: 54ch; }
+.dk-bulk { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 10px; font-size: 13px; color: var(--ink-2); }
+.dk-bulk > span { margin-right: auto; }
+.dk.drag .dk-list { outline: 2.5px dashed var(--accent); outline-offset: 4px; }
+.dk-drop {
+  position: absolute; inset: 0; z-index: 4; display: grid; place-content: center; justify-items: center; gap: 8px;
+  border-radius: 18px; background: color-mix(in oklab, var(--accent) 12%, var(--sheet)); color: var(--accent-text);
+  font: 650 17px var(--f-display); pointer-events: none;
+}
+
+/* Steuerordner: Belege des Jahres mit Summen je Art */
+.dk-sum { border-radius: 16px; padding: 16px 16px 14px; margin-bottom: 12px; background: color-mix(in oklab, var(--mark) 22%, var(--sheet)); border: 1px solid color-mix(in oklab, var(--warn) 22%, transparent); }
+.dk-sum-h { display: flex; gap: 12px; align-items: center; margin-bottom: 10px; }
+.dk-sum-h b { display: block; font: 700 17px/1.2 var(--f-display); letter-spacing: -0.01em; }
+.dk-sum-h small { font-size: 13.5px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.dk-sum-rows { display: grid; gap: 4px; margin-bottom: 12px; }
+.dk-sum-row {
+  position: relative; display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 12px; align-items: center;
+  padding: 7px 10px; border-radius: 9px; font-size: 14px; background: color-mix(in oklab, var(--sheet) 70%, transparent);
+  border: 0; color: var(--ink); text-align: left; overflow: hidden;
+}
+.dk-sum-row::before { content: ''; position: absolute; inset: 0 auto 0 0; width: var(--w, 0%); background: color-mix(in oklab, var(--warn) 14%, transparent); }
+.dk-sum-row > * { position: relative; }
+button.dk-sum-row { cursor: pointer; }
+button.dk-sum-row:hover { background: var(--sheet); }
+.dk-sum-row b { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.dk-acts { display: flex; gap: 8px; flex-wrap: wrap; margin: 12px 0 0; }
+.dk-acts .btn { flex: 1 1 140px; }
+
+/* Ablegen & Detail */
+.dk-sheet .dk-files { display: grid; gap: 6px; margin-bottom: 14px; max-height: 180px; overflow-y: auto; }
+.dk-file { display: flex; align-items: center; gap: 10px; padding: 7px 9px; border-radius: 11px; background: var(--sheet-2); font-size: 13.5px; min-width: 0; }
+.dk-file img { width: 38px; height: 46px; object-fit: cover; border-radius: 6px; flex: none; }
+.dk-file .dk-file-n { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+.dk-file small { color: var(--ink-3); flex: none; }
+.dk-pick { display: flex; flex-wrap: wrap; gap: 6px; }
+.dk-pick .chip { cursor: pointer; gap: 6px; }
+.dk-tax { border: 1px solid var(--line-2); border-radius: 16px; padding: 12px; margin: 4px 0 16px; transition: background .2s ease, border-color .2s ease; }
+.dk-tax.on { background: color-mix(in oklab, var(--mark) 20%, var(--sheet)); border-color: color-mix(in oklab, var(--warn) 30%, transparent); }
+.dk-tax-q { display: flex; align-items: center; gap: 11px; }
+.dk-tax-t { flex: 1; min-width: 0; }
+.dk-tax-t b { display: block; font-size: 15px; }
+.dk-tax-t small { display: block; font-size: 12.5px; color: var(--ink-2); line-height: 1.35; }
+.dk-tax .themeseg { flex: none; }
+.dk-tax-more { margin-top: 12px; }
+.dk-sublabel { font-size: 13px; font-weight: 600; color: var(--ink-2); margin: 10px 0 6px; }
+.dk-preview { display: block; max-width: 100%; max-height: 52vh; margin: 0 auto 4px; border-radius: 12px; border: 1px solid var(--line); object-fit: contain; background: var(--sheet-2); }
+.dk-card { display: flex; gap: 14px; align-items: center; padding: 14px; border-radius: 14px; background: var(--sheet-2); }
+.dk-card b { display: block; font-size: 14.5px; overflow-wrap: anywhere; }
+.dk-card small { display: block; font-size: 13px; color: var(--ink-2); margin-top: 3px; }
+.dk-facts { margin-top: 14px; }
+.dk-mark { border-top: 1px solid var(--line); }
+.dk-del { color: var(--danger); }
 
 /* ================= Suche ================= */
 .pal-scrim {
