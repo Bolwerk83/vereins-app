@@ -77,6 +77,14 @@ Besuch auch offline (Service Worker, Netz-zuerst-Strategie).
   **ZIP mit Übersicht.csv** an Steuerberatung oder ELSTER. Gelöschtes bleibt
   30 Tage im Papierkorb. Die Dateien liegen verschlüsselt in der
   Browser-Datenbank (bis 25 MB pro Datei) und kommen im Backup mit.
+- **Auf- und zuklappen für die kompakte Übersicht:** Jede Bereichs-Überschrift
+  (Listen, Heute, Profil, Familie, Praxis) klappt per Tipp zu – zugeklappt bleibt
+  eine Zeile mit dem Wichtigsten („3 offen · Milch · Brot · Geschenkpapier“).
+  „Alle zuklappen“ faltet eine ganze Seite. Jede Person klappt für sich, die App
+  merkt es sich. In Listen rutscht Abgehaktes nach einem kurzen Moment in eine
+  eigene Klappzeile „N erledigt“ (aufräumen mit einem Tipp, 30 Tage Papierkorb).
+  Im Gedächtnispalast lassen sich Überschriften samt Aufgaben falten
+  („2/5 erledigt“), die Seitenliste zeigt den Aufgaben-Stand jeder Seite.
 - **Eselsohr knicken:** Die Ecke einer Terminzeile umknicken merkt den Termin
   persönlich vor; das gelbe Eselsohr am Blatt führt zu allen gemerkten Terminen.
 - **Kalender** mit Kalenderwochen, Feiertagen je Bundesland (unter *Familie*)

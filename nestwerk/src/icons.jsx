@@ -33,6 +33,8 @@ const ICON_PATHS = {
   chevL: <path d="m14.5 6-6 6 6 6" />,
   chevR: <path d="m9.5 6 6 6-6 6" />,
   chevD: <path d="m6 9.5 6 6 6-6" />,
+  fold: <path d="m7 4.5 5 5 5-5M7 19.5l5-5 5 5" />,
+  unfold: <path d="m7 9 5-5 5 5M7 15l5 5 5-5" />,
   check: <path d="m5 12.5 4.5 4.5L19 7.5" />,
   x: <path d="M6 6l12 12M18 6 6 18" />,
   clock: <><circle cx="12" cy="12" r="8.5" /><path d="M12 7.5V12l3 2" /></>,

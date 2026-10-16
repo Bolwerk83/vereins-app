@@ -33,6 +33,22 @@ await page.waitForTimeout(500)
 let body = await page.textContent('body')
 body.includes('4 Säulen der Empathie') ? ok('Ordnung-Seiten da (4 Säulen)') : fail('Ordnung fehlt')
 
+// Aufgaben-Stand in der Seitenliste, Überschriften zuklappen
+;(await page.locator('.opage', { hasText: 'Kopf leeren' }).locator('.opage-tasks').textContent()) === '0/3 ✓' ? ok('Seitenliste zeigt den Aufgaben-Stand (0/3)') : fail('Aufgaben-Stand fehlt')
+await page.locator('.opage', { hasText: '4 Säulen der Empathie' }).click()
+await page.waitForTimeout(200)
+await page.locator('.pv-h', { hasText: '1. Wahrnehmen' }).locator('.pv-fold').click()
+await page.waitForTimeout(200)
+let pv = await page.textContent('.pageview')
+pv.includes('1. Wahrnehmen') && !pv.includes('Du merkst sofort') && pv.includes('2. Verstehen') ? ok('Überschrift zugeklappt – ihr Inhalt verschwindet, der Rest bleibt') : fail('Zuklappen einer Überschrift')
+;(await page.locator('.pv-h.zu .pv-h-sum').textContent()).includes('Zeile') ? ok('Zugeklappte Überschrift sagt, was darunter liegt') : fail('Zusammenfassung fehlt')
+await page.locator('.pv-all').click()
+await page.waitForTimeout(200)
+;(await page.locator('.pv-h.zu').count()) === 4 ? ok('„Alle Abschnitte zuklappen“ faltet die ganze Seite') : fail('Alle zuklappen auf der Seite')
+await page.locator('.pv-all').click()
+await page.waitForTimeout(200)
+await page.locator('.pv-h', { hasText: '1. Wahrnehmen' }).locator('.pv-fold').click()
+
 // Verschlüsselung: nichts davon liegt im Klartext im Speicher
 await page.waitForTimeout(2500) // debounced persist + Krypto
 const raw = await page.evaluate(() => localStorage.getItem('eselsohr-v1'))
@@ -49,6 +65,9 @@ await page.locator('.lockbox').waitFor({ state: 'detached', timeout: 20000 })
 await page.locator('.osec', { hasText: 'Ordnung' }).first().click().catch(() => {})
 await page.waitForTimeout(400)
 ;(await page.textContent('body')).includes('4 Säulen der Empathie') ? ok('Inhalte nach Entsperren wieder da') : fail('Inhalte weg')
+await page.locator('.opage', { hasText: '4 Säulen der Empathie' }).click()
+await page.waitForTimeout(200)
+;(await page.locator('.pv-h.zu').count()) === 1 && (await page.textContent('.pv-h.zu')).includes('1. Wahrnehmen') ? ok('Zugeklappte Überschrift bleibt zu – verschlüsselt gemerkt') : fail('Falten nicht gemerkt')
 
 // Falsches Passwort bleibt draußen
 await page.reload(); await page.waitForTimeout(400)

@@ -115,9 +115,24 @@ const EMPTY_MEMORY = { persons: [], docs: [], sections: [] }
 const SEC_COLORS = ['#8B5CF6', '#FF5D73', '#FFB02E', '#2FBF71', '#00B8C4', '#FF7A3D']
 const TAG_RE = /#[A-Za-z0-9äöüÄÖÜß_-]+/g
 
+// Überschrift-Ebene einer Zeile: „# …“ = 1, „## …“ = 2, sonst 0
+const headLevel = (ln) => (ln.startsWith('## ') ? 2 : ln.startsWith('# ') ? 1 : 0)
+
+// Aufgaben einer Seite zählen: [ ] offen, [x] erledigt
+export function taskStats(text) {
+  let open = 0
+  let done = 0
+  for (const ln of String(text || '').split('\n')) {
+    if (/^\[x\]/.test(ln)) done++
+    else if (/^\[ \]/.test(ln)) open++
+  }
+  return { open, done, all: open + done }
+}
+
 /* Lese-Ansicht einer Palast-Seite: [[Links]], #Schlagworte, Aufgaben,
-   Überschriften, Listen und **fett** – alles klickbar. */
-function PageView({ text, onToggleLine, onLink, onTag }) {
+   Überschriften, Listen und **fett** – alles klickbar. Überschriften lassen sich
+   samt allem darunter zuklappen; zugeklappt zeigen sie, wie viele Aufgaben erledigt sind. */
+function PageView({ text, onToggleLine, onLink, onTag, folds = [], onFold }) {
   const lines = String(text || '').split('\n')
   const inline = (str) => {
     return String(str).split(/(\[\[[^\]]+\]\]|#[A-Za-z0-9äöüÄÖÜß_-]+|\*\*[^*]+\*\*)/g).map((p, i) => {
@@ -132,11 +147,45 @@ function PageView({ text, onToggleLine, onLink, onTag }) {
       return p
     })
   }
+  // Was zu einer Überschrift gehört: alles bis zur nächsten Überschrift derselben oder höheren Ebene
+  const blockOf = (i) => {
+    const lvl = headLevel(lines[i])
+    let end = i + 1
+    while (end < lines.length && !(headLevel(lines[end]) && headLevel(lines[end]) <= lvl)) end++
+    return lines.slice(i + 1, end)
+  }
+  let hideBelow = 0 // Ebene der zugeklappten Überschrift, deren Inhalt gerade ausgeblendet wird
   return (
     <div className="pageview">
       {lines.map((ln, i) => {
-        if (ln.startsWith('## ')) return <h4 key={i}>{inline(ln.slice(3))}</h4>
-        if (ln.startsWith('# ')) return <h3 key={i}>{inline(ln.slice(2))}</h3>
+        const lvl = headLevel(ln)
+        if (hideBelow && lvl && lvl <= hideBelow) hideBelow = 0
+        if (hideBelow) return null
+        if (lvl) {
+          const key = ln.trim()
+          const zu = folds.includes(key)
+          const block = blockOf(i)
+          const t = taskStats(block.join('\n'))
+          const lines2 = block.filter((x) => x.trim()).length
+          if (zu) hideBelow = lvl
+          const Tag = lvl === 2 ? 'h4' : 'h3'
+          return (
+            <Tag key={i} className={'pv-h' + (zu ? ' zu' : '')}>
+              {onFold && lines2 > 0 && (
+                <button type="button" className="pv-fold" aria-expanded={!zu} onClick={() => onFold(key)}
+                  aria-label={(zu ? 'Aufklappen: ' : 'Zuklappen: ') + ln.replace(/^#+\s*/, '')}>
+                  <Icon name="chevD" size={16} />
+                </button>
+              )}
+              <span className="pv-h-t">{inline(ln.slice(lvl + 1))}</span>
+              {(zu || t.all > 0) && lines2 > 0 && (
+                <button type="button" className={'pv-h-sum' + (t.all && t.done === t.all ? ' ok' : '')} onClick={() => onFold && onFold(key)} tabIndex={-1}>
+                  {t.all ? `${t.done}/${t.all} erledigt` : `${lines2} Zeile${lines2 === 1 ? '' : 'n'}`}
+                </button>
+              )}
+            </Tag>
+          )
+        }
         const task = ln.match(/^\[( |x)\] ?(.*)$/)
         if (task) return (
           <label key={i} className="pv-task">
@@ -492,6 +541,14 @@ function Merkzeug({ blob, onSaveBlob, ownerName, toast, inbox = [], initialQuery
 
   const updPage = (patch) => updSections((ss) => ss.map((s) =>
     s.id === curSec.id ? { ...s, pages: s.pages.map((p) => (p.id === pageId ? { ...p, ...patch, updated: stamp(), ts: Date.now() } : p)) } : s))
+  // Zu- und Aufklappen ist keine Änderung am Inhalt – „zuletzt bearbeitet“ bleibt, wie es ist
+  const updPageQuiet = (patch) => updSections((ss) => ss.map((s) =>
+    s.id === curSec.id ? { ...s, pages: s.pages.map((p) => (p.id === pageId ? { ...p, ...patch } : p)) } : s))
+  const pageHeads = curPage ? String(curPage.text || '').split('\n').filter((ln) => headLevel(ln)).map((ln) => ln.trim()) : []
+  const toggleFold = (key) => {
+    const f = curPage.folds || []
+    updPageQuiet({ folds: f.includes(key) ? f.filter((x) => x !== key) : [...f, key] })
+  }
 
   const addPage = () => {
     const np = { id: uid(), title: '', text: '', updated: stamp(), ts: Date.now() }
@@ -716,7 +773,10 @@ function Merkzeug({ blob, onSaveBlob, ownerName, toast, inbox = [], initialQuery
                 <button key={p.id} className={'opage' + (p.id === pageId ? ' active' : '')}
                   onClick={() => { setPageId(p.id); setPageMode(p.text ? 'view' : 'edit') }}>
                   <div className="opage-t">{p.pin ? '📌 ' : ''}{p.title || 'Unbenannte Seite'}</div>
-                  <div className="opage-d">{p.updated}{p.text ? ' · ' + p.text.slice(0, 34) : ''}</div>
+                  <div className="opage-d">
+                    {(() => { const t = taskStats(p.text); return t.all ? <span className={'opage-tasks' + (t.done === t.all ? ' ok' : '')}>{t.done}/{t.all} ✓</span> : null })()}
+                    {p.updated}{p.text ? ' · ' + p.text.slice(0, 34) : ''}
+                  </div>
                 </button>
               ))}
               {!curSec.pages.length && <div className="empty" style={{ borderBottom: 0 }}>Noch keine Seiten.</div>}
@@ -735,7 +795,17 @@ function Merkzeug({ blob, onSaveBlob, ownerName, toast, inbox = [], initialQuery
                       {pageMode === 'view' ? '✏️ Bearbeiten' : '✓ Fertig'}
                     </button>
                   </div>
-                  <div className="oe-date">zuletzt {curPage.updated} · verschlüsselt gespeichert 🔒</div>
+                  <div className="oe-date">
+                    zuletzt {curPage.updated} · verschlüsselt gespeichert 🔒
+                    {pageMode === 'view' && pageHeads.length > 1 && (() => {
+                      const alleZu = pageHeads.every((h) => (curPage.folds || []).includes(h))
+                      return (
+                        <button type="button" className="linkbtn pv-all" onClick={() => updPageQuiet({ folds: alleZu ? [] : pageHeads })}>
+                          {alleZu ? 'Alle Abschnitte aufklappen' : 'Alle Abschnitte zuklappen'}
+                        </button>
+                      )
+                    })()}
+                  </div>
                   {pageMode === 'edit' ? (
                     <>
                       <textarea className="oe-body" value={curPage.text} placeholder="Einfach lostippen – gespeichert wird automatisch …"
@@ -743,7 +813,8 @@ function Merkzeug({ blob, onSaveBlob, ownerName, toast, inbox = [], initialQuery
                       <div className="oe-hint">Tricks: <code># Überschrift</code> · <code>- Liste</code> · <code>[ ] Aufgabe</code> · <code>[[Verknüpfung]]</code> · <code>#schlagwort</code> · <code>**fett**</code></div>
                     </>
                   ) : (
-                    <PageView text={curPage.text} onToggleLine={toggleTaskLine} onLink={followLink} onTag={(t) => setQ(t)} />
+                    <PageView text={curPage.text} onToggleLine={toggleTaskLine} onLink={followLink} onTag={(t) => setQ(t)}
+                      folds={curPage.folds || []} onFold={toggleFold} />
                   )}
                   {backlinksOf(curPage.title).length > 0 && (
                     <div className="backlinks">

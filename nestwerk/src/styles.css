@@ -356,6 +356,42 @@ h2.screen-title {
 .cols { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0 32px; }
 @media (min-width: 720px) { .cols.two { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; } }
 
+/* ================= Klappbare Bereiche ================= */
+/* Die Überschrift ist der Knopf. Zugeklappt wird sie zur schmalen Zeile mit dem
+   Wichtigsten – mehrere zugeklappte Bereiche stapeln sich zu einer Übersicht. */
+.fach { min-width: 0; }
+.fach > .label { gap: 8px; }
+.fach-t {
+  flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px;
+  margin: -6px -10px; padding: 6px 10px; border: 0; border-radius: 12px; background: none;
+  font: inherit; color: inherit; letter-spacing: inherit; text-align: left; cursor: pointer;
+  transition: background .15s ease;
+}
+.fach-t:hover { background: color-mix(in oklab, var(--ink) 4%, transparent); }
+/* Platz geht zuerst an den Titel; die Zusammenfassung nimmt, was übrig bleibt */
+.fach-n { flex: 0 0.2 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fach-t .sub { flex: 1 1 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fach-chev { flex: none; margin-left: auto; color: var(--ink-3); display: grid; place-items: center; transform: rotate(180deg); transition: transform .22s ease; }
+.fach.zu .fach-chev { transform: none; }
+.fach.zu > .label { margin-top: 14px; margin-bottom: 0; }
+.fach.zu > .label .fach-t {
+  margin: 0; padding: 12px 14px; border-radius: 14px;
+  background: var(--card-bg); border: 1px solid var(--card-border); box-shadow: var(--card-shadow);
+}
+.fach.zu > .label .fach-t:hover { background: color-mix(in oklab, var(--accent) 5%, var(--card-bg)); }
+.fach.zu > .label .fach-t .sub { color: var(--ink-2); }
+.fach.zu + .fach.zu > .label { margin-top: 8px; }
+.fach-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; vertical-align: -1px; }
+.alle-klappen { flex: none; }
+.title-acts { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.kpis-end { margin-left: auto; display: flex; align-items: center; }
+@media (max-width: 640px) { .kpis-end { margin-left: 0; } }
+/* Erledigtes in Listen: eigene Klappzeile, Aufräumen mit einem Tipp */
+.fold-done .row-title { font-weight: 600; }
+.fold-done .fach-chev { transform: none; }
+.fold-done[aria-expanded="true"] .fach-chev { transform: rotate(180deg); }
+.fold-clear .row-title { color: var(--danger); font-weight: 600; font-size: 14px; }
+
 /* ================= Listen-Bausteine ================= */
 .card {
   background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 16px;
@@ -616,12 +652,12 @@ button.chip.off { opacity: .45; border-style: dashed; }
 @media (max-width: 640px) { .planer { --hw: 42px; --colmin: 108px; } }
 
 /* Randspalte */
-.h-side .label:first-child { margin-top: 6px; }
+.h-side > :first-child > .label { margin-top: 6px; }
 .h-side .row { flex-wrap: wrap; row-gap: 8px; }
 .h-side .row-main { flex: 1 1 150px; }
 .h-side .row > .btn, .h-side .row > .invite-actions { margin-left: auto; }
 .h-side .row > .time { min-width: 0 !important; }
-@media (max-width: 1220px) { .h-side .label:first-child { margin-top: 34px; } }
+@media (max-width: 1220px) { .h-side > :first-child > .label { margin-top: 34px; } }
 .sug .row-title { font-size: 14.5px; }
 .sug .row-meta { font-size: 13px; }
 .sug .row { align-items: flex-start; }
@@ -1012,6 +1048,23 @@ button.chip.off { opacity: .45; border-style: dashed; }
 .pageview h3 { margin: 14px 0 4px; font: 700 19px var(--f-display); }
 .pageview h4 { margin: 10px 0 3px; font: 650 16px var(--f-display); color: var(--ink-2); }
 .pv-li { padding: 1px 0; }
+/* Überschriften falten: ▾ offen, ▸ zu – zugeklappt mit Aufgaben-Stand */
+.pageview .pv-h { display: flex; align-items: center; gap: 6px; }
+.pv-fold {
+  flex: none; width: 26px; height: 26px; margin-left: -5px; border: 0; border-radius: 8px; background: none;
+  color: var(--ink-3); cursor: pointer; display: grid; place-items: center; transition: transform .2s ease, background .15s ease;
+}
+.pv-fold:hover { background: var(--sheet-2); color: var(--ink); }
+.pv-h.zu .pv-fold { transform: rotate(-90deg); }
+.pv-h-t { min-width: 0; }
+.pv-h-sum {
+  margin-left: auto; flex: none; border: 0; cursor: pointer; border-radius: 999px; padding: 3px 10px;
+  font: 600 12px var(--f-ui); color: var(--ink-2); background: var(--sheet-2); font-variant-numeric: tabular-nums;
+}
+.pv-h-sum.ok { color: var(--ok); background: var(--ok-soft); }
+.pv-all { margin-left: 10px; font-size: 12.5px; }
+.opage-tasks { display: inline-block; margin-right: 6px; padding: 0 6px; border-radius: 999px; background: var(--sheet-3); color: var(--ink-2); font-weight: 700; font-size: 11px; font-variant-numeric: tabular-nums; }
+.opage-tasks.ok { background: var(--ok-soft); color: var(--ok); }
 .pv-task { display: flex; gap: 9px; align-items: center; padding: 2px 0; cursor: pointer; }
 .pv-task .check { width: 19px; height: 19px; }
 .oe-hint { font-size: 12.5px; color: var(--ink-3); }

@@ -5,7 +5,7 @@ import { loadSyncMeta, saveSyncMeta, newSyncCode, esCreate, esPull, esPush, stri
 import { WD, WD_LONG, MONTHS, COLORS, iso, fromIso, wdIdx, fmtDate, fmtShort, addDays, mins, uid, gebInfo, parseIcs, mapsLink, kw, holidayOn, LAENDER, evDur } from './util.js'
 import { Icon, RowIcon, LogoMark } from './icons.jsx'
 import { MODULES, hasMod, saveTextFile } from './domain.js'
-import { useToast, QuickAdd } from './ui.jsx'
+import { useToast, QuickAdd, Fach, AlleKlappen } from './ui.jsx'
 import { Onboarding, demoData, ProfilePicker } from './onboarding.jsx'
 import { Merkzeug } from './palace.jsx'
 import { EventSheet, MemberSheet, CareSheet, KlientSheet, PTerminSheet, VorlageSheet, VereinSheet, BlitzSheet, BlitzListe, GebForm, WaTemplateRow, SerieWizard, IstWizard, SportPlanForm, ImportRow, WA_DEFAULT } from './sheets.jsx'
@@ -16,7 +16,9 @@ import { exportFiles, importFiles, clearFiles } from './docstore.js'
 
 const THEME_KEY = 'eselsohr-theme'
 const PLANER_KEY = 'eselsohr-heute-ansicht'
+const ZU_KEY = 'eselsohr-zugeklappt' // zugeklappte Bereiche, je Person
 const readPref = (k, d) => { try { return localStorage.getItem(k) || d } catch { return d } }
+const readZu = () => { try { return JSON.parse(localStorage.getItem(ZU_KEY) || '{}') || {} } catch { return {} } }
 const writePref = (k, v) => { try { localStorage.setItem(k, v) } catch { /* Speicher gesperrt */ } }
 const nowMinutes = () => { const d = new Date(); return d.getHours() * 60 + d.getMinutes() }
 
@@ -82,6 +84,8 @@ export default function App() {
   const idxCache = useRef({})
   const [phone, setPhone] = useState(isPhoneNow)
   const [klapp, setKlapp] = useState([]) // aufgeklappte Bereiche auf dem Handy
+  const [zuMap, setZuMap] = useState(readZu) // { [Person]: [zugeklappte Bereiche] }
+  const [justDone, setJustDone] = useState([]) // gerade abgehakt: kurz sichtbar, dann zu „erledigt“
   const swipeRef = useRef(null)
   const [sheet, setSheet] = useState(null)
   const [calCursor, setCalCursor] = useState(() => { const d = new Date(); return { y: d.getFullYear(), m: d.getMonth() } })
@@ -334,6 +338,21 @@ export default function App() {
 
   const isFree = (memberId, dateStr, time) =>
     !db.events.some((e) => e.member_id === memberId && e.on_date === dateStr && e.status === 'fix' && Math.abs(mins(e.at_time) - mins(time)) < 60)
+
+  /* ---------- Klappbare Bereiche: jede Person klappt sich ihre Übersicht zurecht ---------- */
+
+  const zu = zuMap[me.id] || []
+  const setZuFor = (fn) => setZuMap((m) => {
+    const next = { ...m, [me.id]: fn(m[me.id] || []) }
+    try { localStorage.setItem(ZU_KEY, JSON.stringify(next)) } catch { /* Speicher gesperrt */ }
+    return next
+  })
+  const isZu = (id) => zu.includes(id)
+  const toggleZu = (id) => setZuFor((z) => (z.includes(id) ? z.filter((x) => x !== id) : [...z, id]))
+  const setZuAll = (ids, closed) => setZuFor((z) => (closed ? [...new Set([...z, ...ids])] : z.filter((x) => !ids.includes(x))))
+  const fach = (id, props, children) => <Fach key={id} id={id} zu={isZu(id)} onToggle={toggleZu} {...props}>{children}</Fach>
+  // Wer per Knopf oder Suche zu einem Bereich springt, findet ihn aufgeklappt
+  const openFach = (id) => { if (isZu(id)) toggleZu(id) }
 
   /* ---------- Aktionen ---------- */
 
@@ -609,12 +628,30 @@ export default function App() {
   }
 
   const addItem = (list, text) => saveAll({ ...db, items: [{ id: uid(), list, text, done: false, created_by: me.id }, ...db.items] })
-  const toggleItem = (it) => saveAll({ ...db, items: db.items.map((x) => (x.id === it.id ? { ...x, done: !x.done } : x)) })
+  const toggleItem = (it) => {
+    saveAll({ ...db, items: db.items.map((x) => (x.id === it.id ? { ...x, done: !x.done } : x)) })
+    // Abgehakt bleibt es einen Moment durchgestrichen stehen – dann rutscht es zu „erledigt“
+    if (!it.done) {
+      setJustDone((j) => [...j, it.id])
+      setTimeout(() => setJustDone((j) => j.filter((x) => x !== it.id)), 1600)
+    }
+  }
   const deleteItem = (it) => saveAll({
     ...db,
     items: db.items.filter((x) => x.id !== it.id),
     trash: [{ id: it.id, kind: 'item', delAt: today, row: it }, ...(db.trash || [])],
   })
+  // Abgehaktes aufräumen – landet wie alles Gelöschte 30 Tage im Papierkorb
+  function clearDone(list) {
+    const done = db.items.filter((i) => i.list === list && i.done)
+    if (!done.length) return
+    saveAll({
+      ...db,
+      items: db.items.filter((i) => !(i.list === list && i.done)),
+      trash: [...done.map((it) => ({ id: it.id, kind: 'item', delAt: today, row: it })), ...(db.trash || [])],
+    })
+    toast(`${done.length} Erledigte aufgeräumt – 30 Tage im Papierkorb`)
+  }
 
   function addMember(name, color, kind) {
     saveAll({ ...db, members: [...db.members, { id: uid(), name, color, kind, is_admin: false, can_direct: false }] })
@@ -981,7 +1018,10 @@ export default function App() {
     setCalQ('')
     setNav('kalender')
   }
-  const scrollToId = (id) => setTimeout(() => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 140)
+  const scrollToId = (id) => {
+    openFach(id)
+    setTimeout(() => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 140)
+  }
   function addBlitz(text) {
     const d = new Date()
     saveAll({ ...db, inbox: [...(db.inbox || []), { id: uid(), member_id: me.id, text, ts: Date.now(), date: `${d.getDate()}.${d.getMonth() + 1}.${d.getFullYear()}` }] })
@@ -1074,6 +1114,17 @@ export default function App() {
     </>
   )
 
+  // Morgen in einer Zeile – für Klappbereiche auf Handy und Desktop
+  const tmrDate = addDays(dayView, 1)
+  const tmrEvs = db.events.filter((e) => e.on_date === tmrDate && e.status === 'fix').sort((a, b) => a.at_time.localeCompare(b.at_time))
+  const tmrCare = kids.flatMap((k) => careOn(k, tmrDate).slice(0, 1).map((b) => ({ k, b }))).sort((a, b) => a.b.from.localeCompare(b.b.from))[0]
+  const tmrSum = [
+    tmrEvs.length ? `${tmrEvs.length} Termin${tmrEvs.length > 1 ? 'e' : ''}, ab ${tmrEvs[0].at_time}` : 'keine Termine',
+    tmrCare ? `${tmrCare.k.name}: ${tmrCare.b.label} ab ${tmrCare.b.from}` : null,
+  ].filter(Boolean).join(' · ')
+  const dayFixCount = db.events.filter((e) => e.on_date === dayView && e.status === 'fix').length
+  const heuteIds = ['heute-planer', 'geknickt', 'heute-morgen', 'anfragen-karte', 'vorschlaege', 'betreuung', 'balance']
+
   const screenHeute = (
     <section className="screen heute">
       <div className="h-top">
@@ -1125,36 +1176,39 @@ export default function App() {
             <span className="cap">Sport diese Woche</span>
           </button>
         )}
+        <span className="kpis-end"><AlleKlappen ids={heuteIds} zu={zu} onSet={setZuAll} /></span>
       </div>
 
       <div className="h-grid">
         <div className="h-main">
-          <h3 className="label">
-            Familienplaner <span className="sub">{dayView === today ? 'heute' : longDate(dayView)}</span>
-            <span className="lact themeseg" role="group" aria-label="Darstellung">
-              <button type="button" className={heuteAnsicht === 'planer' ? 'on' : ''} onClick={() => setAnsicht('planer')}>Planer</button>
-              <button type="button" className={heuteAnsicht === 'liste' ? 'on' : ''} onClick={() => setAnsicht('liste')}>Liste</button>
-            </span>
-          </h3>
-          {heuteAnsicht === 'planer'
+          {fach('heute-planer', {
+            title: 'Familienplaner', sub: dayView === today ? 'heute' : longDate(dayView),
+            summary: `${dayView === today ? 'heute' : longDate(dayView)} · ${dayFixCount ? `${dayFixCount} Termin${dayFixCount > 1 ? 'e' : ''}` : 'frei'}${nextEv && nextEv.on_date === dayView ? ` · als Nächstes ${nextEv.at_time} ${viewEvent(nextEv).title}` : ''}`,
+            act: (
+              <span className="themeseg" role="group" aria-label="Darstellung">
+                <button type="button" className={heuteAnsicht === 'planer' ? 'on' : ''} onClick={() => setAnsicht('planer')}>Planer</button>
+                <button type="button" className={heuteAnsicht === 'liste' ? 'on' : ''} onClick={() => setAnsicht('liste')}>Liste</button>
+              </span>
+            ),
+          }, heuteAnsicht === 'planer'
             ? <Planer date={dayView} columns={db.members} events={db.events} viewEvent={viewEvent} careOn={careOn} nowMin={nowMin} today={today} byId={byId} pins={pins}
                 onOpen={(e) => setSheet({ event: e })} onCare={(id) => { if (!isKid) setCareSheet(id) }}
                 onAdd={(mid, t) => setSheet({ date: dayView, prefill: { member_id: mid, at_time: t } })} />
-            : <div className="card">{dayList(dayView)}</div>}
-          {pinnedEvs.length > 0 && (
-            <>
-              <h3 className="label" id="geknickt"><span className="lico"><Icon name="knick" size={18} /></span>Gemerkt <span className="sub">mit Eselsohr markiert</span></h3>
-              <div className="card">{pinnedEvs.map((e) => <EventRow key={e.id} e={e} withDate />)}</div>
-            </>
-          )}
-          <h3 className="label">{dayView === today ? 'Morgen schon im Blick' : 'Am Tag danach'} <span className="sub">{fmtDate(addDays(dayView, 1))}</span></h3>
-          <div className="card">{dayList(addDays(dayView, 1))}</div>
+            : <div className="card">{dayList(dayView)}</div>)}
+          {pinnedEvs.length > 0 && fach('geknickt', {
+            hid: 'geknickt', icon: 'knick', title: 'Gemerkt', sub: 'mit Eselsohr markiert',
+            summary: `${pinnedEvs.length} · als Nächstes ${fmtShort(pinnedEvs[0].on_date)} ${viewEvent(pinnedEvs[0]).title}`,
+          }, <div className="card">{pinnedEvs.map((e) => <EventRow key={e.id} e={e} withDate />)}</div>)}
+          {fach('heute-morgen', {
+            title: dayView === today ? 'Morgen schon im Blick' : 'Am Tag danach', sub: fmtDate(tmrDate), summary: tmrSum,
+          }, <div className="card">{dayList(tmrDate)}</div>)}
         </div>
 
         <aside className="h-side">
-          {invites.length > 0 && (
-            <>
-              <h3 className="label" id="anfragen-karte"><span className="lico"><Icon name="inbox" size={18} /></span>Anfragen an dich</h3>
+          {invites.length > 0 && fach('anfragen-karte', {
+            hid: 'anfragen-karte', icon: 'inbox', title: 'Anfragen an dich',
+            summary: `${invites.length} · ${invites.slice(0, 2).map((e) => e.title).join(' · ')}`,
+          }, (
               <div className="card">
                 {invites.map((e) => (
                   <div className="row" key={e.id}>
@@ -1170,22 +1224,22 @@ export default function App() {
                   </div>
                 ))}
               </div>
-            </>
-          )}
+          ))}
 
-          {suggestions.length > 0 && (
-            <>
-              <h3 className="label"><span className="lico"><Icon name="bulb" size={18} /></span>Vorschläge <span className="sub">du entscheidest</span></h3>
+          {suggestions.length > 0 && fach('vorschlaege', {
+            icon: 'bulb', title: 'Vorschläge', sub: 'du entscheidest',
+            summary: `${suggestions.length} · ${suggestions[0].title}`,
+          }, (
               <div className="card sug">
                 {sugRows(suggestions)}
                 <div className="sug-note">Aus euren eigenen Daten – nichts verlässt das Gerät. Nie mehr als drei auf einmal.</div>
               </div>
-            </>
-          )}
+          ))}
 
-          {!isKid && kids.length > 0 && (
-            <>
-              <h3 className="label"><span className="lico"><Icon name="school" size={18} /></span>Wann sind die Kinder in der Betreuung?</h3>
+          {!isKid && kids.length > 0 && fach('betreuung', {
+            icon: 'school', title: 'Betreuung', sub: 'Wann sind die Kinder in der Betreuung?',
+            summary: kids.map((k) => `${k.name}: ${careText(k, today) || ((k.care || []).length ? 'heute frei' : 'keine Zeiten')}`).join(' · '),
+          }, (
               <div className="card">
                 {kids.map((k) => {
                   const heute = careText(k, today)
@@ -1208,12 +1262,12 @@ export default function App() {
                   )
                 })}
               </div>
-            </>
-          )}
+          ))}
 
-          {!isKid && (adults.length > 1 || unclaimed.length > 0) && (
-            <>
-              <h3 className="label"><span className="lico"><Icon name="hand" size={18} /></span>Wer übernimmt diese Woche</h3>
+          {!isKid && (adults.length > 1 || unclaimed.length > 0) && fach('balance', {
+            icon: 'hand', title: 'Wer übernimmt', sub: 'diese Woche',
+            summary: adults.map((m) => `${m.name} ${careCount(m.id)}×`).join(' · ') + (unclaimed.length ? ` · ${unclaimed.length} noch offen` : ''),
+          }, (
               <div className="card">
                 {balanceEl}
                 {unclaimed.map((e) => (
@@ -1227,8 +1281,7 @@ export default function App() {
                   </div>
                 ))}
               </div>
-            </>
-          )}
+          ))}
         </aside>
       </div>
     </section>
@@ -1349,13 +1402,6 @@ export default function App() {
     : isTodayView && restFix < dayCount
       ? `Noch ${restFix} ${restFix === 1 ? 'Termin' : 'Termine'} heute, ${dayCount - restFix} geschafft.`
       : (lage[0] || []).map((s) => s.text).join('')
-  const tmrDate = addDays(dayView, 1)
-  const tmrEvs = db.events.filter((e) => e.on_date === tmrDate && e.status === 'fix').sort((a, b) => a.at_time.localeCompare(b.at_time))
-  const tmrCare = kids.flatMap((k) => careOn(k, tmrDate).slice(0, 1).map((b) => ({ k, b }))).sort((a, b) => a.b.from.localeCompare(b.b.from))[0]
-  const tmrSum = [
-    tmrEvs.length ? `${tmrEvs.length} Termin${tmrEvs.length > 1 ? 'e' : ''}, ab ${tmrEvs[0].at_time}` : 'keine Termine',
-    tmrCare ? `${tmrCare.k.name}: ${tmrCare.b.label} ab ${tmrCare.b.from}` : null,
-  ].filter(Boolean).join(' · ')
   const sugPhone = suggestions.filter((s) => !s.id.startsWith('geb')) // Geburtstage stehen schon unter „Wartet auf dich“
   const planOpen = heuteAnsicht === 'planer'
 
@@ -1404,12 +1450,13 @@ export default function App() {
         </div>
       )}
 
-      <h3 className="label">
-        <span className="lico"><Icon name="today" size={17} /></span>
-        {isTodayView ? 'Heute' : dayView === addDays(today, 1) ? 'Morgen' : WD_LONG[wdIdx(fromIso(dayView))]}
-        <span className="sub">{dayCount ? `${dayCount} Termin${dayCount > 1 ? 'e' : ''}` : 'frei'}</span>
-        <button type="button" className="lact btn sm ghost" onClick={() => setSheet({ date: dayView })}><Icon name="plus" size={15} />Termin</button>
-      </h3>
+      {fach('heute-liste', {
+        icon: 'today',
+        title: isTodayView ? 'Heute' : dayView === addDays(today, 1) ? 'Morgen' : WD_LONG[wdIdx(fromIso(dayView))],
+        sub: dayCount ? `${dayCount} Termin${dayCount > 1 ? 'e' : ''}` : 'frei',
+        summary: (dayCount ? `${dayCount} Termin${dayCount > 1 ? 'e' : ''}` : 'frei') + (nextI >= 0 ? ` · ${restEvs[nextI].at_time} ${viewEvent(restEvs[nextI]).title}` : ''),
+        act: <button type="button" className="btn sm ghost" onClick={() => setSheet({ date: dayView })}><Icon name="plus" size={15} />Termin</button>,
+      }, (
       <div className="card g-day">
         {pastEvs.length > 1
           ? (
@@ -1434,10 +1481,12 @@ export default function App() {
           </button>
         )}
       </div>
+      ))}
 
-      {waiting.length > 0 && (
-        <>
-          <h3 className="label" id="anfragen-karte"><span className="lico"><Icon name="inbox" size={17} /></span>Wartet auf dich <span className="sub">{waiting.length}</span></h3>
+      {waiting.length > 0 && fach('anfragen-karte', {
+        hid: 'anfragen-karte', icon: 'inbox', title: 'Wartet auf dich', sub: String(waiting.length),
+        summary: `${waiting.length} · ${waiting.slice(0, 2).map((w) => (w.type === 'geb' ? w.g.name : viewEvent(w.e).title)).join(' · ')}`,
+      }, (
           <div className="card g-wait">
             {waiting.slice(0, 3).map(waitRow)}
             {waiting.length > 3 && (
@@ -1447,8 +1496,7 @@ export default function App() {
               </details>
             )}
           </div>
-        </>
-      )}
+      ))}
 
       <div className="klapps">
         <Klapp id="planer-klapp" icon="users" title="Familienplaner"
@@ -1637,35 +1685,78 @@ export default function App() {
     </section>
   )
 
-  const listCard = (list, title, ph, ico) => (
-    <div>
-      <h3 className="label"><span className="lico"><Icon name={ico} size={18} /></span>{title} <span className="sub">{db.items.filter((i) => i.list === list && !i.done).length} offen</span></h3>
-      <div className="card">
-        {db.items.filter((i) => i.list === list).map((it) => (
-          <div className="row" key={it.id}>
-            <input type="checkbox" className="check" checked={it.done} onChange={() => toggleItem(it)} aria-label={it.text} />
-            <div className="row-main">
-              <div className={'row-title' + (it.done ? ' done-text' : '')} style={{ fontWeight: 500 }}>{it.text}</div>
-              <div className="row-meta">von {mname(it.created_by)}</div>
-            </div>
-            <button className="xdel" onClick={() => deleteItem(it)} aria-label="Eintrag löschen">✕</button>
-          </div>
-        ))}
-        {!db.items.filter((i) => i.list === list).length && <div className="empty">Alles erledigt. Schön.</div>}
-        <QuickAdd placeholder={ph} onAdd={(v) => addItem(list, v)} />
+  const itemRow = (it) => (
+    <div className="row" key={it.id}>
+      <input type="checkbox" className="check" checked={it.done} onChange={() => toggleItem(it)} aria-label={it.text} />
+      <div className="row-main">
+        <div className={'row-title' + (it.done ? ' done-text' : '')} style={{ fontWeight: 500 }}>{it.text}</div>
+        <div className="row-meta">von {mname(it.created_by)}</div>
       </div>
+      <button className="xdel" onClick={() => deleteItem(it)} aria-label="Eintrag löschen">✕</button>
     </div>
   )
 
+  // Eine Liste: Offenes oben, Abgehaktes eingeklappt darunter – die Übersicht bleibt kurz
+  const listCard = (list, title, ph, ico) => {
+    const all = db.items.filter((i) => i.list === list)
+    const open = all.filter((i) => !i.done || justDone.includes(i.id))
+    const done = all.filter((i) => i.done && !justDone.includes(i.id))
+    const doneKey = 'erledigt-auf-' + list // steht in der Liste = Erledigte werden gezeigt
+    const doneAuf = isZu(doneKey)
+    const offen = all.filter((i) => !i.done)
+    return fach('liste-' + list, {
+      title, icon: ico,
+      sub: offen.length ? `${offen.length} offen` : all.length ? 'alles erledigt' : 'leer',
+      summary: offen.length
+        ? `${offen.length} offen · ${offen.slice(0, 3).map((i) => i.text).join(' · ')}${offen.length > 3 ? ' …' : ''}`
+        : all.length ? 'alles erledigt' : 'leer',
+    }, (
+      <div className="card">
+        {open.map(itemRow)}
+        {!open.length && <div className="empty">{done.length ? 'Alles erledigt. Schön.' : 'Noch nichts drauf.'}</div>}
+        <QuickAdd placeholder={ph} onAdd={(v) => addItem(list, v)} />
+        {done.length > 0 && (
+          <>
+            <button type="button" className="row fold-done" aria-expanded={doneAuf} onClick={() => toggleZu(doneKey)}>
+              <span className="rowico ok"><Icon name="check" size={16} /></span>
+              <div className="row-main">
+                <div className="row-title">{done.length} erledigt</div>
+                <div className="row-meta">{doneAuf ? 'Zuklappen' : 'Antippen zum Anzeigen'}</div>
+              </div>
+              <span className="fach-chev" aria-hidden="true"><Icon name="chevD" size={18} /></span>
+            </button>
+            {doneAuf && done.map(itemRow)}
+            {doneAuf && (
+              <button type="button" className="row fold-clear" onClick={() => clearDone(list)}>
+                <span className="rowico"><Icon name="trash" size={15} /></span>
+                <div className="row-main"><div className="row-title">Erledigte aufräumen</div><div className="row-meta">Kommen 30 Tage in den Papierkorb</div></div>
+              </button>
+            )}
+          </>
+        )}
+      </div>
+    ))
+  }
+
+  const nextGeb = gebSorted.find((x) => x.info)
+  const listIds = ['liste-einkauf', 'liste-todo', 'geburtstage']
   const screenListen = (
     <section className="screen">
-      <h2 className="screen-title">Familienlisten</h2>
-      <p className="screen-sub">Für alle – auch die Kinder. Eintippen, fertig.</p>
+      <div className="title-row">
+        <div>
+          <h2 className="screen-title">Familienlisten</h2>
+          <p className="screen-sub">Für alle – auch die Kinder. Eintippen, fertig.</p>
+        </div>
+        <AlleKlappen ids={listIds} zu={zu} onSet={setZuAll} />
+      </div>
       <div className="cols two">
         {listCard('einkauf', 'Einkaufen', 'Was fehlt? (Enter)', 'list')}
         {listCard('todo', 'Zu erledigen', 'Was ist zu tun? (Enter)', 'check')}
       </div>
-      <h3 className="label"><span className="lico"><Icon name="gift" size={18} /></span>Geburtstage <span className="sub">nie wieder vergessen</span></h3>
+      {fach('geburtstage', {
+        title: 'Geburtstage', icon: 'gift', sub: 'nie wieder vergessen',
+        summary: nextGeb ? `Als Nächstes: ${nextGeb.g.name} ${nextGeb.info.days === 0 ? 'heute' : nextGeb.info.days === 1 ? 'morgen' : `in ${nextGeb.info.days} Tagen`}${gebs.length > 1 ? ` · ${gebs.length} gemerkt` : ''}` : `${gebs.length} gemerkt`,
+      }, (
       <div className="card">
         {gebSorted.map(({ g, info }) => (
           <div className="row" key={g.id}>
@@ -1687,6 +1778,7 @@ export default function App() {
         {!isKid && <WaTemplateRow key={db.waTemplate || 'std'} value={db.waTemplate || WA_DEFAULT}
           onSave={(v) => { saveAll({ ...db, waTemplate: v }); toast('Vorlage gespeichert') }} />}
       </div>
+      ))}
     </section>
   )
 
@@ -1713,7 +1805,10 @@ export default function App() {
             <div className="fact"><b>Adresse</b><span>{k.adresse || '—'}</span></div>
             <div className="fact"><b>Notiz</b><span>{k.notiz || '—'}</span></div>
           </div>
-          <h3 className="label">Termin-Historie <span className="sub">Ist-Zeit direkt eintragen</span></h3>
+          {fach('praxis-historie', {
+            title: 'Termin-Historie', sub: 'Ist-Zeit direkt eintragen',
+            summary: kt.length ? `${kt.length} Termin${kt.length === 1 ? '' : 'e'} · ${kt.filter((t) => !t.ist && t.on_date <= today).length} ohne Ist-Zeit` : 'noch keine Termine',
+          }, (
           <div className="card">
             {kt.map((t) => (
               <div className="row" key={t.id}>
@@ -1734,6 +1829,7 @@ export default function App() {
             ))}
             {!kt.length && <div className="empty">Noch keine Termine – oben „Termin“ antippen.</div>}
           </div>
+          ))}
         </section>
       )
     }
@@ -1751,13 +1847,18 @@ export default function App() {
             <h2 className="screen-title">Praxis</h2>
             <p className="screen-sub">Klientinnen, Termine mit Soll/Ist-Zeiten und Dokumente</p>
           </div>
-          <button className="btn" onClick={() => setPTerminSheet({})}>+ Praxistermin</button>
+          <div className="title-acts">
+            <AlleKlappen ids={['praxis-klienten', 'praxis-termine']} zu={zu} onSet={setZuAll} />
+            <button className="btn" onClick={() => setPTerminSheet({})}>+ Praxistermin</button>
+          </div>
         </div>
         <input className="search" value={praxisQ} onChange={(e) => setPraxisQ(e.target.value)}
           placeholder="Nach Namen suchen …" aria-label="Klientinnen durchsuchen" />
         <div className="cols two">
-          <div>
-            <h3 className="label">Klientinnen</h3>
+          {fach('praxis-klienten', {
+            title: 'Klientinnen',
+            summary: `${hits.length} · ${hits.slice(0, 3).map((k) => k.name).join(' · ')}`,
+          }, (
             <div className="card">
               {hits.map((k) => {
                 const kt = klientTermine(k.id)
@@ -1782,9 +1883,12 @@ export default function App() {
                 <span className="chev">›</span>
               </button>
             </div>
-          </div>
+          ))}
+          {fach('praxis-termine', {
+            title: 'Nächste Praxistermine',
+            summary: upcoming.length ? `${upcoming.length} geplant · als Nächstes ${fmtShort(upcoming[0].on_date)} ${upcoming[0].at_time}` : 'nichts geplant',
+          }, (
           <div>
-            <h3 className="label">Nächste Praxistermine</h3>
             <div className="card">
               {upcoming.map((e) => (
                 <button className="row" key={e.id} onClick={() => { if (e.klid) setPraxisSel(e.klid) }}>
@@ -1800,10 +1904,16 @@ export default function App() {
             </div>
             <p className="hint">Praxistermine erscheinen automatisch auch im Familienkalender.</p>
           </div>
+          ))}
         </div>
       </section>
     )
   })()
+
+  const profilIds = ['profil-farbe', 'profil-theme', ...(isKid ? [] : [
+    'profil-module', hasMod(me, 'praxis') && 'profil-praxis', hasMod(me, 'sport') && 'sport-bereich',
+    hasMod(me, 'verein') && 'profil-verein', hasMod(me, 'arbeit') && 'profil-arbeit', hasMod(me, 'connect') && 'profil-anbindungen',
+  ])].filter(Boolean)
 
   const screenProfil = (
     <section className="screen">
@@ -1816,9 +1926,10 @@ export default function App() {
       </div>
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', margin: '12px 0 4px' }}>
         <button className="btn ghost" onClick={() => saveAll({ ...db, active: null })}>⇄ Profil wechseln</button>
+        <AlleKlappen ids={profilIds} zu={zu} onSet={setZuAll} />
       </div>
 
-      <h3 className="label">Meine Farbe <span className="sub">färbt deine ganze App</span></h3>
+      {fach('profil-farbe', { title: 'Meine Farbe', sub: 'färbt deine ganze App', summary: <><i className="fach-dot" style={{ background: me.color }} />deine Farbe</> }, (
       <div className="card">
         <div className="row">
           <div className="colorpick">
@@ -1832,17 +1943,25 @@ export default function App() {
           </div>
         </div>
       </div>
+      ))}
 
-      <h3 className="label">Erscheinungsbild <span className="sub">nur auf diesem Gerät</span></h3>
+      {fach('profil-theme', {
+        title: 'Erscheinungsbild', sub: 'nur auf diesem Gerät',
+        summary: theme === 'dark' ? 'Dunkel' : theme === 'light' ? 'Hell' : 'Automatisch – folgt dem Gerät',
+      }, (
       <div className="themeseg" role="group" aria-label="Erscheinungsbild">
         {[['auto', 'monitor', 'Automatisch'], ['light', 'sun', 'Hell'], ['dark', 'moon', 'Dunkel']].map(([k, ico, l]) => (
           <button type="button" key={k} className={theme === k ? 'on' : ''} onClick={() => setTheme(k)}><Icon name={ico} size={15} />{l}</button>
         ))}
       </div>
+      ))}
 
       {!isKid && (
         <>
-          <h3 className="label">Meine Module <span className="sub">nur du siehst deren Inhalte</span></h3>
+          {fach('profil-module', {
+            title: 'Meine Module', sub: 'nur du siehst deren Inhalte',
+            summary: MODULES.filter((x) => hasMod(me, x.id)).map((x) => x.name).join(' · ') || 'keins aktiv',
+          }, (
           <div className="card">
             {MODULES.map((mod) => hasMod(me, mod.id) ? (
               <div className="row" key={mod.id}>
@@ -1864,10 +1983,11 @@ export default function App() {
               </button>
             ))}
           </div>
+          ))}
 
-          {hasMod(me, 'praxis') && (
-            <>
-              <h3 className="label">Praxis</h3>
+          {hasMod(me, 'praxis') && fach('profil-praxis', {
+            title: 'Praxis', summary: `${praxis.klienten.length} Klientin${praxis.klienten.length === 1 ? '' : 'nen'} · ${db.events.filter((e) => e.ptype).length} Praxistermine`,
+          }, (
               <div className="card">
                 <button className="row" onClick={() => setNav('praxis')}>
                   <RowIcon name="heart" />
@@ -1878,12 +1998,12 @@ export default function App() {
                   <span className="chev">›</span>
                 </button>
               </div>
-            </>
-          )}
+          ))}
 
-          {hasMod(me, 'sport') && (
-            <>
-              <h3 className="label" id="sport-bereich">Sport <span className="sub">dein Ausgleich, fest eingeplant</span></h3>
+          {hasMod(me, 'sport') && fach('sport-bereich', {
+            hid: 'sport-bereich', title: 'Sport', sub: 'dein Ausgleich, fest eingeplant',
+            summary: `${sportDone}/${sportGoal} diese Woche geschafft${mySportWeek.length ? ' · ' + mySportWeek.length + ' geplant' : ''}`,
+          }, (
               <div className="card">
                 <div className="row">
                   <RowIcon name="activity" />
@@ -1912,12 +2032,12 @@ export default function App() {
                   </>
                 )}
               </div>
-            </>
-          )}
+          ))}
 
-          {hasMod(me, 'verein') && (
-            <>
-              <h3 className="label">Vereins-App</h3>
+          {hasMod(me, 'verein') && fach('profil-verein', {
+            title: 'Vereins-App',
+            summary: (db.verein?.links || []).length ? (db.verein.links || []).map((l) => l.teamName).join(' · ') : 'noch kein Team verknüpft',
+          }, (
               <div className="card">
                 {(db.verein?.links || []).map((l) => (
                   <div className="row" key={l.tid}>
@@ -1948,12 +2068,12 @@ export default function App() {
                   <span className="chev">›</span>
                 </button>
               </div>
-            </>
-          )}
+          ))}
 
-          {hasMod(me, 'arbeit') && (
-            <>
-              <h3 className="label">Arbeitskalender</h3>
+          {hasMod(me, 'arbeit') && fach('profil-arbeit', {
+            title: 'Arbeitskalender',
+            summary: `${db.events.filter((e) => e.src === 'work' && e.member_id === me.id).length} Arbeitstermine importiert`,
+          }, (
               <div className="card">
                 <button className="row" onClick={() => icsInput.current?.click()}>
                   <RowIcon name="upload" />
@@ -1976,12 +2096,12 @@ export default function App() {
                   </div>
                 </div>
               </div>
-            </>
-          )}
+          ))}
 
-          {hasMod(me, 'connect') && (
-            <>
-              <h3 className="label">Anbindungen <span className="sub">deine Daten in anderen Programmen</span></h3>
+          {hasMod(me, 'connect') && fach('profil-anbindungen', {
+            title: 'Anbindungen', sub: 'deine Daten in anderen Programmen',
+            summary: 'Kalender-Export, Outlook, Vereins-App, Backup',
+          }, (
               <div className="card">
                 <button className="row" onClick={exportIcs}>
                   <RowIcon name="calendar" />
@@ -2032,17 +2152,22 @@ export default function App() {
                   </div>
                 </div>
               </div>
-            </>
-          )}
+          ))}
         </>
       )}
     </section>
   )
 
+  const familieIds = ['familie-mitglieder', 'familie-sync', (db.trash || []).length > 0 && 'papierkorb', 'familie-feiertage', 'familie-sicherung', 'familie-hinweis'].filter(Boolean)
   const screenFamilie = (
     <section className="screen">
-      <h2 className="screen-title">{db.family.name}</h2>
-      <p className="screen-sub">Mitglieder, Rechte und Sicherung</p>
+      <div className="title-row">
+        <div>
+          <h2 className="screen-title">{db.family.name}</h2>
+          <p className="screen-sub">Mitglieder, Rechte und Sicherung</p>
+        </div>
+        <AlleKlappen ids={familieIds} zu={zu} onSet={setZuAll} />
+      </div>
       {db.demo && (
         <div className="card" style={{ marginBottom: 4 }}>
           <div className="row">
@@ -2055,7 +2180,9 @@ export default function App() {
           </div>
         </div>
       )}
-      <h3 className="label"><span className="lico"><Icon name="users" size={18} /></span>Mitglieder</h3>
+      {fach('familie-mitglieder', {
+        icon: 'users', title: 'Mitglieder', summary: `${db.members.length} · ${db.members.map((m) => m.name).join(' · ')}`,
+      }, (
       <div className="card">
         {db.members.map((m) => (
           <div className="row" key={m.id}>
@@ -2091,7 +2218,11 @@ export default function App() {
           </button>
         )}
       </div>
-      <h3 className="label"><span className="lico"><Icon name="cloud" size={18} /></span>Familien-Sync <span className="sub">alle Geräte, ein Stand</span></h3>
+      ))}
+      {fach('familie-sync', {
+        icon: 'cloud', title: 'Familien-Sync', sub: 'alle Geräte, ein Stand',
+        summary: cloud.on ? (cloud.error ? 'gestört – Daten bleiben lokal sicher' : 'läuft') : 'aus – Daten nur auf diesem Gerät',
+      }, (
       <div className="card">
         {cloud.on ? (
           <>
@@ -2128,9 +2259,12 @@ export default function App() {
           </button>
         )}
       </div>
-      {(db.trash || []).length > 0 && (
-        <>
-          <h3 className="label" id="papierkorb"><span className="lico"><Icon name="trash" size={18} /></span>Papierkorb <span className="sub">30 Tage wiederherstellbar</span><span className="lact"><button className="btn ghost sm" onClick={emptyTrash}>Leeren</button></span></h3>
+      ))}
+      {(db.trash || []).length > 0 && fach('papierkorb', {
+        hid: 'papierkorb', icon: 'trash', title: 'Papierkorb', sub: '30 Tage wiederherstellbar',
+        summary: `${db.trash.length} Eintr${db.trash.length === 1 ? 'ag' : 'äge'} · wiederherstellbar`,
+        act: <button className="btn ghost sm" onClick={emptyTrash}>Leeren</button>,
+      }, (
           <div className="card">
             {(db.trash || []).map((t) => (
               <div className="row" key={t.id}>
@@ -2143,9 +2277,8 @@ export default function App() {
               </div>
             ))}
           </div>
-        </>
-      )}
-      <h3 className="label"><span className="lico"><Icon name="today" size={18} /></span>Feiertage <span className="sub">rot im Kalender</span></h3>
+      ))}
+      {fach('familie-feiertage', { icon: 'today', title: 'Feiertage', sub: 'rot im Kalender', summary: LAENDER[land] }, (
       <div className="card">
         <div className="row">
           <div className="row-main">
@@ -2158,7 +2291,11 @@ export default function App() {
           </select>
         </div>
       </div>
-      <h3 className="label"><span className="lico"><Icon name="archive" size={18} /></span>Sicherung</h3>
+      ))}
+      {fach('familie-sicherung', {
+        icon: 'archive', title: 'Sicherung',
+        summary: db.lastBackup ? `letztes Backup am ${fmtShort(db.lastBackup)}` : 'noch nie gesichert',
+      }, (
       <div className="card">
         <button className="row" onClick={exportBackup}>
           <RowIcon name="download" />
@@ -2170,7 +2307,10 @@ export default function App() {
         </button>
         <ImportRow onImport={importBackup} />
       </div>
-      <h3 className="label">Hinweis</h3>
+      ))}
+      {fach('familie-hinweis', {
+        title: 'Hinweis', summary: persistent ? (cloud.on ? 'Sync hält alle Geräte aktuell' : 'Daten liegen nur in diesem Browser') : 'Speichern in diesem Browser nicht möglich',
+      }, (
       <div className="card">
         <div className="row">
           <RowIcon name={persistent ? 'archive' : 'alert'} />
@@ -2184,6 +2324,7 @@ export default function App() {
           </div>
         </div>
       </div>
+      ))}
     </section>
   )
 
