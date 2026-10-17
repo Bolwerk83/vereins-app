@@ -52,7 +52,15 @@ const kind = await page.evaluate(()=>{
   const mach=(id,titel,typ,tage,zeit,ende)=>({...vorlage,id,title:titel,type:typ,date:tg(tage),time:zeit,endTime:ende,
     loc:"Platz",note:"",deadline:null,votes:{},carpoolExtra:false,carpoolEnabled:false,extraPolls:[],duties:[],lineup:null,lineups:null});
   d.events=[...(d.events||[]).filter(e=>!(e.cid==="demo"&&e.tid==="demo_f1")),
-    mach("ev_heute","Training Heute","training",0,"08:00","09:30"),   // heute früh – schon vorbei
+    // Sicher vorbei, egal wann der Test laeuft: Beginn vor 3 Stunden, Ende vor
+     // 2 Stunden. Feste Uhrzeiten wie "08:00-09:30" liessen den Test morgens
+     // durchfallen, weil der Termin dann noch lief.
+    (()=>{ const z=x=>String(x).padStart(2,"0");
+      const a=new Date(Date.now()-3*3600000), e=new Date(Date.now()-2*3600000);
+      const iso=dt=>`${dt.getFullYear()}-${z(dt.getMonth()+1)}-${z(dt.getDate())}`;
+      const hm=dt=>`${z(dt.getHours())}:${z(dt.getMinutes())}`;
+      return {...vorlage,id:"ev_heute",title:"Training Heute",type:"training",date:iso(a),time:hm(a),endTime:hm(e),
+        loc:"Platz",note:"",deadline:null,votes:{},carpoolExtra:false,carpoolEnabled:false,extraPolls:[],duties:[],lineup:null,lineups:null}; })(),
     mach("ev_a","Training A","training",2,"17:30","19:00"),
     mach("ev_b","Training B","training",3,"17:30","19:00"),
     mach("ev_c","Spiel C","auswarts",4,"10:30","12:00")];
