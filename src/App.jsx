@@ -12956,7 +12956,14 @@ function HelpersTab({data,cid,myTids,session,save,fire,cl}) {
     const rec={...base,id,cid,createdAt:editH?f.createdAt:new Date().toISOString(),
       ...(tempPw?{pw:hashPw(tempPw),mustChangePw:true,sharedAt:null}:{})};
     const next=editH?allHelpers.map(x=>x.id===id?rec:x):[...allHelpers,rec];
-    save({...data,helpers:[...(data.helpers||[]).filter(h=>h.cid!==cid),...next]});
+    // Umbenannt? Dann ziehen seine Helfer-Meldungen, Dienste und Stationen mit.
+    // Ohne das bleibt der alte Name in jedem Termin stehen und gehoert dort zu
+    // niemandem mehr - die Spielerliste bleibt dabei unangetastet.
+    const vorher=editH?allHelpers.find(x=>x.id===id):null;
+    const umbenannt=!!vorher&&!!String(rec.name||"").trim()&&_nrmName(vorher.name)!==_nrmName(rec.name);
+    const basis={...data,helpers:[...(data.helpers||[]).filter(h=>h.cid!==cid),...next]};
+    save(umbenannt ? renamePerson(basis, vorher.name, rec.name, {profile:false}) : basis);
+    if(umbenannt) fire("Name geändert – bisherige Einsätze übernommen");
     if(!editH){ setEditH(id); setF(prev=>({...prev,id,createdAt:rec.createdAt})); }
     return rec;
   };
@@ -20010,7 +20017,10 @@ const sitzungNachUmbenennung = (s, cd) => {
 // Dienste, Stationen und Gruppen. Ohne das bleiben die alten Antworten unter
 // dem alten Namen stehen - und tauchen im Termin als fremder Name auf.
 // Steht unter dem neuen Namen schon etwas, gewinnt der juengere Eintrag.
-const renamePerson = (data, alt, neu) => {
+// opt.profile=false: nur die Eintraege in den Terminen umhaengen, die
+// Spielerliste nicht anfassen - das braucht die Umbenennung eines Helfers,
+// damit nicht zufaellig ein gleichnamiges Kind mit umbenannt wird.
+const renamePerson = (data, alt, neu, opt={}) => {
   const a=_nrmName(alt); const n=String(neu||"").trim();
   if(!a || !n || a===_nrmName(n)) return data;
   const gleich = x => !!x && _nrmName(x)===a;
@@ -20087,13 +20097,17 @@ const renamePerson = (data, alt, neu) => {
     if(gleich(ev.planBy)) ev.planBy=n;
     return ev;
   });
+  if(opt.profile===false) return {...data, events};
   const players={...(data.players||{})};
   Object.keys(players).forEach(tid=>{ players[tid]=umListe(players[tid]||[]); });
   const playerProfiles=(data.playerProfiles||[]).map(pp=>({...pp,
     name: gleich(pp.name) ? n : pp.name,
     friends: umListe(pp.friends),
     mustWith: umListe(pp.mustWith)}));
-  return {...data, events, players, playerProfiles};
+  // Helfer sind ueber den Namen ihres Kindes mit ihm verknuepft - sonst steht
+  // dort nach der Umbenennung ein Kind, das es nicht mehr gibt.
+  const helpers=(data.helpers||[]).map(h=>gleich(h&&h.childName)?{...h,childName:n}:h);
+  return {...data, events, players, playerProfiles, helpers};
 };
 
 // Ein Helfer-Eintrag im Termin gehoert immer zu einem Konto (Helfer oder

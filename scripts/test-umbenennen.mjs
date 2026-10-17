@@ -199,6 +199,64 @@ else fail("Nicht als übrig erkannt: "+String(b).slice(-420).replace(/\n/g," | "
   if(!s.votes.includes("Noch Fremder")) ok("Die Antwort ist entfernt");
   else fail("Antwort bleibt stehen: "+JSON.stringify(s.votes)); }
 
+// ===== 4) Auch ein HELFER lässt sich umbenennen, ohne Spuren zu hinterlassen =====
+// Helfer waren bisher ganz außen vor: ihr Name blieb in jeder Helfer-Meldung
+// stehen. Gleichzeitig darf ein gleichnamiges Kind nicht mit umbenannt werden.
+await page.evaluate(i=>{
+  const d=JSON.parse(localStorage.getItem("vereinsapp_v14")||"null");
+  const ev=(d.events||[]).find(e=>e.id===i);
+  ev.helperOffers=[{id:"h_um",name:"Helfer Alt",ts:new Date().toISOString()}];
+  ev.helperInterest=[];
+  ev.duties=[{id:"d_um",title:"Kuchen",assignee:"Helfer Alt"}];
+  d.helpers=[...(d.helpers||[]).filter(h=>h.id!=="h_um"),
+    {id:"h_um",cid:"demo",name:"Helfer Alt",childName:"",tids:["demo_f1"],active:true,roles:{einsatz:true,kasse:false}}];
+  localStorage.setItem("vereinsapp_v14", JSON.stringify(d));
+  sessionStorage.setItem("vereinsapp_v12_session", JSON.stringify({role:"trainer",cid:"demo",tids:["demo_f1"],name:"Demo Trainer",id:"demo_tr1"}));
+}, setup.evId);
+await page.reload({waitUntil:"networkidle"}); await page.waitForTimeout(2800); await dismiss();
+// Über „Mehr“ in die Helfer-Verwaltung
+const zuHelfern=async()=>{
+  for(let i=0;i<3;i++){
+    if(/Helfer-Accounts/.test(await body())) return true;
+    await page.evaluate(()=>{ const b=[...document.querySelectorAll("button")]
+      .find(x=>/^(Mehr|≡|=)$/.test((x.innerText||"").trim())); b&&b.click(); });
+    await page.waitForTimeout(900);
+    await page.evaluate(()=>{ const b=[...document.querySelectorAll("button,a,div[role=button]")]
+      .find(x=>/^(🤝\s*)?Helfer$/.test((x.innerText||"").replace(/\s+/g," ").trim())); b&&b.click(); });
+    await page.waitForTimeout(1300);
+  }
+  return /Helfer-Accounts/.test(await body());
+};
+{ if(await zuHelfern()) ok("Die Helfer-Verwaltung ist erreichbar");
+  else { const m=await page.evaluate(()=>[...document.querySelectorAll("button,a")].map(x=>(x.innerText||"").replace(/\s+/g," ").trim()).filter(t=>t&&t.length<24));
+    fail("Helfer-Verwaltung nicht gefunden – sichtbar: "+JSON.stringify(m.slice(-24))); } }
+{ const geklickt=await page.evaluate(()=>{
+    const z=[...document.querySelectorAll("div")].filter(d=>(d.innerText||"").includes("Helfer Alt")&&(d.innerText||"").length<300);
+    for(const k of z.reverse()){ const b=[...k.querySelectorAll("button")].find(x=>(x.innerText||"").trim()==="✎"); if(b){ b.click(); return true; } }
+    return false; });
+  if(geklickt) ok("Der Helfer lässt sich bearbeiten"); else fail("Kein Bearbeiten-Knopf beim Helfer"); }
+await page.waitForTimeout(900);
+{ const gesetzt=await page.evaluate(()=>{
+    const i=[...document.querySelectorAll("input")].find(x=>x.value==="Helfer Alt");
+    if(!i) return false;
+    const set=Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype,"value").set;
+    set.call(i,"Helfer Neu"); i.dispatchEvent(new Event("input",{bubbles:true})); return true; });
+  if(gesetzt) ok("Der Helfername lässt sich ändern"); else fail("Kein Namensfeld beim Helfer"); }
+await page.waitForTimeout(400);
+if(await klick("^Speichern$")) ok("Gespeichert"); else fail("Kein Speichern-Knopf beim Helfer");
+await page.waitForTimeout(1600);
+{ const s=await page.evaluate(i=>{ const d=JSON.parse(localStorage.getItem("vereinsapp_v14")||"null");
+    const ev=(d.events||[]).find(e=>e.id===i);
+    return { offers:(ev.helperOffers||[]).map(o=>o.name), duty:(ev.duties||[]).map(x=>x.assignee),
+             helfer:(d.helpers||[]).filter(h=>h.id==="h_um").map(h=>h.name),
+             spieler:(d.playerProfiles||[]).filter(p=>p.mainTid==="demo_f1").map(p=>p.name) }; }, setup.evId);
+  if(s.helfer.includes("Helfer Neu")) ok("Der Helfer heißt jetzt anders"); else fail("Helfer nicht umbenannt: "+JSON.stringify(s.helfer));
+  if(s.offers.includes("Helfer Neu")&&!s.offers.includes("Helfer Alt")) ok("Seine Helfer-Meldung zieht mit – genau die Lücke");
+  else fail("Helfer-Meldung nicht mitgezogen: "+JSON.stringify(s.offers));
+  if(s.duty.includes("Helfer Neu")) ok("Sein Dienst ebenso"); else fail("Dienst nicht mitgezogen: "+JSON.stringify(s.duty));
+  if(s.spieler.includes(NEU)) ok("Und die Spielerliste bleibt unangetastet");
+  else fail("Spielerliste verändert: "+JSON.stringify(s.spieler)); }
+
 if(errors.length){ console.log("JS-FEHLER:"); [...new Set(errors)].forEach(e=>console.log(" -",e.slice(0,150))); }
 console.log(errors.length||fails.length?`ERGEBNIS: ${fails.length} Fehlschläge, ${errors.length} JS-Fehler`:"ERGEBNIS: ALLES OK");
 await browser.close(); srv.close();

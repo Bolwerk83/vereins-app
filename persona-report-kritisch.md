@@ -1,6 +1,6 @@
 # Härte-Test: 500 sehr kritische Personas
 
-Stand: 2026-09-28
+Stand: 2026-10-08
 
 Diese Personas finden fast nichts gut. Ihre Messlatten liegen bewusst höher als der Alltag:
 höchstens 120 Wörter auf dem ersten Blick, höchstens 12 Knöpfe, kein Fachwort ohne Erklärung,
