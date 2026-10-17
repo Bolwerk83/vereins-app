@@ -16504,6 +16504,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
   useEffect(()=>{ setEvTab("rueck"); },[viewEv?.id]);
   const [editConf,setEditConf]=useState(null);
   const [pauseSer,setPauseSer]=useState(null); // {ev,from,to} Ferien-Pause fuer eine Serie
+  const [tagSchieben,setTagSchieben]=useState(null); // {ev,ziel,zeit} Wochentag einer Serie verlegen
   const [showSearch,setShowSearch]=useState(false); const [searchQ,setSearchQ]=useState("");
   const [showImport,setShowImport]=useState(false); // Spielplan-Import (fussball.de/DFBnet)
   const _ferienDash=useSchoolHolidays(cl?.clubSettings?.holidayState); // cl (Zeile oben), NICHT myClub - das ist hier noch nicht deklariert (TDZ)
@@ -17760,6 +17761,9 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
           {editConf.sid&&<Btn full ch="Ganze Serie bearbeiten" cl={myClub} onClick={()=>{
             setEditEv({...editInfo(editConf),_editSeries:"all"});setEditConf(null);
           }}/>}
+          {editConf.sid&&<Btn v="out" full ch="📅 Wochentag verlegen (ab hier)" cl={myClub} onClick={()=>{
+            setTagSchieben({ev:editConf, ziel:wtagIdx(editConf.date), zeit:editConf.time||""}); setEditConf(null);
+          }}/>}
           {editConf.sid&&<Btn v="out" full ch="⛱ Serie pausieren (Ferien)" cl={myClub} onClick={()=>{
             setPauseSer({ev:editConf,from:tod>editConf.date?tod:editConf.date,to:addD(tod>editConf.date?tod:editConf.date,41)});setEditConf(null);
           }}/>}
@@ -17800,6 +17804,80 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
             <div style={{display:"flex",gap:9}}>
               <Btn v="gst" full ch="Abbrechen" onClick={()=>setPauseSer(null)} sx={{flex:1}}/>
               <Btn full dis={!ok} ch={`⛱ ${inRange.length} Termine pausieren`} cl={myClub} onClick={doPause} sx={{flex:2}}/>
+            </div>
+          </Drawer>
+        );
+      })()}
+
+      {/* Wochentag einer Serie ab einem Termin verlegen - z.B. Dienstag wird in
+          der Wintersaison zu Montag. Nur die Termine AM QUELLTAG wandern mit;
+          ein zweiter Trainingstag derselben Serie bleibt, wo er ist. Zu- und
+          Absagen bleiben, es wird nur das Datum geschoben. */}
+      {tagSchieben&&(()=>{
+        const ev0=tagSchieben.ev;
+        const quelle=wtagIdx(ev0.date);
+        const diff=tagSchieben.ziel-quelle;
+        const zeit=(tagSchieben.zeit||"").trim();
+        const zeitNeu=zeit&&zeit!==(ev0.time||"");
+        const betroffen=(local.events||[])
+          .filter(e=>e.sid===ev0.sid&&e.date>=ev0.date&&wtagIdx(e.date)===quelle)
+          .sort((a,b)=>String(a.date).localeCompare(String(b.date)));
+        const bleiben=(local.events||[]).filter(e=>e.sid===ev0.sid&&e.date>=ev0.date&&wtagIdx(e.date)!==quelle);
+        const neuDatum=e=>addD(e.date,diff);
+        const ids=new Set(betroffen.map(e=>e.id));
+        const belegt=new Set((local.events||[]).filter(e=>e.tid===ev0.tid&&!ids.has(e.id))
+          .map(e=>e.date+"|"+(e.time||"")));
+        const konflikte=betroffen.filter(e=>belegt.has(neuDatum(e)+"|"+(zeit||e.time||"")));
+        const ok=betroffen.length>0&&(diff!==0||zeitNeu)&&konflikte.length===0;
+        const doSchieben=()=>{
+          save({...local, events:(local.events||[]).map(e=>{
+            if(!ids.has(e.id)) return e;
+            const abstand=fristAbstand(e);
+            const e2={...e, date:addD(e.date,diff), ...(zeit?{time:zeit}:{})};
+            return abstand ? {...e2, deadline:fristFuer(e2,abstand)} : e2;
+          })});
+          setTagSchieben(null);
+          fire(`${betroffen.length} Termine auf ${WTAG_NAMEN[tagSchieben.ziel-1]} verlegt – Zu- und Absagen bleiben`);
+        };
+        return (
+          <Drawer onClose={()=>setTagSchieben(null)} title="📅 Wochentag verlegen">
+            <p style={{fontSize:13.5,color:"#475569",lineHeight:1.55,marginBottom:14}}>
+              <b>„{ev0.title}“</b> liegt bisher am <b>{wtagName(ev0.date)}</b>.
+              Ab dem {fmtDShort(ev0.date)} wandern alle {wtagName(ev0.date)}-Termine dieser Serie auf den neuen Tag.
+              {bleiben.length>0&&<> Die {bleiben.length} Termine an den anderen Wochentagen bleiben, wo sie sind.</>}
+              {" "}Zu- und Absagen bleiben erhalten – es ändert sich nur das Datum.
+            </p>
+            <div style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.3,marginBottom:6}}>NEUER WOCHENTAG</div>
+            <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:14}}>
+              {WTAG_NAMEN.map((n,i)=>{ const an=tagSchieben.ziel===i+1; return (
+                <button key={n} onClick={()=>setTagSchieben(z=>({...z,ziel:i+1}))}
+                  style={{flex:"1 1 60px",minHeight:42,padding:"8px 6px",borderRadius:11,
+                    border:`1.5px solid ${an?"#0f172a":"#e2e8f0"}`,background:an?"#0f172a":"#fff",
+                    color:an?"#fff":"#475569",fontWeight:800,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>
+                  {n.slice(0,2)}
+                </button>
+              ); })}
+            </div>
+            <div style={{marginBottom:12}}>
+              <Inp label="Uhrzeit (optional ändern)" type="time" val={tagSchieben.zeit} set={v=>setTagSchieben(z=>({...z,zeit:v}))} cl={myClub}/>
+            </div>
+            <div style={{background:konflikte.length?"#fef2f2":ok?"#f0fdf4":"#fff7ed",
+              border:`1.5px solid ${konflikte.length?"#fca5a5":ok?"#bbf7d0":"#fed7aa"}`,
+              borderRadius:12,padding:"11px 13px",fontSize:13,
+              color:konflikte.length?"#b42318":ok?"#166534":"#9a3412",fontWeight:600,marginBottom:14,lineHeight:1.5}}>
+              {betroffen.length===0
+                ? "Ab hier gibt es keine Termine dieser Serie an diesem Wochentag."
+                : konflikte.length>0
+                  ? <>Am neuen Tag liegt schon ein Termin: {konflikte.slice(0,3).map(e=>fmtDShort(neuDatum(e))).join(", ")}{konflikte.length>3?" …":""}. Bitte eine andere Uhrzeit oder einen anderen Tag wählen.</>
+                  : diff===0&&!zeitNeu
+                    ? "Noch nichts geändert – wähle einen anderen Wochentag oder eine andere Uhrzeit."
+                    : <>Betroffen: <b>{betroffen.length} Termine</b> · {fmtDShort(betroffen[0].date)} → <b>{fmtDShort(neuDatum(betroffen[0]))}</b>
+                        {betroffen.length>1&&<> , {fmtDShort(betroffen[1].date)} → <b>{fmtDShort(neuDatum(betroffen[1]))}</b></>}
+                        {betroffen.length>2&&<> … bis {fmtDShort(neuDatum(betroffen[betroffen.length-1]))}</>}</>}
+            </div>
+            <div style={{display:"flex",gap:9}}>
+              <Btn v="gst" full ch="Abbrechen" onClick={()=>setTagSchieben(null)} sx={{flex:1}}/>
+              <Btn full dis={!ok} ch={`📅 ${betroffen.length} Termine verlegen`} cl={myClub} onClick={doSchieben} sx={{flex:2}}/>
             </div>
           </Drawer>
         );
@@ -19998,18 +20076,28 @@ const purgePerson = (data, {id=null, name=""}={}) => {
 // Anmeldung still auf den heutigen Namen gezogen, sobald der alte Name am
 // Profil als frueherer Name vermerkt ist.
 const sitzungNachUmbenennung = (s, cd) => {
-  if(!s || s.role!=="user" || !s.user) return s;
-  const profile=(cd&&cd.playerProfiles)||[];
+  if(!s || !cd) return s;
   const gl=(a,b)=>_nrmName(a)===_nrmName(b);
+  const merken=n=>{ let dauerhaft=false;
+    try{ dauerhaft=!!localStorage.getItem(SS+"_persist"); }catch{}
+    try{ sess.set(n, dauerhaft); }catch{} return n; };
+  // Helfer und Trainer haengen an ihrer Konto-Nummer - der Name in der
+  // Anmeldung ist nur eine Kopie. Wurde das Konto umbenannt, wird sie hier
+  // nachgezogen; sonst traegt sich der Helfer weiter unter dem alten Namen
+  // in die Termine ein und steht dort doppelt.
+  if((s.role==="helper"||s.role==="trainer")&&s.id){
+    const liste=(s.role==="helper"?cd.helpers:cd.trainers)||[];
+    const rec=liste.find(x=>x.id===s.id);
+    if(rec&&rec.name&&!gl(rec.name,s.name)) return merken({...s, name:rec.name});
+    return s;
+  }
+  if(s.role!=="user" || !s.user) return s;
+  const profile=cd.playerProfiles||[];
   if(profile.some(p=>gl(p.name,s.user))) return s;         // Name gibt es noch
   const treffer=profile.find(p=>(p.prevNames||[]).some(x=>gl(x,s.user))
     && (!s.tid || p.mainTid===s.tid || (p.optTids||[]).includes(s.tid)));
   if(!treffer || gl(treffer.name,s.user)) return s;
-  const neu={...s, user:treffer.name, ...(s.name?{name:treffer.name}:{})};
-  let dauerhaft=false;
-  try{ dauerhaft=!!localStorage.getItem(SS+"_persist"); }catch{}
-  try{ sess.set(neu, dauerhaft); }catch{}
-  return neu;
+  return merken({...s, user:treffer.name, ...(s.name?{name:treffer.name}:{})});
 };
 
 // Wird eine Person umbenannt, ziehen ihre Eintraege mit: Zu- und Absagen,
@@ -23580,6 +23668,12 @@ function recommendLineup(present, profiles, pastLineups, friendWeight=1){
   const friends=fp.sort((x,y)=>(y.must-x.must)).slice(0,4);
   return {lineup,bench,formation,pairs,friends,count:n};
 }
+// Wochentag eines Datums als 1..7 (Mo..So) - so liegt die Woche am Stueck,
+// und "Dienstag auf Montag" ist -1 statt +6.
+const WTAG_NAMEN = ["Montag","Dienstag","Mittwoch","Donnerstag","Freitag","Samstag","Sonntag"];
+const wtagIdx = iso => { const d=new Date(String(iso)+"T12:00:00");
+  if(isNaN(d.getTime())) return 1; const w=d.getDay(); return w===0?7:w; };
+const wtagName = iso => WTAG_NAMEN[wtagIdx(iso)-1];
 // Der aktuelle Stand des Spielchens: festgehaltene Einteilung hat Vorrang,
 // sonst wird frisch gerechnet. EINE Stelle - so zeigt die Anwesenheitsliste
 // genau die Leibchen, die auch im Spielchen stehen.

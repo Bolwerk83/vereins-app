@@ -659,6 +659,8 @@ export function Btn({ch,onClick,v="pri",full,sm,dis,load,icon,cl,sx={}}) {
   return (
     <button
       onClick={dis||load?undefined:onClick}
+      disabled={!!(dis||load)}
+      aria-disabled={dis||load?"true":undefined}
       style={{
         ...s,borderRadius:radius,padding:pad,fontSize:fSize,fontWeight:700,letterSpacing:"-.01em",cursor:dis||load?"not-allowed":"pointer",width:full?"100%":undefined,display:"inline-flex",alignItems:"center",justifyContent:"center",gap:7,transition:"all .15s",opacity:1,fontFamily:"inherit",lineHeight:1.2,...sx
       }}
