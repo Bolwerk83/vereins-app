@@ -31,6 +31,12 @@ const I18N = {
     deactivated:"Deaktiviert.",
     testSent:"Test gesendet – sollte gleich ankommen.",
     testNoRecip:"Gesendet, aber 0 Empfänger. Push wirklich aktiviert?",
+    regFailed:"Anmeldung an die Datenbank fehlgeschlagen – echte Nachrichten erreichen dich nicht:",
+    testButUnassigned:"Test kam an, aber dieses Gerät ist keiner Mannschaft zugeordnet – echte Nachrichten erreichen dich noch nicht. Bitte „Reparieren“ antippen.",
+    repairBtn:"🔧 Zuordnung reparieren",
+    standOk:"Angemeldet als",
+    standUnassigned:"Dieses Gerät ist keiner Mannschaft zugeordnet – nur der Test erreicht dich, echte Nachrichten nicht.",
+    standMissing:"Dieses Gerät steht nicht in der Datenbank – echte Nachrichten erreichen dich nicht.",
     bell:"Benachrichtigungen",
     title:"Benachrichtigungen",
     intro:"Erinnerungen an Termine, Abstimmungen und Chat-Nachrichten.",
@@ -68,6 +74,12 @@ const I18N = {
     deactivated:"Disabled.",
     testSent:"Test sent – it should arrive shortly.",
     testNoRecip:"Sent, but 0 recipients. Is push really enabled?",
+    regFailed:"Registering with the database failed – real messages will not reach you:",
+    testButUnassigned:"The test arrived, but this device is not assigned to a team – real messages will not reach you yet. Please tap Repair.",
+    repairBtn:"🔧 Repair assignment",
+    standOk:"Registered as",
+    standUnassigned:"This device is not assigned to a team – only the test reaches you, real messages do not.",
+    standMissing:"This device is not in the database – real messages will not reach you.",
     bell:"Notifications",
     title:"Notifications",
     intro:"Reminders for events, votes and chat messages.",
@@ -105,6 +117,12 @@ const I18N = {
     deactivated:"Uitgeschakeld.",
     testSent:"Test verstuurd – zou zo moeten aankomen.",
     testNoRecip:"Verstuurd, maar 0 ontvangers. Staat push echt aan?",
+    regFailed:"Registering with the database failed – real messages will not reach you:",
+    testButUnassigned:"The test arrived, but this device is not assigned to a team – real messages will not reach you yet. Please tap Repair.",
+    repairBtn:"🔧 Repair assignment",
+    standOk:"Registered as",
+    standUnassigned:"This device is not assigned to a team – only the test reaches you, real messages do not.",
+    standMissing:"This device is not in the database – real messages will not reach you.",
     bell:"Meldingen",
     title:"Meldingen",
     intro:"Herinneringen voor afspraken, stemmingen en chatberichten.",
@@ -241,6 +259,32 @@ export async function subscribePush() {
   return j.endpoint;
 }
 
+// Was weiss der Server ueber DIESES Geraet? Ohne Verein/Team/Name filtern
+// runCron, runChat und runEvent das Abo heraus - nur der Test findet es noch
+// (der sucht allein ueber den Endpoint). Genau so entsteht der Fall
+// "Test kommt an, sonst nichts".
+export async function pushStatus() {
+  const c = getConfig();
+  if (!c.url || !c.key) return { state:"nocfg" };
+  let endpoint = getLocalPref().endpoint || null;
+  if (!endpoint && "serviceWorker" in navigator) {
+    try { const reg = await navigator.serviceWorker.ready;
+          const sub = await reg.pushManager.getSubscription(); endpoint = sub?.endpoint || null; } catch {}
+  }
+  if (!endpoint) return { state:"nosub" };
+  try {
+    const r = await fetch(`${c.url}/rest/v1/push_subscriptions?endpoint=eq.${encodeURIComponent(endpoint)}&select=cid,tid,player_name,enabled,last_seen`, {
+      headers: { "apikey": c.key, "Authorization": "Bearer " + c.key },
+    });
+    if (!r.ok) return { state:"unknown" };
+    const rows = await r.json();
+    const row = Array.isArray(rows) ? rows[0] : null;
+    if (!row) return { state:"missing" };                       // Browser hat ein Abo, die Datenbank nicht
+    if (!row.cid || !row.player_name) return { state:"unassigned", row };
+    return { state: row.enabled ? "ok" : "off", row };
+  } catch { return { state:"unknown" }; }
+}
+
 export async function unsubscribePush() {
   if (!("serviceWorker" in navigator)) return;
   const reg = await navigator.serviceWorker.ready;
@@ -261,8 +305,9 @@ export async function testPush() {
   // ein Abo, aber die Zeile in der Datenbank fehlt (frueherer Fehlschlag),
   // (b) das Abo haengt noch am alten Server-Schluessel und laesst sich nicht
   // mehr beliefern. subscribePush() loest beides und liefert den Endpoint.
-  let endpoint = null;
-  try { endpoint = await subscribePush(); } catch {}
+  let endpoint = null; let anmeldeFehler = null;
+  try { endpoint = await subscribePush(); }
+  catch (e) { anmeldeFehler = String(e?.message || e); }
   if (!endpoint) endpoint = getLocalPref().endpoint;
   if (!endpoint && "serviceWorker" in navigator) {
     try { const reg = await navigator.serviceWorker.ready; const sub = await reg.pushManager.getSubscription(); endpoint = sub?.endpoint; } catch {}
@@ -274,7 +319,11 @@ export async function testPush() {
     body: JSON.stringify({ mode: "test", endpoint }),
   });
   if (!r.ok) throw new Error(tr("testFailed") + " (" + r.status + ")");
-  return await r.json().catch(() => ({}));
+  const j = await r.json().catch(() => ({}));
+  // Scheitert die Neuanmeldung, kommt der Test trotzdem an (er sucht allein
+  // ueber den Endpoint) - echte Nachrichten aber nicht. Das darf nicht als
+  // "alles gut" durchgehen, sonst sucht man den Fehler nie.
+  return { ...j, regError: anmeldeFehler };
 }
 
 export async function updatePrefs(prefs) {
@@ -322,20 +371,41 @@ export function NotifMount() {
   });
   const [sess, setSess] = useState(getSession());
 
+  const [stand, setStand] = useState(null);   // was der Server ueber dieses Geraet weiss
+
+  // Beim Start pruefen UND die Anmeldung erneuern, sobald eine Sitzung laeuft.
+  // Ohne das bleibt eine Zeile, die vor dem Login entstand, fuer immer ohne
+  // Verein/Team/Name - und damit erreichen echte Nachrichten das Geraet nie,
+  // obwohl die Glocke "aktiviert" zeigt und der Test ankommt.
   useEffect(() => {
+    let weg = false;
     (async () => {
       if (!("serviceWorker" in navigator)) return;
+      let sub = null;
       try {
         const reg = await navigator.serviceWorker.ready;
-        const sub = await reg.pushManager.getSubscription();
+        sub = await reg.pushManager.getSubscription();
+        if (weg) return;
         setSubbed(!!sub);
         if (sub) setLocalPref({ endpoint: sub.endpoint });
       } catch {}
+      if (!sub) return;
+      const s = getSession();
+      let st = await pushStatus();
+      // Zuordnung fehlt oder ist veraltet? Dann still neu anmelden - das
+      // schreibt Verein, Team und Namen aus der laufenden Sitzung nach.
+      const passtNicht = st.state==="missing" || st.state==="unassigned" ||
+        (st.row && s.cid && st.row.cid !== s.cid) ||
+        (st.row && (s.user||s.name) && st.row.player_name !== (s.user||s.name));
+      if (s.cid && passtNicht) {
+        try { await subscribePush(); st = await pushStatus(); } catch {}
+      }
+      if (!weg) setStand(st);
     })();
     const onFocus = () => setSess(getSession());
     window.addEventListener("focus", onFocus);
-    return () => window.removeEventListener("focus", onFocus);
-  }, []);
+    return () => { weg = true; window.removeEventListener("focus", onFocus); };
+  }, [sess.cid, sess.user, sess.name]);
 
   const data = getData();
   const upcomingEvents = (data?.events || [])
@@ -365,11 +435,22 @@ export function NotifMount() {
     catch (e) { fire(String(e.message || e)); }
     finally { setBusy(false); }
   };
+  // Zuordnung nachtragen: meldet das Geraet mit der laufenden Sitzung neu an.
+  const onRepair = async () => {
+    setBusy(true);
+    try { await subscribePush(); const st = await pushStatus(); setStand(st);
+          fire(st.state==="ok" ? tr("activated") : tr("standUnassigned")); }
+    catch (e) { fire(String(e.message || e)); }
+    finally { setBusy(false); }
+  };
   const onTest = async () => {
     setBusy(true);
     try {
       const j = await testPush();
-      if (j?.sent) { fire(tr("testSent")); }
+      const st = await pushStatus(); setStand(st);
+      if (j?.regError) { fire(tr("regFailed") + " " + j.regError); }
+      else if (st.state==="unassigned" || st.state==="missing") { fire(tr("testButUnassigned")); }
+      else if (j?.sent) { fire(tr("testSent")); }
       // Kein Versand: Grund mitgeben, sonst bleibt "0 Empfaenger" raetselhaft.
       // found=0 -> Geraet steht nicht in der Datenbank; found>0 -> Push-Dienst
       // hat abgelehnt (Details stehen in j.error).
@@ -458,6 +539,31 @@ export function NotifMount() {
               <div style={{marginBottom:14}}>
                 <Btn label={tr("testBtn")} onClick={onTest} busy={busy} kind="primary"/>
                 <p style={{fontSize:11.5,color:"#64748b",margin:"6px 2px 0",lineHeight:1.4}}>{tr("testSub")}</p>
+              </div>
+            )}
+
+            {/* Was weiss der Server ueber dieses Geraet? Ohne diese Zeile sieht
+                man "aktiviert", bekommt den Test - und nie eine echte Nachricht. */}
+            {subbed && stand && stand.state!=="nocfg" && stand.state!=="unknown" && (
+              <div style={{margin:"10px 0 0",padding:"10px 12px",borderRadius:12,lineHeight:1.45,
+                background: stand.state==="ok" ? "#f0fdf4" : "#fff7ed",
+                border: `1.5px solid ${stand.state==="ok" ? "#bbf7d0" : "#fed7aa"}`,
+                color: stand.state==="ok" ? "#166534" : "#9a3412", fontSize:12, fontWeight:600}}>
+                {stand.state==="ok"
+                  ? <>✓ {tr("standOk")} <b>{stand.row.player_name}</b></>
+                  : stand.state==="missing"
+                    ? tr("standMissing")
+                    : stand.state==="unassigned"
+                      ? tr("standUnassigned")
+                      : tr("standMissing")}
+                {stand.state!=="ok" && (
+                  <button onClick={onRepair} disabled={busy}
+                    style={{display:"block",marginTop:8,padding:"8px 12px",minHeight:36,borderRadius:10,
+                      border:"1.5px solid #fdba74",background:"#fff",color:"#9a3412",fontWeight:800,
+                      fontSize:12,cursor:busy?"default":"pointer",fontFamily:"inherit"}}>
+                    {tr("repairBtn")}
+                  </button>
+                )}
               </div>
             )}
 
