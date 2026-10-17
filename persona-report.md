@@ -6,7 +6,7 @@ Stand: 2026-10-17
 - Personas geprüft: **500**
 - Geprüfte Erwartungen: **5270**
 - Personas ohne Befund: **170/500**
-- Verschiedene Befunde: **9**
+- Verschiedene Befunde: **5**
 
 ## Befunde
 
@@ -23,19 +23,7 @@ Betrifft 150 Personas (helfer) in den Profilen helfer-klein, helfer-normal, helf
 Betrifft 150 Personas (helfer) in den Profilen helfer-klein, helfer-normal, helfer-gross – z. B. p151, p152, p153, p154, p155
 
 **5. Zu kleine Knöpfe in „start": 🔔 Erinnern (1) (19px) · 🔔 Erinnern (2) (19px) · 🔔 Erinnern (1) (19px) (Knöpfe groß genug zum Treffen)**  
-Betrifft 15 Personas (admin) in den Profilen admin-normal – z. B. p441, p443, p445, p447, p449
-
-**6. „📈 Entwicklung" fehlt in „mehr" (Überblick über die Entwicklung)**  
-Betrifft 15 Personas (admin) in den Profilen admin-klein – z. B. p442, p444, p446, p448, p450
-
-**7. „Neue Funktion" fehlt in „log" (Features getrennt gezählt)**  
-Betrifft 15 Personas (admin) in den Profilen admin-klein – z. B. p442, p444, p446, p448, p450
-
-**8. „Behobener Fehler" fehlt in „log" (Fehler getrennt gezählt)**  
-Betrifft 15 Personas (admin) in den Profilen admin-klein – z. B. p442, p444, p446, p448, p450
-
-**9. Technischer Fehler:  Rundgang: page.evaluate: Target page, context or browser has been closed**  
-Betrifft 15 Personas (admin) in den Profilen admin-klein – z. B. p442, p444, p446, p448, p450
+Betrifft 30 Personas (admin) in den Profilen admin-normal, admin-klein – z. B. p441, p442, p443, p444, p445
 
 ## Beobachtungen (kein Fehlschlag, aber bekannt)
 
@@ -62,4 +50,4 @@ Die Sprachwahl greift in der Navigation und im Eltern-/Spieler-Bereich. Die Trai
 | eltern-en | eltern | 390px | en | – |
 | eltern-tr | eltern | 390px | tr | – |
 | admin-normal | admin | 390px | de | – |
-| admin-klein | admin | 320px | de | 1 |
+| admin-klein | admin | 320px | de | – |
