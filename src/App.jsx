@@ -23940,10 +23940,25 @@ function LineupBoard({ ev, present, canEdit, onChange, pub=undefined, onPubChang
   const _kl=n=>String(n).toLowerCase().trim();
   const _offenSet=new Set((ohneZusage||[]).map(_kl));
   const _neinSet=new Set((abgesagt||[]).map(_kl));
-  const statusVon=n=>_neinSet.has(_kl(n))?"nein":(_offenSet.has(_kl(n))?"offen":"ja");
+  // Wer inzwischen in einer anderen Mannschaft spielt (oder geloescht wurde),
+  // bleibt in alten Aufstellungen stehen - das ist Geschichte. In Terminen,
+  // die noch kommen, waere er aber eine falsche Planung: deshalb Vermerk und
+  // nicht mitzaehlen. Erkannt an den Spielerprofilen: kein Profil zu dieser
+  // Mannschaft (Haupt- oder Zweitmannschaft).
+  const _vorbei = isEventPast(ev) || (ev.date && ev.date < now());
+  const _gehoertDazu = n => {
+    if(!ev.tid || !(profiles||[]).length) return true;
+    const k=_kl(n);
+    const p=(profiles||[]).find(x=>_kl(x.name||"")===k);
+    if(!p) return true;                       // Gast oder Aushilfe ohne Profil
+    return p.mainTid===ev.tid || (p.optTids||[]).includes(ev.tid);
+  };
+  const statusVon=n=>(!_vorbei&&!_gehoertDazu(n)) ? "fremd"
+    : _neinSet.has(_kl(n))?"nein":(_offenSet.has(_kl(n))?"offen":"ja");
   const STAT={ ja:{rand:null, bg:"#fff", txt:"#0f172a", tag:"" },
                offen:{rand:"#f59e0b", bg:"#fffbeb", txt:"#92400e", tag:"noch offen"},
-               nein:{rand:"#f87171", bg:"#fef2f2", txt:"#b91c1c", tag:"abgesagt"} };
+               nein:{rand:"#f87171", bg:"#fef2f2", txt:"#b91c1c", tag:"abgesagt"},
+               fremd:{rand:"#c4b5fd", bg:"#f5f3ff", txt:"#6d28d9", tag:"andere Mannschaft"} };
   const bench = [...(present||[]), ...(ohneZusage||[])]
     .filter((n,i,arr)=>arr.indexOf(n)===i)
     .filter(n=>!placed.includes(n)&&!_beSet.has(_kl(n)))
@@ -24183,6 +24198,10 @@ function LineupBoard({ ev, present, canEdit, onChange, pub=undefined, onPubChang
       <div style={{display:"flex",flexDirection:"column",gap:8}}>
         {teams.map((t,ti)=>{
           const drin=spielerVon(t);
+          // Kinder aus einer anderen Mannschaft zaehlen in kuenftigen Terminen
+          // nicht mit - sonst plant man mit Spielern, die gar nicht kommen.
+          const fremdDrin=drin.filter(n=>statusVon(n)==="fremd");
+          const zaehlt=drin.filter(n=>statusVon(n)!=="fremd");
           const auf=t.id===offen;
           return (
           <div key={t.id} style={{background:auf?"linear-gradient(#16a34a22,#16a34a11)":"#f8fafc",borderRadius:14,border:`1.5px solid ${auf?"#bbf7d0":"#e2e8f0"}`,overflow:"hidden"}}>
@@ -24195,8 +24214,9 @@ function LineupBoard({ ev, present, canEdit, onChange, pub=undefined, onPubChang
                     onKeyDown={e=>{ if(e.key==="Enter"){ teamName(t.id,e.target.value.trim()||`Team ${ti+1}`); setUmbenennen(null); } }}
                     style={{flex:1,minWidth:0,padding:"5px 9px",fontSize:13.5,fontWeight:800,border:"1.5px solid #bbf7d0",borderRadius:8,outline:"none",fontFamily:"inherit"}}/>
                 : <span style={{flex:1,minWidth:0,fontWeight:800,fontSize:13.5,color:"#0f172a",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
-                    {t.name||`Team ${ti+1}`} <span style={{fontWeight:600,fontSize:12,color:"#64748b"}}>({drin.length})</span>
-                    {drin.filter(n=>statusVon(n)!=="ja").length>0&&<span style={{fontWeight:700,fontSize:11,color:"#b45309",marginLeft:5}}>· {drin.filter(n=>statusVon(n)!=="ja").length} ohne Zusage</span>}
+                    {t.name||`Team ${ti+1}`} <span style={{fontWeight:600,fontSize:12,color:"#64748b"}}>({zaehlt.length})</span>
+                    {zaehlt.filter(n=>statusVon(n)!=="ja").length>0&&<span style={{fontWeight:700,fontSize:11,color:"#b45309",marginLeft:5}}>· {zaehlt.filter(n=>statusVon(n)!=="ja").length} ohne Zusage</span>}
+                    {fremdDrin.length>0&&<span title="Spielt inzwischen in einer anderen Mannschaft – zählt nicht mit" style={{fontWeight:700,fontSize:11,color:"#6d28d9",marginLeft:5}}>· {fremdDrin.length} andere Mannschaft</span>}
                     {canEdit&&t.grp&&(intGroups||[]).some(g=>g.id===t.grp)&&(()=>{ const g=(intGroups||[]).find(x=>x.id===t.grp);
                       return <span title="Interne Leistungsgruppe – nur für Trainer" style={{fontWeight:700,fontSize:11,color:g.col,marginLeft:5}}>· {g.name}</span>; })()}
                   </span>}
