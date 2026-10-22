@@ -18961,7 +18961,7 @@ function AttendanceCheckoff({ ev, teamPlayers=[], teamPlusAus=null, onSetPresent
   );
 }
 
-function VoteOverview({ev,players,playerProfiles=[],teams,myTids,cl,onSetDeadline,onSetPresent=()=>{},onSetGuests=()=>{},onSetVote=null,onVotePatch=null,onFremd=null,myKids=[],staff=null,readOnly=false,trainerNames=[],helperNames=[],gruppen=[],leibchen=null,onGruppe=null,grpVon=null,istFremd=null}) {
+function VoteOverview({ev,players,playerProfiles=[],teams,myTids,cl,allEvents=[],onSetDeadline,onSetPresent=()=>{},onSetGuests=()=>{},onSetVote=null,onVotePatch=null,onFremd=null,myKids=[],staff=null,readOnly=false,trainerNames=[],helperNames=[],gruppen=[],leibchen=null,onGruppe=null,grpVon=null,istFremd=null}) {
   // Zuordnung fremder Antworten: je Name der gewaehlte Kader-Name
   const [fremdZiel,setFremdZiel]=useState({});
   const p = cl?.pri||"#16a34a";
@@ -19024,6 +19024,24 @@ function VoteOverview({ev,players,playerProfiles=[],teams,myTids,cl,onSetDeadlin
   const fremd   = [...yesAll,...noAll].filter(([n,v])=>istFremdeStimme(n,v,_pctx))
                     .map(([n,v])=>({name:n, ja:getVal(v)==="yes"}));
   const missing = teamPlayers.filter(n=>!(ev.votes||{})[n]&&!isStaffName(n,null)).sort(byName);
+  // Gemeinsamer Termin mehrerer Mannschaften: Jede Mannschaft hat ihren
+  // eigenen Antwort-Topf, man sieht sonst aber nie das Ganze. Deshalb hier
+  // eine Liste ueber alle - mit der Mannschaft hinter jedem Namen.
+  const verbundTeams = (() => {
+    if(!ev.groupId) return null;
+    const sibs=(allEvents||[]).filter(e=>e.groupId===ev.groupId);
+    if(sibs.length<2) return null;
+    return sibs.map(se=>{
+      const tm=(teams||[]).find(x=>x.id===se.tid);
+      const kader=kaderNamen(players, playerProfiles, se.tid);
+      const vv=se.votes||{};
+      const wert=n=>{ const v=vv[n]; return (typeof v==="object"&&v)?v.val:v; };
+      return { id:se.id, hier:se.id===ev.id, name:tm?.name||"Mannschaft", col:tm?.col||"#64748b",
+        ja:kader.filter(n=>wert(n)==="yes").sort(byName),
+        nein:kader.filter(n=>wert(n)==="no").sort(byName),
+        offen:kader.filter(n=>!vv[n]).sort(byName) };
+    });
+  })();
   const lateVoters = voted.filter(([n])=>isLate(n)).map(([n])=>n);
   // Late arrivals: yes votes with .late field
   const lateArrivals = voted.filter(([,v])=>typeof v==="object"&&v!==null&&v.val==="yes"&&v.late)
@@ -19047,6 +19065,35 @@ function VoteOverview({ev,players,playerProfiles=[],teams,myTids,cl,onSetDeadlin
           </div>
         ))}
       </div>
+      {/* Gemeinsamer Termin: alle Mannschaften auf einen Blick, mit Zuordnung.
+          Jede Mannschaft antwortet im eigenen Termin - hier steht das Ganze. */}
+      {verbundTeams&&(
+        <div style={{background:"#eef2ff",border:"1.5px solid #c7d2fe",borderRadius:12,padding:"11px 13px",marginBottom:16}}>
+          <div style={{fontSize:11,fontWeight:800,color:"#3730a3",letterSpacing:.3,marginBottom:2}}>
+            🤝 GEMEINSAMER TERMIN · {verbundTeams.reduce((n,t)=>n+t.ja.length,0)} ZUSAGEN
+          </div>
+          <div style={{fontSize:11,color:"#4f46e5",marginBottom:8,lineHeight:1.45}}>
+            Jede Mannschaft stimmt in ihrem eigenen Termin ab – hier siehst du alle zusammen.
+          </div>
+          {verbundTeams.map(t=>(
+            <div key={t.id} style={{borderTop:"1px solid #ddd6fe",paddingTop:7,marginTop:7}}>
+              <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:4}}>
+                <span style={{width:9,height:9,borderRadius:99,background:t.col,flexShrink:0}}/>
+                <span style={{fontWeight:800,fontSize:12.5,color:"#312e81",flex:1,minWidth:0}}>
+                  {t.name}{t.hier&&<span style={{fontWeight:600,color:"#6366f1"}}> · dieser Termin</span>}
+                </span>
+                <span style={{fontSize:11,fontWeight:800,color:"#15803d"}}>✓ {t.ja.length}</span>
+                {t.nein.length>0&&<span style={{fontSize:11,fontWeight:800,color:"#b42318"}}>✕ {t.nein.length}</span>}
+                {t.offen.length>0&&<span style={{fontSize:11,fontWeight:700,color:"#b45309"}}>? {t.offen.length}</span>}
+              </div>
+              {t.ja.length>0&&<div style={{fontSize:12,color:"#166534",lineHeight:1.5}}>{t.ja.join(", ")}</div>}
+              {t.nein.length>0&&<div style={{fontSize:11.5,color:"#b42318",lineHeight:1.5,marginTop:2}}>Abgesagt: {t.nein.join(", ")}</div>}
+              {t.offen.length>0&&<div style={{fontSize:11.5,color:"#b45309",lineHeight:1.5,marginTop:2}}>Offen: {t.offen.join(", ")}</div>}
+              {t.ja.length+t.nein.length+t.offen.length===0&&<div style={{fontSize:11.5,color:"#6366f1"}}>Noch keine Spieler in dieser Mannschaft.</div>}
+            </div>
+          ))}
+        </div>
+      )}
       {/* Trainer separat - fuer "mind. 6 Spieler" zaehlen nur die Spieler oben.
           Mit Zeitpunkt: der Trainer sieht, wann wer zu- oder abgesagt hat. */}
       {(trYes.length>0||trNo.length>0)&&(()=>{
