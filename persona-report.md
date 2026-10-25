@@ -1,6 +1,6 @@
 # Anwender-Check mit 500 Personas
 
-Stand: 2026-10-17
+Stand: 2026-10-25
 
 - Sitzungs-Profile vermessen: **14** (Rolle × Bildschirmbreite × Sprache)
 - Personas geprüft: **500**
