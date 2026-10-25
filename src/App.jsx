@@ -16133,7 +16133,10 @@ function SpielplanImport({ local, save, fire, cl, cid, teams, defaultTid, onClos
 // ----------------------------------------------------------------
 function EinfachTrainer({ cl, evs=[], tod, trainerNames=[], helperNames=[], squadOf=()=>[], squadPlusOf=null, planTitleOf=()=>null,
   modTraining=true, selfName=null, onSelfVote=null,
-  onView, onAttend, onSetup, onPlan, onEdit, onRemind, onBrief, onSubReq, onDel, onReset, onCopyLink, onNew, onDetail }){
+  onView, onAttend, onSetup, onPlan, onEdit, onRemind, onBrief, onSubReq, onDel, onReset, onCopyLink, onNew, onDetail,
+  modTrainingFuer=null }){
+  // Module gelten je Mannschaft - also die Mannschaft DIESES Termins fragen.
+  const modTrainingEv = e2 => modTrainingFuer ? !!modTrainingFuer(e2) : !!modTraining;
   const t=TH(cl); const p=readable(t.p);
   const [gewaehlt,setGewaehlt]=useState(null);
   const [mehr,setMehr]=useState(null);   // welche Karte hat "Mehr" offen?
@@ -16282,7 +16285,7 @@ function EinfachTrainer({ cl, evs=[], tod, trainerNames=[], helperNames=[], squa
           {/* Was man ab und zu braucht - gleich gross, ruhig, ohne Farbe */}
           <div style={{display:"flex",gap:7,marginTop:8,flexWrap:"wrap"}}>
             {onSetup&&<Neben onClick={()=>onSetup(fokus)} title="Aufbau-Liste: was muss auf welches Feld" ch="🏗 Aufbau"/>}
-            {fokus.type==="training"&&onPlan&&modTraining&&<Neben onClick={()=>onPlan(fokus)} title={planT||"Trainingsplan anlegen"} ch={planT?"📋 Training steht":"📋 Training planen"}/>}
+            {fokus.type==="training"&&onPlan&&modTrainingEv(fokus)&&<Neben onClick={()=>onPlan(fokus)} title={planT||"Trainingsplan anlegen"} ch={planT?"📋 Training steht":"📋 Training planen"}/>}
             <Neben onClick={()=>setMehr(m=>m===fokus.id?null:fokus.id)} title="Weitere Aktionen" ch={mehrAuf?"⋯ weniger":"⋯ Mehr"}/>
           </div>
           {mehrAuf&&(
@@ -16468,7 +16471,10 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
   // Module je Team: Trainer stimmen ab (Mehrheit); ohne abgegebene Stimmen ist
   // alles AN (Bestandsschutz). Bei Gleichstand bleibt das Modul aktiv.
   const teamModOn=(tm,key)=>{ const vs=Object.values(tm?.moduleVotes||{}).filter(v=>v&&(key in v)); if(!vs.length) return true; return vs.filter(v=>v[key]).length*2>=vs.length; };
-  const modOn=key=>{ const tms=(local.teams||[]).filter(tm=>myTids.includes(tm.id)); return tms.length?tms.some(tm=>teamModOn(tm,key)):true; };                       // Termin-Ansicht als Tabs
+  const modOn=key=>{ const tms=(local.teams||[]).filter(tm=>myTids.includes(tm.id)); return tms.length?tms.some(tm=>teamModOn(tm,key)):true; };
+  // Module gelten je Mannschaft. Wo ein Termin dranhaengt, entscheidet
+  // SEINE Mannschaft - nicht, ob irgendeine meiner Mannschaften das Modul anhat.
+  const modOnEv=(ev,key)=>{ const tm=(local.teams||[]).find(x=>x.id===ev?.tid); return tm?teamModOn(tm,key):modOn(key); };                       // Termin-Ansicht als Tabs
   // Namen aller Vereins-Trainer: Zusagen werden in Spieler und Trainer getrennt gezaehlt
   const trainerNames=(local.trainers||[]).filter(x=>x.cid===cid).map(x=>x.name).filter(Boolean);
   const helperNames=(local.helpers||[]).filter(x=>x.cid===cid).map(x=>x.name).filter(Boolean);
@@ -17008,7 +17014,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
               allen Werkzeugen um - es faellt nichts weg. */}
           {tSimple&&!isHelper ? (
             <EinfachTrainer cl={myClub} evs={myEvs} tod={tod} trainerNames={trainerNames} helperNames={helperNames} allEvents={local.events} allTeams={local.teams} squadPlusOf={squadPlusOf}
-              squadOf={squadOf} planTitleOf={planTitleOf} modTraining={modOn("training")}
+              squadOf={squadOf} planTitleOf={planTitleOf} modTrainingFuer={e2=>modOnEv(e2,"training")}
               selfName={isHelper?null:selfName} onSelfVote={isHelper?null:selfVote}
               onView={ev=>{ setEvTab("rueck"); setViewEv(ev); }}
               onAttend={ev=>{ setEvTab("orga"); setViewEv(ev); }}
@@ -17051,16 +17057,16 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
             );
           })()}
           <FerienHinweis hols={_ferienDash} from={tod} to={_in10}/>
-          {up.length>0&&<><Divider label={`NÄCHSTE 21 TAGE (${soon.length})`}/>{soon.length>0?soon.map(ev=><DashRow key={ev.id} ev={ev} cl={myClub} tod={tod} onView={()=>{setEvTab("rueck");setViewEv(ev);}} onEdit={()=>ev.sid?setEditConf(ev):setEditEv(editInfo(ev))} onDel={()=>{setDelConf(ev.id);setDelConfVal(ev.title);}} onReset={()=>{ if(!window.confirm(`Alle Zu- und Absagen für „${ev.title}" wirklich zurücksetzen?\n\nDie Antworten aller Teilnehmer gehen verloren. Das lässt sich nicht rückgängig machen.`)) return; save({...local,events:local.events.map(e=>e.id===ev.id?{...e,votes:{}}:e)});fire("Stimmen zurückgesetzt");}} onCopyLink={()=>kopiereTerminLink(ev)} selfName={isHelper?null:selfName} onSelfVote={isHelper?null:selfVote} onRemind={()=>remindNonVoters(ev)} onMitfahr={isHelper?null:()=>teileMitfahrAufruf(ev)} onPlan={isHelper?null:()=>openPlan(ev)} planTitle={planTitleOf(ev)} onAttend={()=>{setEvTab("orga");setViewEv(ev);}} onBrief={isHelper?null:()=>setBriefEv(ev)} modTraining={modOn("training")} trainerNames={trainerNames} helperNames={helperNames} allEvents={local.events} allTeams={local.teams} squad={squadPlusOf(ev.tid)} onSubReq={isHelper?null:()=>{setSubNote("");setSubReqEv(ev);}} helperId={isHelper?(session.id||session.helperId||session.name):null} onHelperQuick={isHelper?helperQuick:null} onSetup={()=>setSetupEv(ev)}/>):<p style={{textAlign:"center",color:"#64748b",fontSize:13.5,padding:"14px 10px"}}>Keine Termine in den nächsten 21 Tagen.</p>}
+          {up.length>0&&<><Divider label={`NÄCHSTE 21 TAGE (${soon.length})`}/>{soon.length>0?soon.map(ev=><DashRow key={ev.id} ev={ev} cl={myClub} tod={tod} onView={()=>{setEvTab("rueck");setViewEv(ev);}} onEdit={()=>ev.sid?setEditConf(ev):setEditEv(editInfo(ev))} onDel={()=>{setDelConf(ev.id);setDelConfVal(ev.title);}} onReset={()=>{ if(!window.confirm(`Alle Zu- und Absagen für „${ev.title}" wirklich zurücksetzen?\n\nDie Antworten aller Teilnehmer gehen verloren. Das lässt sich nicht rückgängig machen.`)) return; save({...local,events:local.events.map(e=>e.id===ev.id?{...e,votes:{}}:e)});fire("Stimmen zurückgesetzt");}} onCopyLink={()=>kopiereTerminLink(ev)} selfName={isHelper?null:selfName} onSelfVote={isHelper?null:selfVote} onRemind={()=>remindNonVoters(ev)} onMitfahr={isHelper?null:()=>teileMitfahrAufruf(ev)} onPlan={isHelper?null:()=>openPlan(ev)} planTitle={planTitleOf(ev)} onAttend={()=>{setEvTab("orga");setViewEv(ev);}} onBrief={isHelper?null:()=>setBriefEv(ev)} modTraining={modOnEv(ev,"training")} trainerNames={trainerNames} helperNames={helperNames} allEvents={local.events} allTeams={local.teams} squad={squadPlusOf(ev.tid)} onSubReq={isHelper?null:()=>{setSubNote("");setSubReqEv(ev);}} helperId={isHelper?(session.id||session.helperId||session.name):null} onHelperQuick={isHelper?helperQuick:null} onSetup={()=>setSetupEv(ev)}/>):<p style={{textAlign:"center",color:"#64748b",fontSize:13.5,padding:"14px 10px"}}>Keine Termine in den nächsten 21 Tagen.</p>}
             {later.length>0&&<>
               <button onClick={()=>setShowLater(s=>!s)} style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8,width:"100%",background:showLater?"#f1f5f9":"#fff",border:"1.5px solid #e2e8f0",borderRadius:12,cursor:"pointer",margin:"6px 0 12px",padding:"11px 14px",fontWeight:800,fontSize:13,color:"#475569",fontFamily:"inherit"}}>{showLater?"▲ Weitere Termine ausblenden":"▼ Weitere "+later.length+" Termine anzeigen"}</button>
-              {showLater&&later.map(ev=><DashRow key={ev.id} ev={ev} cl={myClub} tod={tod} onView={()=>{setEvTab("rueck");setViewEv(ev);}} onEdit={()=>ev.sid?setEditConf(ev):setEditEv(editInfo(ev))} onDel={()=>{setDelConf(ev.id);setDelConfVal(ev.title);}} onReset={()=>{ if(!window.confirm(`Alle Zu- und Absagen für „${ev.title}" wirklich zurücksetzen?\n\nDie Antworten aller Teilnehmer gehen verloren. Das lässt sich nicht rückgängig machen.`)) return; save({...local,events:local.events.map(e=>e.id===ev.id?{...e,votes:{}}:e)});fire("Stimmen zurückgesetzt");}} onCopyLink={()=>kopiereTerminLink(ev)} selfName={isHelper?null:selfName} onSelfVote={isHelper?null:selfVote} onRemind={()=>remindNonVoters(ev)} onMitfahr={isHelper?null:()=>teileMitfahrAufruf(ev)} onPlan={isHelper?null:()=>openPlan(ev)} planTitle={planTitleOf(ev)} onAttend={()=>{setEvTab("orga");setViewEv(ev);}} onBrief={isHelper?null:()=>setBriefEv(ev)} modTraining={modOn("training")} trainerNames={trainerNames} helperNames={helperNames} allEvents={local.events} allTeams={local.teams} squad={squadPlusOf(ev.tid)} onSubReq={isHelper?null:()=>{setSubNote("");setSubReqEv(ev);}} helperId={isHelper?(session.id||session.helperId||session.name):null} onHelperQuick={isHelper?helperQuick:null} onSetup={()=>setSetupEv(ev)}/>)}
+              {showLater&&later.map(ev=><DashRow key={ev.id} ev={ev} cl={myClub} tod={tod} onView={()=>{setEvTab("rueck");setViewEv(ev);}} onEdit={()=>ev.sid?setEditConf(ev):setEditEv(editInfo(ev))} onDel={()=>{setDelConf(ev.id);setDelConfVal(ev.title);}} onReset={()=>{ if(!window.confirm(`Alle Zu- und Absagen für „${ev.title}" wirklich zurücksetzen?\n\nDie Antworten aller Teilnehmer gehen verloren. Das lässt sich nicht rückgängig machen.`)) return; save({...local,events:local.events.map(e=>e.id===ev.id?{...e,votes:{}}:e)});fire("Stimmen zurückgesetzt");}} onCopyLink={()=>kopiereTerminLink(ev)} selfName={isHelper?null:selfName} onSelfVote={isHelper?null:selfVote} onRemind={()=>remindNonVoters(ev)} onMitfahr={isHelper?null:()=>teileMitfahrAufruf(ev)} onPlan={isHelper?null:()=>openPlan(ev)} planTitle={planTitleOf(ev)} onAttend={()=>{setEvTab("orga");setViewEv(ev);}} onBrief={isHelper?null:()=>setBriefEv(ev)} modTraining={modOnEv(ev,"training")} trainerNames={trainerNames} helperNames={helperNames} allEvents={local.events} allTeams={local.teams} squad={squadPlusOf(ev.tid)} onSubReq={isHelper?null:()=>{setSubNote("");setSubReqEv(ev);}} helperId={isHelper?(session.id||session.helperId||session.name):null} onHelperQuick={isHelper?helperQuick:null} onSetup={()=>setSetupEv(ev)}/>)}
             </>}
           </>}
           {up.length===0&&<div style={{textAlign:"center",padding:"30px",background:"#fff",borderRadius:18,border:"1.5px dashed #e2e8f0",color:"#64748b"}}><Logo cl={myClub} sz={50} sx={{margin:"0 auto 12px"}}/><p style={{fontWeight:800,fontSize:15}}>Noch keine Termine</p><p style={{fontSize:13,marginTop:3}}>{isHelper?"Sobald die Trainer Termine anlegen, erscheinen sie hier.":'Klicke oben auf "Neuen Termin anlegen"'}</p></div>}
           {past.length>0&&<>
             <button onClick={()=>setShowPast(v=>!v)} style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8,width:"100%",background:showPast?"#f1f5f9":"#fff",border:"1.5px solid #e2e8f0",borderRadius:12,cursor:"pointer",margin:"6px 0 12px",padding:"11px 14px",fontWeight:800,fontSize:13,color:"#64748b",fontFamily:"inherit"}}>{showPast?"▲ Vergangene Termine ausblenden":"▼ "+past.length+" vergangene Termine anzeigen"}</button>
-            {showPast&&<div style={{opacity:.72}}>{past.map(ev=><DashRow key={ev.id} ev={ev} cl={myClub} tod={tod} onView={()=>{setEvTab("rueck");setViewEv(ev);}} onEdit={()=>setEditEv(editInfo(ev))} onDel={()=>{setDelConf(ev.id);setDelConfVal(ev.title);}} onReset={()=>{}} onCopyLink={()=>{}} onAttend={()=>{setEvTab("orga");setViewEv(ev);}} onBrief={isHelper?null:()=>setBriefEv(ev)} modTraining={modOn("training")} trainerNames={trainerNames} helperNames={helperNames} allEvents={local.events} allTeams={local.teams} squad={squadPlusOf(ev.tid)}/>)}</div>}
+            {showPast&&<div style={{opacity:.72}}>{past.map(ev=><DashRow key={ev.id} ev={ev} cl={myClub} tod={tod} onView={()=>{setEvTab("rueck");setViewEv(ev);}} onEdit={()=>setEditEv(editInfo(ev))} onDel={()=>{setDelConf(ev.id);setDelConfVal(ev.title);}} onReset={()=>{}} onCopyLink={()=>{}} onAttend={()=>{setEvTab("orga");setViewEv(ev);}} onBrief={isHelper?null:()=>setBriefEv(ev)} modTraining={modOnEv(ev,"training")} trainerNames={trainerNames} helperNames={helperNames} allEvents={local.events} allTeams={local.teams} squad={squadPlusOf(ev.tid)}/>)}</div>}
           </>}
           <AffiliateBanner trigger="events" style={{marginTop:14}}/>
           {/* DFB-Spielformen sind Trainer-Fachwissen - Helfer brauchen sie nicht */}
@@ -19615,18 +19621,35 @@ const APP_MODULES=[
 function ModuleWizard({data,session,myTids,cl,save,onClose}){
   const t=TH(cl);
   const teams=(data.teams||[]).filter(tm=>myTids.includes(tm.id));
-  const mine=(teams[0]?.moduleVotes||{})[session.id]||{};
-  const [sel,setSel]=useState(()=>{ const o={}; APP_MODULES.forEach(m=>{ o[m.key]= m.defOff ? mine[m.key]===true : mine[m.key]!==false; }); return o; });
+  // Module gelten JE MANNSCHAFT: die F2 macht monatliche Skills, die F3
+  // nicht. Deshalb hält der Assistent eine Auswahl pro Mannschaft - der
+  // Durchlauf stellt alle gleich ein, in der Zusammenfassung lässt sich
+  // jede Mannschaft einzeln ändern.
+  const start=(tm)=>{ const mine=(tm?.moduleVotes||{})[session.id]||{}; const o={};
+    APP_MODULES.forEach(m=>{ o[m.key]= m.defOff ? mine[m.key]===true : mine[m.key]!==false; }); return o; };
+  const [proTeam,setProTeam]=useState(()=>{ const o={}; teams.forEach(tm=>{ o[tm.id]=start(tm); }); return o; });
+  const [welches,setWelches]=useState(teams[0]?.id||"");
   const [step,setStep]=useState(0);                 // 0=Intro, 1..N=Module, N+1=Zusammenfassung
   const N=APP_MODULES.length;
+  // Im Durchlauf stellt eine Entscheidung alle Mannschaften gleich ein -
+  // das ist der normale Fall. Feinschliff kommt in der Zusammenfassung.
+  const sel=proTeam[welches]||start(teams[0]);
+  const setSel=(fnOrObj)=>setProTeam(p=>{
+    const neu={...p};
+    Object.keys(neu).forEach(tid=>{ neu[tid]= typeof fnOrObj==="function" ? fnOrObj(neu[tid]) : {...neu[tid],...fnOrObj}; });
+    return neu;
+  });
+  const setFuer=(tid,key,val)=>setProTeam(p=>({...p,[tid]:{...(p[tid]||{}),[key]:val}}));
   const finish=()=>{
     save({...data,
-      teams:(data.teams||[]).map(tm=>myTids.includes(tm.id)?{...tm,moduleVotes:{...(tm.moduleVotes||{}),[session.id]:sel}}:tm),
+      teams:(data.teams||[]).map(tm=>proTeam[tm.id]?{...tm,moduleVotes:{...(tm.moduleVotes||{}),[session.id]:proTeam[tm.id]}}:tm),
       trainers:(data.trainers||[]).map(x=>x.id===session.id?{...x,moduleWizardDone:true}:x)});
     onClose();
   };
-  const preview=(key)=>{ const tm=teams[0]; if(!tm) return {cast:1,on:sel[key]?1:0,eff:sel[key],tie:false};
-    const votes={...(tm.moduleVotes||{}),[session.id]:sel};
+  const preview=(key,tid)=>{ const tm=teams.find(x=>x.id===(tid||welches))||teams[0];
+    const eigen=(proTeam[tm?.id]||sel);
+    if(!tm) return {cast:1,on:eigen[key]?1:0,eff:eigen[key],tie:false};
+    const votes={...(tm.moduleVotes||{}),[session.id]:eigen};
     const trs=(data.trainers||[]).filter(x=>(x.tids||[]).includes(tm.id)&&isActive(x));
     const cast=trs.filter(x=>votes[x.id]&&(key in votes[x.id]));
     const onN=cast.filter(x=>votes[x.id][key]).length;
@@ -19672,22 +19695,46 @@ function ModuleWizard({data,session,myTids,cl,save,onClose}){
         {step===N+1&&(<>
           <div style={{textAlign:"center",marginBottom:12}}><div style={{fontSize:40}}>✅</div>
             <h2 style={{fontWeight:900,fontSize:19,color:"#0f172a",margin:"6px 0 2px"}}>Eure Auswahl</h2>
-            <p style={{fontSize:12.5,color:"#64748b"}}>So steht die Team-Abstimmung{teams[0]?` für ${teams[0].name}`:""}:</p>
+            <p style={{fontSize:12.5,color:"#64748b"}}>
+              {teams.length>1 ? "Jede Mannschaft lässt sich einzeln einstellen – tippe auf ein Modul, um es für die gewählte Mannschaft umzuschalten." : "So steht die Team-Abstimmung:"}
+            </p>
           </div>
+          {/* Module gelten je Mannschaft: hier die Mannschaft wählen und
+              einzeln schalten. Beispiel: F2 macht monatliche Skills, F3 nicht. */}
+          {teams.length>1&&(
+            <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:11}}>
+              {teams.map(tm=>{ const an=welches===tm.id; return (
+                <button key={tm.id} onClick={()=>setWelches(tm.id)}
+                  style={{flex:"1 1 40%",minHeight:38,padding:"8px 10px",borderRadius:11,
+                    border:`2px solid ${an?(tm.col||t.p):"#e2e8f0"}`,background:an?(tm.col||t.p):"#fff",
+                    color:an?"#fff":"#475569",fontWeight:800,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>
+                  {tm.name}
+                </button>
+              ); })}
+            </div>
+          )}
           <div style={{display:"flex",flexDirection:"column",gap:7,marginBottom:14}}>
-            {APP_MODULES.map(m=>{ const pv=preview(m.key); return (
-              <div key={m.key} style={{display:"flex",alignItems:"center",gap:9,background:"#f8fafc",borderRadius:11,padding:"9px 12px",border:`1.5px solid ${pv.eff?"#bbf7d0":"#e2e8f0"}`}}>
+            {APP_MODULES.map(m=>{ const pv=preview(m.key,welches); const eigen=(proTeam[welches]||sel)[m.key]; return (
+              <button key={m.key} onClick={()=>setFuer(welches,m.key,!eigen)}
+                style={{display:"flex",alignItems:"center",gap:9,background:"#f8fafc",borderRadius:11,padding:"9px 12px",
+                  border:`1.5px solid ${pv.eff?"#bbf7d0":"#e2e8f0"}`,cursor:"pointer",fontFamily:"inherit",textAlign:"left",width:"100%"}}>
                 <span style={{fontSize:18}}>{m.e}</span>
                 <div style={{flex:1,minWidth:0}}>
                   <div style={{fontSize:13,fontWeight:800,color:"#0f172a"}}>{m.t}</div>
                   <div style={{fontSize:11,color:pv.tie?"#b45309":"#64748b"}}>
-                    Du: {sel[m.key]?"nutzen":"ausblenden"} · Team: {pv.on}/{pv.cast} dafür{pv.tie?" · ⚖️ Patt → bleibt aktiv, sprecht euch ab":""}
+                    Du: {eigen?"nutzen":"ausblenden"} · Team: {pv.on}/{pv.cast} dafür{pv.tie?" · ⚖️ Patt → bleibt aktiv, sprecht euch ab":""}
                   </div>
                 </div>
                 <span style={{fontSize:11.5,fontWeight:800,color:pv.eff?"#15803d":"#94a3b8"}}>{pv.eff?"AKTIV":"AUS"}</span>
-              </div>
+              </button>
             );})}
           </div>
+          {teams.length>1&&(
+            <div style={{fontSize:11.5,color:"#64748b",lineHeight:1.5,marginBottom:12}}>
+              Gilt nur für <b>{teams.find(x=>x.id===welches)?.name}</b>. Die anderen Mannschaften behalten ihre eigene Einstellung –
+              oben umschalten, um sie zu sehen.
+            </div>
+          )}
           <button onClick={finish} style={{width:"100%",padding:"14px",borderRadius:14,border:"none",background:t.p,color:contrast(t.p),fontWeight:800,fontSize:15,cursor:"pointer",fontFamily:"inherit"}}>Speichern & loslegen</button>
           <button onClick={()=>setStep(N)} style={{width:"100%",marginTop:8,padding:"11px",borderRadius:13,border:"none",background:"none",color:"#64748b",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>← Zurück</button>
         </>)}
