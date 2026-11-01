@@ -16134,7 +16134,7 @@ function SpielplanImport({ local, save, fire, cl, cid, teams, defaultTid, onClos
 function EinfachTrainer({ cl, evs=[], tod, trainerNames=[], helperNames=[], squadOf=()=>[], squadPlusOf=null, planTitleOf=()=>null,
   modTraining=true, selfName=null, onSelfVote=null,
   onView, onAttend, onSetup, onPlan, onEdit, onRemind, onBrief, onSubReq, onDel, onReset, onCopyLink, onNew, onDetail,
-  modTrainingFuer=null }){
+  modTrainingFuer=null, fremdOf=null }){
   // Module gelten je Mannschaft - also die Mannschaft DIESES Termins fragen.
   const modTrainingEv = e2 => modTrainingFuer ? !!modTrainingFuer(e2) : !!modTraining;
   const t=TH(cl); const p=readable(t.p);
@@ -16159,7 +16159,7 @@ function EinfachTrainer({ cl, evs=[], tod, trainerNames=[], helperNames=[], squa
   // Zahlen eines Termins: Spieler und Betreuer sauber getrennt (wie auf der Karte)
   const zahlen=ev=>{
     const v=ev.votes||{};
-    const ctx={staff:staffSet(trainerNames,helperNames),squad:squadSet((squadPlusOf||squadOf)(ev.tid)),guests:ev.guests||[],open:!!ev.open};
+    const ctx={staff:staffSet(trainerNames,helperNames),squad:squadSet((squadPlusOf||squadOf)(ev.tid)),guests:ev.guests||[],open:!!ev.open,andere:fremdOf?fremdOf(ev.tid):null};
     const val=x=>(typeof x==="object"&&x?x.val:x);
     const spieler=Object.entries(v).filter(([n,x])=>isPlayerVote(n,x,ctx));
     const ja=spieler.filter(([,x])=>val(x)==="yes").length;
@@ -16486,7 +16486,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
   const squadPlusOf=tid=>kaderNamen(local.players,local.playerProfiles,tid,true);
   // Zusagen OHNE Betreuer - der Betreuer-Schluessel rechnet nur mit Kindern.
   const jaSpielerNamen=(ev)=>{
-    const ctx={staff:staffSet(trainerNames,helperNames),squad:squadSet(squadPlusOf(ev.tid)),guests:ev.guests||[],open:!!ev.open};
+    const ctx={staff:staffSet(trainerNames,helperNames),squad:squadSet(squadPlusOf(ev.tid)),guests:ev.guests||[],open:!!ev.open,andere:fremdeKinder(local.playerProfiles,ev.tid)};
     return Object.entries(ev.votes||{}).filter(([n,v])=>((typeof v==="object"&&v)?v.val:v)==="yes"&&isPlayerVote(n,v,ctx)).map(([n])=>n);
   };
   // Kinder aus dem Kader, die noch gar nicht geantwortet haben - sie lassen
@@ -16498,11 +16498,11 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
   // Absagen - wer schon aufgestellt war und dann absagt, faellt nicht still
   // aus der Mannschaft, sondern wird rot markiert.
   const neinSpielerNamen=(ev)=>{
-    const ctx={staff:staffSet(trainerNames,helperNames),squad:squadSet(squadPlusOf(ev.tid)),guests:ev.guests||[],open:!!ev.open};
+    const ctx={staff:staffSet(trainerNames,helperNames),squad:squadSet(squadPlusOf(ev.tid)),guests:ev.guests||[],open:!!ev.open,andere:fremdeKinder(local.playerProfiles,ev.tid)};
     return Object.entries(ev.votes||{}).filter(([n,v])=>((typeof v==="object"&&v)?v.val:v)==="no"&&isPlayerVote(n,v,ctx)).map(([n])=>n);
   };
   const jaSpieler=(ev)=>{
-    const ctx={staff:staffSet(trainerNames,helperNames),squad:squadSet(squadPlusOf(ev.tid)),guests:ev.guests||[],open:!!ev.open};
+    const ctx={staff:staffSet(trainerNames,helperNames),squad:squadSet(squadPlusOf(ev.tid)),guests:ev.guests||[],open:!!ev.open,andere:fremdeKinder(local.playerProfiles,ev.tid)};
     return Object.entries(ev.votes||{}).filter(([n,v])=>((typeof v==="object"&&v)?v.val:v)==="yes"&&isPlayerVote(n,v,ctx)).length;
   };
   const [subReqEv,setSubReqEv]=useState(null);   // Vertretungs-Gesuch anlegen (Modal)
@@ -16906,7 +16906,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
             } else {
             (local.events||[]).filter(e=>myTids.includes(e.tid)).forEach(e=>{
               if(e.date>=tod&&e.date<=todoBis)
-                eventWarnings(e,tod,{ events:local.events, teams:local.teams, perStaff:myClub?.clubSettings?.playersPerStaff||6, trainers:(local.trainers||[]).filter(trn=>(trn.tids||[]).includes(e.tid)&&isActive(trn)).length, squad:(local.playerProfiles||[]).filter(pp=>pp.mainTid===e.tid&&!pp.archived).length, trainerNames, helperNames, squadNames:squadPlusOf(e.tid) }).forEach(x=>todos.push({ev:e,label:x.label,col:x.col,bg:x.bg}));
+                eventWarnings(e,tod,{ events:local.events, teams:local.teams, perStaff:myClub?.clubSettings?.playersPerStaff||6, trainers:(local.trainers||[]).filter(trn=>(trn.tids||[]).includes(e.tid)&&isActive(trn)).length, squad:(local.playerProfiles||[]).filter(pp=>pp.mainTid===e.tid&&!pp.archived).length, trainerNames, helperNames, squadNames:squadPlusOf(e.tid), profiles:local.playerProfiles||[] }).forEach(x=>todos.push({ev:e,label:x.label,col:x.col,bg:x.bg}));
               // Der Spielbericht schaut zurueck statt voraus - er bleibt, bis er
               // geschrieben ist (sonst geht er einfach verloren).
               if(["heimspiel","auswarts","freundschaft"].includes(e.type)&&e.date<tod&&e.date>=addD(tod,-21)&&!(e.report&&e.report.ts)) todos.push({ev:e,label:"Spielbericht eintragen",col:"#2563eb",bg:"#eff6ff"});
@@ -17014,7 +17014,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
               allen Werkzeugen um - es faellt nichts weg. */}
           {tSimple&&!isHelper ? (
             <EinfachTrainer cl={myClub} evs={myEvs} tod={tod} trainerNames={trainerNames} helperNames={helperNames} allEvents={local.events} allTeams={local.teams} squadPlusOf={squadPlusOf}
-              squadOf={squadOf} planTitleOf={planTitleOf} modTrainingFuer={e2=>modOnEv(e2,"training")}
+              squadOf={squadOf} planTitleOf={planTitleOf} modTrainingFuer={e2=>modOnEv(e2,"training")} fremdOf={t2=>fremdeKinder(local.playerProfiles,t2)}
               selfName={isHelper?null:selfName} onSelfVote={isHelper?null:selfVote}
               onView={ev=>{ setEvTab("rueck"); setViewEv(ev); }}
               onAttend={ev=>{ setEvTab("orga"); setViewEv(ev); }}
@@ -17057,16 +17057,16 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
             );
           })()}
           <FerienHinweis hols={_ferienDash} from={tod} to={_in10}/>
-          {up.length>0&&<><Divider label={`NÄCHSTE 21 TAGE (${soon.length})`}/>{soon.length>0?soon.map(ev=><DashRow key={ev.id} ev={ev} cl={myClub} tod={tod} onView={()=>{setEvTab("rueck");setViewEv(ev);}} onEdit={()=>ev.sid?setEditConf(ev):setEditEv(editInfo(ev))} onDel={()=>{setDelConf(ev.id);setDelConfVal(ev.title);}} onReset={()=>{ if(!window.confirm(`Alle Zu- und Absagen für „${ev.title}" wirklich zurücksetzen?\n\nDie Antworten aller Teilnehmer gehen verloren. Das lässt sich nicht rückgängig machen.`)) return; save({...local,events:local.events.map(e=>e.id===ev.id?{...e,votes:{}}:e)});fire("Stimmen zurückgesetzt");}} onCopyLink={()=>kopiereTerminLink(ev)} selfName={isHelper?null:selfName} onSelfVote={isHelper?null:selfVote} onRemind={()=>remindNonVoters(ev)} onMitfahr={isHelper?null:()=>teileMitfahrAufruf(ev)} onPlan={isHelper?null:()=>openPlan(ev)} planTitle={planTitleOf(ev)} onAttend={()=>{setEvTab("orga");setViewEv(ev);}} onBrief={isHelper?null:()=>setBriefEv(ev)} modTraining={modOnEv(ev,"training")} trainerNames={trainerNames} helperNames={helperNames} allEvents={local.events} allTeams={local.teams} squad={squadPlusOf(ev.tid)} onSubReq={isHelper?null:()=>{setSubNote("");setSubReqEv(ev);}} helperId={isHelper?(session.id||session.helperId||session.name):null} onHelperQuick={isHelper?helperQuick:null} onSetup={()=>setSetupEv(ev)}/>):<p style={{textAlign:"center",color:"#64748b",fontSize:13.5,padding:"14px 10px"}}>Keine Termine in den nächsten 21 Tagen.</p>}
+          {up.length>0&&<><Divider label={`NÄCHSTE 21 TAGE (${soon.length})`}/>{soon.length>0?soon.map(ev=><DashRow key={ev.id} ev={ev} cl={myClub} tod={tod} onView={()=>{setEvTab("rueck");setViewEv(ev);}} onEdit={()=>ev.sid?setEditConf(ev):setEditEv(editInfo(ev))} onDel={()=>{setDelConf(ev.id);setDelConfVal(ev.title);}} onReset={()=>{ if(!window.confirm(`Alle Zu- und Absagen für „${ev.title}" wirklich zurücksetzen?\n\nDie Antworten aller Teilnehmer gehen verloren. Das lässt sich nicht rückgängig machen.`)) return; save({...local,events:local.events.map(e=>e.id===ev.id?{...e,votes:{}}:e)});fire("Stimmen zurückgesetzt");}} onCopyLink={()=>kopiereTerminLink(ev)} selfName={isHelper?null:selfName} onSelfVote={isHelper?null:selfVote} onRemind={()=>remindNonVoters(ev)} onMitfahr={isHelper?null:()=>teileMitfahrAufruf(ev)} onPlan={isHelper?null:()=>openPlan(ev)} planTitle={planTitleOf(ev)} onAttend={()=>{setEvTab("orga");setViewEv(ev);}} onBrief={isHelper?null:()=>setBriefEv(ev)} modTraining={modOnEv(ev,"training")} trainerNames={trainerNames} helperNames={helperNames} allEvents={local.events} allTeams={local.teams} squad={squadPlusOf(ev.tid)} profiles={local.playerProfiles||[]} onSubReq={isHelper?null:()=>{setSubNote("");setSubReqEv(ev);}} helperId={isHelper?(session.id||session.helperId||session.name):null} onHelperQuick={isHelper?helperQuick:null} onSetup={()=>setSetupEv(ev)}/>):<p style={{textAlign:"center",color:"#64748b",fontSize:13.5,padding:"14px 10px"}}>Keine Termine in den nächsten 21 Tagen.</p>}
             {later.length>0&&<>
               <button onClick={()=>setShowLater(s=>!s)} style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8,width:"100%",background:showLater?"#f1f5f9":"#fff",border:"1.5px solid #e2e8f0",borderRadius:12,cursor:"pointer",margin:"6px 0 12px",padding:"11px 14px",fontWeight:800,fontSize:13,color:"#475569",fontFamily:"inherit"}}>{showLater?"▲ Weitere Termine ausblenden":"▼ Weitere "+later.length+" Termine anzeigen"}</button>
-              {showLater&&later.map(ev=><DashRow key={ev.id} ev={ev} cl={myClub} tod={tod} onView={()=>{setEvTab("rueck");setViewEv(ev);}} onEdit={()=>ev.sid?setEditConf(ev):setEditEv(editInfo(ev))} onDel={()=>{setDelConf(ev.id);setDelConfVal(ev.title);}} onReset={()=>{ if(!window.confirm(`Alle Zu- und Absagen für „${ev.title}" wirklich zurücksetzen?\n\nDie Antworten aller Teilnehmer gehen verloren. Das lässt sich nicht rückgängig machen.`)) return; save({...local,events:local.events.map(e=>e.id===ev.id?{...e,votes:{}}:e)});fire("Stimmen zurückgesetzt");}} onCopyLink={()=>kopiereTerminLink(ev)} selfName={isHelper?null:selfName} onSelfVote={isHelper?null:selfVote} onRemind={()=>remindNonVoters(ev)} onMitfahr={isHelper?null:()=>teileMitfahrAufruf(ev)} onPlan={isHelper?null:()=>openPlan(ev)} planTitle={planTitleOf(ev)} onAttend={()=>{setEvTab("orga");setViewEv(ev);}} onBrief={isHelper?null:()=>setBriefEv(ev)} modTraining={modOnEv(ev,"training")} trainerNames={trainerNames} helperNames={helperNames} allEvents={local.events} allTeams={local.teams} squad={squadPlusOf(ev.tid)} onSubReq={isHelper?null:()=>{setSubNote("");setSubReqEv(ev);}} helperId={isHelper?(session.id||session.helperId||session.name):null} onHelperQuick={isHelper?helperQuick:null} onSetup={()=>setSetupEv(ev)}/>)}
+              {showLater&&later.map(ev=><DashRow key={ev.id} ev={ev} cl={myClub} tod={tod} onView={()=>{setEvTab("rueck");setViewEv(ev);}} onEdit={()=>ev.sid?setEditConf(ev):setEditEv(editInfo(ev))} onDel={()=>{setDelConf(ev.id);setDelConfVal(ev.title);}} onReset={()=>{ if(!window.confirm(`Alle Zu- und Absagen für „${ev.title}" wirklich zurücksetzen?\n\nDie Antworten aller Teilnehmer gehen verloren. Das lässt sich nicht rückgängig machen.`)) return; save({...local,events:local.events.map(e=>e.id===ev.id?{...e,votes:{}}:e)});fire("Stimmen zurückgesetzt");}} onCopyLink={()=>kopiereTerminLink(ev)} selfName={isHelper?null:selfName} onSelfVote={isHelper?null:selfVote} onRemind={()=>remindNonVoters(ev)} onMitfahr={isHelper?null:()=>teileMitfahrAufruf(ev)} onPlan={isHelper?null:()=>openPlan(ev)} planTitle={planTitleOf(ev)} onAttend={()=>{setEvTab("orga");setViewEv(ev);}} onBrief={isHelper?null:()=>setBriefEv(ev)} modTraining={modOnEv(ev,"training")} trainerNames={trainerNames} helperNames={helperNames} allEvents={local.events} allTeams={local.teams} squad={squadPlusOf(ev.tid)} profiles={local.playerProfiles||[]} onSubReq={isHelper?null:()=>{setSubNote("");setSubReqEv(ev);}} helperId={isHelper?(session.id||session.helperId||session.name):null} onHelperQuick={isHelper?helperQuick:null} onSetup={()=>setSetupEv(ev)}/>)}
             </>}
           </>}
           {up.length===0&&<div style={{textAlign:"center",padding:"30px",background:"#fff",borderRadius:18,border:"1.5px dashed #e2e8f0",color:"#64748b"}}><Logo cl={myClub} sz={50} sx={{margin:"0 auto 12px"}}/><p style={{fontWeight:800,fontSize:15}}>Noch keine Termine</p><p style={{fontSize:13,marginTop:3}}>{isHelper?"Sobald die Trainer Termine anlegen, erscheinen sie hier.":'Klicke oben auf "Neuen Termin anlegen"'}</p></div>}
           {past.length>0&&<>
             <button onClick={()=>setShowPast(v=>!v)} style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8,width:"100%",background:showPast?"#f1f5f9":"#fff",border:"1.5px solid #e2e8f0",borderRadius:12,cursor:"pointer",margin:"6px 0 12px",padding:"11px 14px",fontWeight:800,fontSize:13,color:"#64748b",fontFamily:"inherit"}}>{showPast?"▲ Vergangene Termine ausblenden":"▼ "+past.length+" vergangene Termine anzeigen"}</button>
-            {showPast&&<div style={{opacity:.72}}>{past.map(ev=><DashRow key={ev.id} ev={ev} cl={myClub} tod={tod} onView={()=>{setEvTab("rueck");setViewEv(ev);}} onEdit={()=>setEditEv(editInfo(ev))} onDel={()=>{setDelConf(ev.id);setDelConfVal(ev.title);}} onReset={()=>{}} onCopyLink={()=>{}} onAttend={()=>{setEvTab("orga");setViewEv(ev);}} onBrief={isHelper?null:()=>setBriefEv(ev)} modTraining={modOnEv(ev,"training")} trainerNames={trainerNames} helperNames={helperNames} allEvents={local.events} allTeams={local.teams} squad={squadPlusOf(ev.tid)}/>)}</div>}
+            {showPast&&<div style={{opacity:.72}}>{past.map(ev=><DashRow key={ev.id} ev={ev} cl={myClub} tod={tod} onView={()=>{setEvTab("rueck");setViewEv(ev);}} onEdit={()=>setEditEv(editInfo(ev))} onDel={()=>{setDelConf(ev.id);setDelConfVal(ev.title);}} onReset={()=>{}} onCopyLink={()=>{}} onAttend={()=>{setEvTab("orga");setViewEv(ev);}} onBrief={isHelper?null:()=>setBriefEv(ev)} modTraining={modOnEv(ev,"training")} trainerNames={trainerNames} helperNames={helperNames} allEvents={local.events} allTeams={local.teams} squad={squadPlusOf(ev.tid)} profiles={local.playerProfiles||[]}/>)}</div>}
           </>}
           <AffiliateBanner trigger="events" style={{marginTop:14}}/>
           {/* DFB-Spielformen sind Trainer-Fachwissen - Helfer brauchen sie nicht */}
@@ -17556,7 +17556,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
             fire(an?"Warnung ausgeblendet – bewusst doppelt eingeplant":"Warnung wird wieder gezeigt");
           }}/>}
         {/* Checkliste direkt in der Orga: Zusagen sehen, ganzen Kader abhaken, Gaeste anlegen */}
-        {!isHelper&&<AttendanceCheckoff ev={viewEv}
+        {!isHelper&&<AttendanceCheckoff ev={viewEv} profiles={local.playerProfiles||[]}
           teamPlayers={squadOf(viewEv.tid)} teamPlusAus={squadPlusOf(viewEv.tid)}
           trainerNames={trainerNames} helperNames={helperNames} allEvents={local.events} allTeams={local.teams}
           {...gruppenProps(viewEv, local, save, fire, jaSpielerNamen(viewEv))}
@@ -17569,7 +17569,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
           onSetPresent={present=>{ save({...local,events:local.events.map(e=>e.id===viewEv.id?{...e,present}:e)}); setViewEv(prev=>({...prev,present})); }}
           onSetGuests={guests=>{ save({...local,events:local.events.map(e=>e.id===viewEv.id?{...e,guests}:e)}); setViewEv(prev=>({...prev,guests})); }}/>}
         {viewEv.type==="training"&&(
-          <StaffingBoard ev={viewEv} team={(local.teams||[]).find(tm=>tm.id===viewEv.tid)} session={session} isHelper={isHelper}
+          <StaffingBoard ev={viewEv} profiles={local.playerProfiles||[]} team={(local.teams||[]).find(tm=>tm.id===viewEv.tid)} session={session} isHelper={isHelper}
             trainerNames={trainerNames} helperNames={helperNames} squadNames={squadPlusOf(viewEv.tid)}
             assignedTrainers={(local.trainers||[]).filter(trn=>(trn.tids||[]).includes(viewEv.tid)&&isActive(trn)).length}
             perStaff={myClub?.clubSettings?.playersPerStaff||6}
@@ -17577,7 +17577,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
             fire={fire}/>
         )}
         {viewEv.type!=="training"&&(viewEv.helferOpen
-          ? <StaffingBoard mode="helfer" ev={viewEv} team={(local.teams||[]).find(tm=>tm.id===viewEv.tid)} session={session} isHelper={isHelper}
+          ? <StaffingBoard mode="helfer" ev={viewEv} profiles={local.playerProfiles||[]} team={(local.teams||[]).find(tm=>tm.id===viewEv.tid)} session={session} isHelper={isHelper}
             trainerNames={trainerNames} helperNames={helperNames} squadNames={squadPlusOf(viewEv.tid)}
               onPatch={patch=>{ save({...local,events:local.events.map(e=>e.id===viewEv.id?{...e,...patch}:e)}); setViewEv(prev=>({...prev,...patch})); }}
               fire={fire}/>
@@ -18728,7 +18728,7 @@ const bringtMit = (ev, name) => {
 
 function AttendanceCheckoff({ ev, teamPlayers=[], teamPlusAus=null, onSetPresent=()=>{}, onSetGuests=()=>{}, trainerNames=[], helperNames=[], onSetVote=null,
                              gruppen=[], leibchen=null, onGruppe=null, grpVon=null,
-                             istFremd=null, onFremd=null }){
+                             istFremd=null, onFremd=null, profiles=[] }){
   const [guestName,setGuestName]=useState("");
   // Absage-Grund nachtragen: die Eltern haben angerufen, aber nichts eingetragen.
   const [grundFuer,setGrundFuer]=useState(null);   // Name oder null
@@ -18750,7 +18750,7 @@ function AttendanceCheckoff({ ev, teamPlayers=[], teamPlusAus=null, onSetPresent
   // Kader + selbst angemeldete Gäste (haben abgestimmt, sind aber nicht im Kader).
   // Trainer-Selbstzusagen gehoeren NICHT in die Spieler-Anwesenheit.
   const _tn=staffSet(trainerNames,helperNames);
-  const _actx={staff:_tn, squad:squadSet(teamPlusAus||teamPlayers), guests:ev.guests||[], open:!!ev.open};
+  const _actx={staff:_tn, squad:squadSet(teamPlusAus||teamPlayers), guests:ev.guests||[], open:!!ev.open, andere:fremdeKinder(profiles,ev.tid)};
   const extraVoters=Object.entries(ev.votes||{}).filter(([n,v])=>!teamPlayers.includes(n)&&isPlayerVote(n,v,_actx)).map(([n])=>n);
   // Sortierung: erst Zusagen (inkl. "komme später"), dann Offene, dann Absagen
   const rank=n=>{ const v=(ev.votes||{})[n]; const val=getVal(v); if(val==="yes") return (typeof v==="object"&&v?.late)?1:0; return val==="no"?3:2; };
@@ -19016,7 +19016,7 @@ function VoteOverview({ev,players,playerProfiles=[],teams,myTids,cl,allEvents=[]
   // Trainer-Selbstzusage uninteressant - sie steht separat darunter.
   const _tnSet = staffSet(trainerNames);
   const _stSet = staffSet(trainerNames,helperNames);
-  const _pctx  = {staff:_stSet, squad:squadSet(teamPlusAus), guests:ev.guests||[], open:!!ev.open};
+  const _pctx  = {staff:_stSet, squad:squadSet(teamPlusAus), guests:ev.guests||[], open:!!ev.open, andere:fremdeKinder(playerProfiles,ev.tid)};
   const isTrainerName = (n,raw)=>isStaffVote(n,raw,_tnSet);
   // Trainer UND Helfer bleiben in allen Spieler-Listen und -Zahlen aussen vor:
   // sie stehen in ihren eigenen Bereichen (Trainer-Zeile bzw. Helfer-Einsatz).
@@ -19419,7 +19419,7 @@ function VoteOverview({ev,players,playerProfiles=[],teams,myTids,cl,allEvents=[]
         </div>
       </>}
 
-      {!readOnly&&<AttendanceCheckoff ev={ev} teamPlayers={teamPlayers} teamPlusAus={teamPlusAus} onSetPresent={onSetPresent} onSetGuests={onSetGuests} trainerNames={trainerNames} helperNames={helperNames} onSetVote={onSetVote} gruppen={gruppen} leibchen={leibchen} onGruppe={onGruppe} grpVon={grpVon} istFremd={istFremd} onFremd={onFremd}/>}
+      {!readOnly&&<AttendanceCheckoff ev={ev} profiles={playerProfiles} teamPlayers={teamPlayers} teamPlusAus={teamPlusAus} onSetPresent={onSetPresent} onSetGuests={onSetGuests} trainerNames={trainerNames} helperNames={helperNames} onSetVote={onSetVote} gruppen={gruppen} leibchen={leibchen} onGruppe={onGruppe} grpVon={grpVon} istFremd={istFremd} onFremd={onFremd}/>}
 
       {/* "Noch nicht abgestimmt" nur ohne Abhak-Liste - dort stehen Offene mit ✓/✕ drin */}
       {readOnly&&missing.length>0&&<>
@@ -19519,7 +19519,7 @@ function eventWarnings(ev, tod, ctx={}){
   if((ev.type==="training"||isGame) && days<=10 && ctx.trainers!=null){
     const sn=staffNeed(ev, {...ctx, yesPlayers:(()=>{
       if(!ctx.trainerNames&&!ctx.helperNames) return null;   // ohne Namen: alte Zaehlung
-      const c={staff:staffSet(ctx.trainerNames||[],ctx.helperNames||[]),squad:squadSet(ctx.squadNames||[]),guests:ev.guests||[],open:!!ev.open};
+      const c={staff:staffSet(ctx.trainerNames||[],ctx.helperNames||[]),squad:squadSet(ctx.squadNames||[]),guests:ev.guests||[],open:!!ev.open,andere:fremdeKinder(ctx.profiles||[],ev.tid)};
       return Object.entries(ev.votes||{}).filter(([n,v])=>((typeof v==="object"&&v)?v.val:v)==="yes"&&isPlayerVote(n,v,c)).length;
     })()});
     if(sn.required>0 && !sn.ok) w.push({label:`Betreuer ${sn.avail}/${sn.required}`,col:"#d97706",bg:"#fef3c7"});
@@ -19546,7 +19546,7 @@ function SpickzettelModal({ev,data,cl,save,fire,onClose}){
   const _tnSp=staffSet((data.trainers||[]).filter(x=>!ev.cid||x.cid===ev.cid).map(x=>x.name),
                        (data.helpers||[]).filter(x=>!ev.cid||x.cid===ev.cid).map(x=>x.name));
   const _kader=squadSet(kaderNamen(data.players,data.playerProfiles,ev.tid,true));
-  const yes=votes.filter(([n,v])=>vv(v)==="yes"&&isPlayerVote(n,v,{staff:_tnSp,squad:_kader,guests:ev.guests||[],open:!!ev.open})).map(([n])=>n);
+  const yes=votes.filter(([n,v])=>vv(v)==="yes"&&isPlayerVote(n,v,{staff:_tnSp,squad:_kader,guests:ev.guests||[],open:!!ev.open,andere:fremdeKinder(data.playerProfiles,ev.tid)})).map(([n])=>n);
   const late=votes.filter(([,v])=>vv(v)==="late").map(([n])=>n);
   const trainersN=(data.trainers||[]).filter(x=>(x.tids||[]).includes(ev.tid)&&isActive(x)).length;
   const offers=(ev.helperOffers||[]);
@@ -20345,6 +20345,11 @@ const isPlayerVote = (name, raw, ctx={}) => {
   // role:"player" - sonst landete ein Kind, das nicht im Kader steht (Aushilfe
   // aus einer anderen Mannschaft), faelschlich bei den Betreuern.
   const r = (raw&&typeof raw==="object") ? raw.role : null;
+  // ABER: Ein Kind, das ein Profil in einer ANDEREN Mannschaft hat, zaehlt
+  // hier nicht mit - auch nicht mit role:"player". Sonst plant der Trainer
+  // mit Kindern, die inzwischen woanders spielen (passiert, solange die
+  // Anmeldung der Eltern noch auf der alten Mannschaft steht).
+  if(ctx.andere && ctx.andere.has(_nrmName(name))) return false;
   if(r==="player") return true;
   if(isStaffVote(name, raw, ctx.staff)) return false;
   if(ctx.open) return true;
@@ -20355,6 +20360,16 @@ const isPlayerVote = (name, raw, ctx={}) => {
   // Abgekuerzte Nachnamen: "Zinedin S." und "Zinedin Sarr" sind dieselbe Person.
   if(kader.sh.has(_shortName(name))) return true;
   return (ctx.guests||[]).some(g=>_nrmName(g)===n);
+};
+// Namen aller Kinder, die ein Profil haben, aber NICHT zu dieser Mannschaft
+// gehoeren (weder Haupt- noch Zweitmannschaft). Gaeste und Aushilfen ohne
+// Profil sind nicht dabei - die sollen weiter zaehlen.
+const fremdeKinder = (profiles=[], tid="") => {
+  const s=new Set(); if(!tid) return s;
+  (profiles||[]).forEach(p=>{ if(!p||!p.name) return;
+    if(p.mainTid===tid || (p.optTids||[]).includes(tid)) return;
+    s.add(_nrmName(p.name)); });
+  return s;
 };
 const squadSet = (namen=[]) => {
   const ex=new Set(), sh=new Set();
@@ -20520,19 +20535,19 @@ function FerienHinweis({hols,from,to}){
   );
 }
 
-function DashRow({ev,cl,tod,onView,onEdit,onDel,onReset,onCopyLink,selfName,onSelfVote,onRemind,onPlan,planTitle,onAttend,onBrief,modTraining=true,trainerNames=[],helperNames=[],allEvents=[],allTeams=[],squad=[],onSubReq=null,helperId=null,onHelperQuick=null,onSetup=null,onMitfahr=null}) {
+function DashRow({ev,cl,tod,onView,onEdit,onDel,onReset,onCopyLink,selfName,onSelfVote,onRemind,onPlan,planTitle,onAttend,onBrief,modTraining=true,trainerNames=[],helperNames=[],allEvents=[],allTeams=[],squad=[],profiles=[],onSubReq=null,helperId=null,onHelperQuick=null,onSetup=null,onMitfahr=null}) {
   const _ferien=useSchoolHolidays(cl?.clubSettings?.holidayState);
   const [more,setMore]=useState(false);
   const wd=d=>{ try{ return new Date(d+"T12:00:00").toLocaleDateString("de-DE",{weekday:"short"})+", "; }catch{ return ""; } };
   const wx=useWeather(plzToGeo(cl?.plz));
   const eT=ET[ev.type]||ET.training; const tF=ev.date===tod; const p=cl?.pri||"#16a34a";
-  const warns=eventWarnings(ev,tod,{ perStaff:cl?.clubSettings?.playersPerStaff||6, trainerNames, helperNames, squadNames:squad, events:allEvents, teams:allTeams });
+  const warns=eventWarnings(ev,tod,{ perStaff:cl?.clubSettings?.playersPerStaff||6, trainerNames, helperNames, squadNames:squad, events:allEvents, teams:allTeams, profiles });
   const _v=ev.votes||{};
   const vc=Object.keys(_v).length;
   // Spieler- und Trainer-Zusagen getrennt: "mind. 6 Spieler" braucht die Spieler-Zahl
   const _staff=staffSet(trainerNames,helperNames);
   const _tnOnly=staffSet(trainerNames);
-  const _ctx={staff:_staff, squad:squadSet(squad), guests:ev.guests||[], open:!!ev.open};
+  const _ctx={staff:_staff, squad:squadSet(squad), guests:ev.guests||[], open:!!ev.open, andere:fremdeKinder(profiles,ev.tid)};
   const _vv=v=>(typeof v==="object"?v.val:v);
   const yes=ev.pt==="att"?Object.entries(_v).filter(([n,v])=>_vv(v)==="yes"&&isPlayerVote(n,v,_ctx)).length:0;
   const no =ev.pt==="att"?Object.entries(_v).filter(([n,v])=>_vv(v)==="no" &&isPlayerVote(n,v,_ctx)).length:0;
@@ -23166,13 +23181,13 @@ const LINEUP_LINES = [["T","Tor"],["A","Abwehr"],["M","Mittelfeld"],["S","Angrif
 // Schnell-Spielbericht: Ergebnis + Torschützen + Notiz, in Sekunden nach dem Spiel.
 // Betreuung/Staffing fürs Training: Soll 2–3 je nach Größe, Trainer haben Vorrang,
 // Helfer füllen nur die Lücke (wer zuerst kommt) – Rest auf die Warteliste.
-function StaffingBoard({ ev, team, session, isHelper, onPatch, fire, onRequestHelpers, assignedTrainers=0, perStaff=6, mode="betreuung", trainerNames=[], helperNames=[], squadNames=[] }){
+function StaffingBoard({ ev, team, session, isHelper, onPatch, fire, onRequestHelpers, assignedTrainers=0, perStaff=6, mode="betreuung", trainerNames=[], helperNames=[], squadNames=[], profiles=[] }){
   const { tr } = useT();
   const hm=mode==="helfer";   // Helfer-Einsatz: vom Trainer freigegebener Termin (Spieltag, Turnier, Fest ...)
   const role=session?.role; const isManager=role==="trainer"||role==="admin";
   // Nur Kinder zaehlen fuer den Betreuer-Schluessel - die Zusage eines
   // Trainers macht keine zusaetzliche Aufsicht noetig.
-  const _sbCtx={staff:staffSet(trainerNames,helperNames),squad:squadSet(squadNames),guests:ev.guests||[],open:!!ev.open};
+  const _sbCtx={staff:staffSet(trainerNames,helperNames),squad:squadSet(squadNames),guests:ev.guests||[],open:!!ev.open,andere:fremdeKinder(profiles,ev.tid)};
   const yes=Object.entries(ev.votes||{}).filter(([n,v])=>((typeof v==="object"&&v)?v.val:v)==="yes"&&isPlayerVote(n,v,_sbCtx)).length;
   const size=yes||ev.sollPlayers||defaultSollPlayers(team?.cat)||7;
   const ps=Math.max(1,Number(perStaff)||6);
