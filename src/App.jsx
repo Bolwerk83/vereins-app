@@ -1,6 +1,6 @@
 import React, { useState,useEffect,useCallback,useRef,useMemo,createContext,useContext } from "react";
 import { splitData, mergeData, merge3Obj } from "./data.js";
-import { eventStart, eventDeadline, isDeadlinePassed, isEventPast, needsLateReason, daysUntil, isUpcoming5, formatCountdown, round2, clampSkill, monthKey, skillsMean, blendSkill, germanPublicHolidays, publicHolidayName, DE_STATES, parseRosterText, parseSpielplan } from "./logic.js";
+import { eventStart, eventDeadline, isDeadlinePassed, isEventPast, needsLateReason, lateChangeEntries, lateChangesOpen, daysUntil, isUpcoming5, formatCountdown, round2, clampSkill, monthKey, skillsMean, blendSkill, germanPublicHolidays, publicHolidayName, DE_STATES, parseRosterText, parseSpielplan } from "./logic.js";
 import { ACOLORS, acol, inits, contrast, mix, readable } from "./util.js";
 import { feat } from "./features.js";
 import { SK, SS, CFG, DEFAULT_CFG, JOIN_CODE, getConfig, setConfig, MULTI_TENANT, auth, _DATA_ARRAYS, normData, sb, localGet, localSet, sess, dbHealth } from "./storage.js";
@@ -19503,12 +19503,11 @@ function eventWarnings(ev, tod, ctx={}){
     const votedN=Object.keys(ev.votes||{}).length;
     if(votedN<ev.sollPlayers) w.push({label:"Frist abgelaufen – erinnern",col:"#dc2626",bg:"#fee2e2"});
   }
-  // Nach Ablauf der Frist hat sich noch jemand ab-/angemeldet -> Trainer informieren.
-  { const lateN=(ev.lateCancellations||[]).length + Object.values(ev.votes||{}).filter(v=>typeof v==="object"&&v&&v.lateChange&&v.val!=="no").length;
-    if(lateN>0) w.push({label:`Nach Frist: ${lateN} Änderung${lateN>1?"en":""}`,col:"#b45309",bg:"#ffedd5"}); }
-  // Änderungen nach Frist, über die der Trainer noch nicht entschieden hat.
-  { const okN=Object.values(ev.votes||{}).filter(v=>typeof v==="object"&&v&&v.lateChange&&!v.okAt).length;
-    if(okN>0) w.push({label:`${okN} Änderung${okN>1?"en":""} bestätigen`,col:"#c2410c",bg:"#ffedd5"}); }
+  // Nach Ablauf der Frist hat sich noch jemand ab-/angemeldet. EINE Meldung,
+  // und nur solange niemand reagiert hat: bestätigt oder abgelehnt heißt
+  // gesehen - dann muss sie weg, sonst klebt sie bis zum Termin am Termin.
+  { const offenN=lateChangesOpen(ev);
+    if(offenN>0) w.push({label:`Nach Frist: ${offenN} Änderung${offenN>1?"en":""} offen`,col:"#b45309",bg:"#ffedd5"}); }
   // Doppelmeldung: Kind ist zur gleichen Zeit noch woanders zugesagt.
   if(ctx.events&&ctx.events.length){
     const offen=konfliktNamen(ev,ctx.events,ctx.teams||[]).filter(x=>!(ev.conflictOk||[]).includes(x.name));
@@ -20449,16 +20448,16 @@ async function pushTeamInfo({cid,tid,title,text,from}){
 // zweiten Push-Anlauf. Verschwindet automatisch, wenn alle geantwortet haben.
 function KurzfristigNachfassen({data,myTids,cid,cl,save,fire,onOpen,selfName}){
   const tod=now();
-  const rows=(data.events||[])
-    .filter(e=>myTids.includes(e.tid)&&e.cid===cid&&(e.pt==="att"||!e.pt)&&shortNoticeOpen(e,cl,tod))
+  const alle=(data.events||[])
+    .filter(e=>myTids.includes(e.tid)&&e.cid===cid&&(e.pt==="att"||!e.pt)&&shortNoticeOpen(e,cl,tod)&&!e.nudgeOff)
     .map(ev=>{
       const roster=(data.playerProfiles||[]).filter(p=>p.mainTid===ev.tid&&!p.archived&&!isPausedP(p)).map(p=>p.name);
       const voted=new Set(Object.keys(ev.votes||{}));
       return { ev, roster, missing: roster.filter(n=>!voted.has(n)) };
     })
     .filter(r=>r.roster.length>0 && r.missing.length>0)
-    .sort((a,b)=>String(a.ev.date).localeCompare(String(b.ev.date)))
-    .slice(0,3);
+    .sort((a,b)=>String(a.ev.date).localeCompare(String(b.ev.date)));
+  const rows=alle.slice(0,3);
   if(!rows.length) return null;
 
   const linkFor=ev=>(typeof window!=="undefined"?window.location.origin:"")+"/?club="+(cl?.slug||cid)+"&event="+ev.id;
@@ -20471,6 +20470,14 @@ function KurzfristigNachfassen({data,myTids,cid,cl,save,fire,onOpen,selfName}){
     linkFor(ev),
   ].join("\n");
   const stamp=ev=>save({...data,events:(data.events||[]).map(e=>e.id===ev.id?{...e,lastNudge:new Date().toISOString()}:e)});
+  // Wegklicken: der Hinweis ist eine Erinnerung, keine Pflicht. Wer ihn
+  // gesehen hat, soll ihn loswerden koennen - dauerhaft, nicht nur bis zum
+  // naechsten Laden. Bei NEUEN kurzfristigen Terminen kommt er wieder.
+  const ausblenden=(ids,text)=>{
+    const w=new Set(ids);
+    save({...data,events:(data.events||[]).map(e=>w.has(e.id)?{...e,nudgeOff:true}:e)});
+    fire&&fire(text);
+  };
   const share=(ev,missing)=>{
     const txt=textFor(ev,missing);
     if(navigator.share){ navigator.share({title:ev.title,text:txt}).catch(()=>{}); }
@@ -20491,6 +20498,9 @@ function KurzfristigNachfassen({data,myTids,cid,cl,save,fire,onOpen,selfName}){
       <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:3}}>
         <span style={{fontSize:17}}>⚡</span>
         <span style={{fontWeight:800,fontSize:13.5,color:"#9a3412",flex:1}}>Kurzfristig – Rückmeldungen fehlen</span>
+        <button onClick={()=>ausblenden(alle.map(r=>r.ev.id),"Hinweis ausgeblendet – er kommt nur bei neuen kurzfristigen Terminen wieder")}
+          title="Hinweis ausblenden"
+          style={{flexShrink:0,width:28,height:28,borderRadius:9,border:"1.5px solid #fed7aa",background:"#fff",color:"#9a3412",fontWeight:900,fontSize:14,lineHeight:1,cursor:"pointer",fontFamily:"inherit"}}>✕</button>
       </div>
       <div style={{fontSize:11.5,color:"#b45309",marginBottom:9,lineHeight:1.45}}>
         Nicht alle haben Benachrichtigungen an oder schauen täglich rein. Der Text unten erreicht auch sie – einmal in die Eltern-Gruppe, fertig.
@@ -20499,11 +20509,16 @@ function KurzfristigNachfassen({data,myTids,cid,cl,save,fire,onOpen,selfName}){
         const tage=Math.max(0,Math.round((new Date(ev.date+"T12:00:00")-new Date(tod+"T12:00:00"))/86400000));
         return (
           <div key={ev.id} style={{background:"#fff",border:"1.5px solid #fed7aa",borderRadius:12,padding:"10px 12px",marginBottom:7}}>
-            <div onClick={()=>onOpen&&onOpen(ev)} style={{cursor:"pointer"}}>
+            <div style={{display:"flex",alignItems:"flex-start",gap:8}}>
+            <div onClick={()=>onOpen&&onOpen(ev)} style={{cursor:"pointer",flex:1,minWidth:0}}>
               <div style={{fontWeight:800,fontSize:13.5,color:"#0f172a"}}>{ev.title}</div>
               <div style={{fontSize:11.5,color:"#9a3412",marginTop:2,fontWeight:700}}>
                 {tage===0?"HEUTE":tage===1?"MORGEN":`in ${tage} Tagen`} · {fmtD(ev.date)}{ev.time?` · ${ev.time} Uhr`:""} · {roster.length-missing.length}/{roster.length} geantwortet
               </div>
+            </div>
+            <button onClick={()=>ausblenden([ev.id],"Für diesen Termin ausgeblendet")}
+              title="Für diesen Termin ausblenden"
+              style={{flexShrink:0,width:26,height:26,borderRadius:8,border:"1.5px solid #fed7aa",background:"#fff7ed",color:"#9a3412",fontWeight:900,fontSize:13,lineHeight:1,cursor:"pointer",fontFamily:"inherit"}}>✕</button>
             </div>
             <div style={{fontSize:11.5,color:"#7c2d12",background:"#fff7ed",borderRadius:8,padding:"6px 9px",marginTop:7,lineHeight:1.45}}>
               Es fehlt noch von: <b>{missing.slice(0,8).join(", ")}</b>{missing.length>8?` +${missing.length-8} weitere`:""}
@@ -20560,7 +20575,8 @@ function DashRow({ev,cl,tod,onView,onEdit,onDel,onReset,onCopyLink,selfName,onSe
   // "Zu spaet dran" gilt fuer beide Fristen: die automatische 24-Stunden-Sperre
   // UND eine vom Trainer gesetzte Abstimmungs-Frist.
   const votingLocked = needsLateReason(ev);
-  const lateCount = (ev.lateCancellations||[]).length;
+  // Nur die noch unbearbeiteten spaeten Absagen - bestaetigte sind erledigt.
+  const lateCount = lateChangeEntries(ev).filter(x=>x.offen&&x.val==="no").length;
   const canSelfVote = selfName && onSelfVote && (ev.pt==="att"||!ev.pt) && ev.date>=tod;
   // Live-Countdown nur bei anstehenden Events innerhalb der nächsten 5 Tage
   const [now2, setNow2] = useState(Date.now());
@@ -20639,7 +20655,7 @@ function DashRow({ev,cl,tod,onView,onEdit,onDel,onReset,onCopyLink,selfName,onSe
           )}
           {lateCount > 0 && (
             <div style={{marginTop:4}}>
-              <span title="Späte Absagen nach Anmeldeschluss" style={{fontSize:11,fontWeight:700,color:"#9a3412",background:"#ffedd5",borderRadius:6,padding:"2px 8px"}}>
+              <span title="Späte Absagen nach Anmeldeschluss – noch nicht bestätigt" style={{fontSize:11,fontWeight:700,color:"#9a3412",background:"#ffedd5",borderRadius:6,padding:"2px 8px"}}>
                 Späte Absagen: {lateCount}
               </span>
             </div>

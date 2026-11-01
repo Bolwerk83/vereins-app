@@ -48,6 +48,34 @@ export const isEventPast = (ev) => {
 export const needsLateReason = (ev) =>
   (isVotingLocked(ev) || isDeadlinePassed(ev)) && !isEventPast(ev);
 
+// Aenderungen nach Ablauf der Frist, in einer Liste zusammengefasst.
+// Jede Person steht genau EINMAL drin - sonst zaehlt eine Absage mit
+// anschliessender Wieder-Anmeldung doppelt.
+// "offen" heisst: niemand hat darauf reagiert. Sobald der Trainer bestaetigt
+// (okAt) oder ablehnt (declined), ist die Aenderung erledigt und darf nicht
+// weiter oben am Termin stehen - sonst bleibt die Meldung bis zum Termin
+// kleben, obwohl sie langst bearbeitet ist.
+const _lcName = (x) => String(x == null ? "" : x).trim().toLowerCase();
+export const lateChangeEntries = (ev) => {
+  const votes = (ev && ev.votes) || {};
+  const liste = []; const gesehen = new Set();
+  Object.keys(votes).forEach((name) => {
+    const v = votes[name];
+    if (!v || typeof v !== "object" || !v.lateChange) return;
+    gesehen.add(_lcName(name));
+    liste.push({ name, val: v.val, offen: !v.okAt && !v.declined });
+  });
+  // Historie der spaeten Absagen: nur noch die, zu denen es keine Stimme mehr
+  // gibt (z.B. vom Trainer neu gesetzt). Die gilt als erledigt.
+  ((ev && ev.lateCancellations) || []).forEach((c) => {
+    const n = c && c.user; if (!n || gesehen.has(_lcName(n))) return;
+    gesehen.add(_lcName(n));
+    liste.push({ name: n, val: "no", offen: false });
+  });
+  return liste;
+};
+export const lateChangesOpen = (ev) => lateChangeEntries(ev).filter((x) => x.offen).length;
+
 // Tage bis zum Termin (negativ = vergangen, Infinity = kein Datum).
 export const daysUntil = (ev) => {
   const s = eventStart(ev); if (!s) return Infinity;

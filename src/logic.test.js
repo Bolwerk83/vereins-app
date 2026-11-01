@@ -5,7 +5,8 @@ import {
   isEventPast, needsLateReason, daysUntil, isUpcoming5, formatCountdown,
   round2, clampSkill, monthKey, skillsMean, blendSkill,
   germanPublicHolidays, publicHolidayName, DE_STATES,
-  parseRosterText, parseSpielplan } from "./logic.js";
+  parseRosterText, parseSpielplan,
+  lateChangeEntries, lateChangesOpen } from "./logic.js";
 
 const isoDaysFromNow = (n) => new Date(Date.now() + n*86400000).toISOString().slice(0,10);
 
@@ -246,4 +247,33 @@ test("parseSpielplan: Muell wird ignoriert, eigene Erkennung faellt sonst auf He
   assert.equal(g.length, 1);
   assert.equal(g[0].type, "heimspiel"); // unbekannt -> Standard Heim, im Wizard umschaltbar
   assert.equal(g[0].own, false);
+});
+
+// ---- Aenderungen nach der Frist ----
+test("lateChangesOpen: unbearbeitete Aenderung zaehlt, bestaetigte nicht", () => {
+  const ev = { votes:{
+    "A Kind":{val:"no",lateChange:true},
+    "B Kind":{val:"yes",lateChange:true,okAt:"2026-01-01T10:00:00.000Z"},
+  }, lateCancellations:[{user:"A Kind"}] };
+  assert.equal(lateChangesOpen(ev), 1);
+});
+test("lateChangesOpen: abgelehnte Aenderung ist erledigt", () => {
+  const ev = { votes:{ "C Kind":{val:"no",lateChange:true,declined:true} } };
+  assert.equal(lateChangesOpen(ev), 0);
+});
+test("lateChangesOpen: Absage und spaetere Wieder-Anmeldung zaehlen einmal", () => {
+  const ev = { votes:{ "D Kind":{val:"yes",lateChange:true} },
+               lateCancellations:[{user:"d kind"}] };
+  assert.equal(lateChangesOpen(ev), 1);
+  assert.equal(lateChangeEntries(ev).length, 1);
+});
+test("lateChangesOpen: Historie ohne Stimme gilt als erledigt", () => {
+  const ev = { votes:{}, lateCancellations:[{user:"E Kind"}] };
+  assert.equal(lateChangesOpen(ev), 0);
+  assert.equal(lateChangeEntries(ev).length, 1);
+});
+test("lateChangesOpen: ohne Aenderungen null, robust gegen leere Termine", () => {
+  assert.equal(lateChangesOpen({}), 0);
+  assert.equal(lateChangesOpen(null), 0);
+  assert.equal(lateChangesOpen({votes:{"F Kind":{val:"yes"}}}), 0);
 });
