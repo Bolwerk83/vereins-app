@@ -18795,28 +18795,33 @@ function AttendanceCheckoff({ ev, teamPlayers=[], teamPlusAus=null, onSetPresent
               const bringt=val==="yes"?bringtMit(ev,name):"";
               return (
                 <div key={name} onClick={()=>togglePresent(name)} style={{background:here?"#f0fdf4":noShow?"#fff7ed":"#f8fafc",borderRadius:11,padding:"9px 11px",border:`1.5px solid ${here?"#bbf7d0":noShow?"#fed7aa":"#e2e8f0"}`,cursor:"pointer"}}>
-                <div style={{display:"flex",alignItems:"center",gap:10}}>
-                  <div style={{width:22,height:22,borderRadius:7,border:`2px solid ${here?"#16a34a":"#cbd5e1"}`,background:here?"#16a34a":"#fff",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontSize:13,fontWeight:900}}>{here?"✓":""}</div>
-                  <Av name={name} sz={30}/>
-                  <span style={{flex:1,minWidth:0}}>
-                    <span style={{display:"block",fontWeight:700,fontSize:13.5,color:"#0f172a",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{name}</span>
-                    {/* Wann kam die Antwort? Hilft bei kurzfristigen Absagen. */}
-                    {stimmZeit(raw)&&<span style={{display:"block",fontSize:10.5,color:"#98a2b3",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{stimmZeit(raw)}</span>}
-                  </span>
-                  {val==="yes"&&!lateMin&&<span style={{fontSize:10.5,fontWeight:700,color:"#16a34a",background:"#dcfce7",borderRadius:6,padding:"2px 7px"}}>zugesagt</span>}
-                  {val==="yes"&&lateMin&&<span style={{fontSize:10.5,fontWeight:800,color:"#b45309",background:"#fef3c7",borderRadius:6,padding:"2px 7px"}}>+{lateMin} Min später</span>}
+                {/* Der NAME steht allein in der ersten Zeile und wird nie
+                    abgeschnitten. Vorher teilte er sich die Zeile mit allen
+                    Merkern - bei 390 px blieben ihm 20 px, man sah nur den
+                    ersten Buchstaben. Status, Leibchen und Zeit stehen jetzt
+                    darunter und duerfen umbrechen. */}
+                <div style={{display:"flex",alignItems:"center",gap:11}}>
+                  <div style={{width:24,height:24,borderRadius:8,border:`2px solid ${here?"#16a34a":"#cbd5e1"}`,background:here?"#16a34a":"#fff",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontSize:14,fontWeight:900}}>{here?"✓":""}</div>
+                  <span style={{flexShrink:0}}><Av name={name} sz={34}/></span>
+                  <span style={{flex:1,minWidth:0,fontWeight:800,fontSize:15.5,color:"#0f172a",lineHeight:1.25,overflowWrap:"anywhere"}}>{name}</span>
+                </div>
+                <div style={{display:"flex",alignItems:"center",flexWrap:"wrap",gap:6,marginTop:7,paddingLeft:69}}>
+                  {val==="yes"&&!lateMin&&<span style={{fontSize:11,fontWeight:800,color:"#15803d",background:"#dcfce7",borderRadius:7,padding:"3px 8px"}}>zugesagt</span>}
+                  {val==="yes"&&lateMin&&<span style={{fontSize:11,fontWeight:800,color:"#b45309",background:"#fef3c7",borderRadius:7,padding:"3px 8px"}}>+{lateMin} Min später</span>}
                   {val==="no"&&(onSetVote
                     ? <button onClick={e=>{ e.stopPropagation(); setGrundFuer(name); setGrundText((typeof raw==="object"&&raw?.reason)||""); }}
                         title="Absage-Grund eintragen oder ändern"
-                        style={{fontSize:10.5,fontWeight:700,color:"#dc2626",background:"#fee2e2",border:"none",borderRadius:6,padding:"3px 7px",cursor:"pointer",fontFamily:"inherit"}}>abgesagt{(typeof raw==="object"&&raw?.reason)?"":" ✎"}</button>
-                    : <span style={{fontSize:10.5,fontWeight:700,color:"#dc2626",background:"#fee2e2",borderRadius:6,padding:"2px 7px"}}>abgesagt</span>)}
-                  {noShow&&<span style={{fontSize:10.5,fontWeight:800,color:"#9a3412",background:"#ffedd5",borderRadius:6,padding:"2px 7px"}}>No-Show</span>}
+                        style={{fontSize:11,fontWeight:800,color:"#dc2626",background:"#fee2e2",border:"none",borderRadius:7,padding:"3px 8px",cursor:"pointer",fontFamily:"inherit"}}>abgesagt{(typeof raw==="object"&&raw?.reason)?"":" ✎"}</button>
+                    : <span style={{fontSize:11,fontWeight:800,color:"#dc2626",background:"#fee2e2",borderRadius:7,padding:"3px 8px"}}>abgesagt</span>)}
+                  {noShow&&<span style={{fontSize:11,fontWeight:800,color:"#9a3412",background:"#ffedd5",borderRadius:7,padding:"3px 8px"}}>No-Show</span>}
+                  {/* Wann kam die Antwort? Hilft bei kurzfristigen Absagen. */}
+                  {stimmZeit(raw)&&<span style={{fontSize:11,color:"#98a2b3",whiteSpace:"nowrap"}}>{stimmZeit(raw)}</span>}
                   {/* Welches Leibchen zieht das Kind heute an? Kommt aus
                       derselben Einteilung, die unten im Spielchen steht. */}
                   {(()=>{ const lb=leibchen&&leibchen[name]; if(!lb) return null;
-                    if(lb.bank) return <span title={`${lb.titel} – wechselt ein`} style={{fontSize:10.5,fontWeight:800,color:"#64748b",background:"#f1f5f9",borderRadius:6,padding:"2px 7px",whiteSpace:"nowrap"}}>🎽 Bank</span>;
+                    if(lb.bank) return <span title={`${lb.titel} – wechselt ein`} style={{fontSize:11,fontWeight:800,color:"#475569",background:"#e2e8f0",borderRadius:7,padding:"3px 8px",whiteSpace:"nowrap"}}>🎽 Bank</span>;
                     return <span title={`Spielchen: ${lb.titel} – Mannschaft ${lb.leib.name}`}
-                      style={{display:"inline-flex",alignItems:"center",gap:4,fontSize:10.5,fontWeight:800,color:"#fff",background:lb.leib.col,borderRadius:6,padding:"2px 7px",whiteSpace:"nowrap"}}>🎽 {lb.leib.name}</span>;
+                      style={{display:"inline-flex",alignItems:"center",gap:4,fontSize:11,fontWeight:800,color:"#fff",background:lb.leib.col,borderRadius:7,padding:"3px 8px",whiteSpace:"nowrap"}}>🎽 {lb.leib.name}</span>;
                   })()}
                   {/* Ohne Stimme: Trainer kann direkt zu-/absagen (z.B. nach Telefonat) */}
                   {onSetVote&&!val&&(
