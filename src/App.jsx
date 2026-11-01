@@ -20187,11 +20187,25 @@ const sitzungNachUmbenennung = (s, cd) => {
   }
   if(s.role!=="user" || !s.user) return s;
   const profile=cd.playerProfiles||[];
-  if(profile.some(p=>gl(p.name,s.user))) return s;         // Name gibt es noch
-  const treffer=profile.find(p=>(p.prevNames||[]).some(x=>gl(x,s.user))
-    && (!s.tid || p.mainTid===s.tid || (p.optTids||[]).includes(s.tid)));
-  if(!treffer || gl(treffer.name,s.user)) return s;
-  return merken({...s, user:treffer.name, ...(s.name?{name:treffer.name}:{})});
+  let neu=s;
+  // 1) Kind umbenannt? Namen nachziehen (am Profil als frueherer Name vermerkt).
+  let kind=profile.find(p=>gl(p.name,s.user));
+  if(!kind){
+    const imTeam=profile.find(p=>(p.prevNames||[]).some(x=>gl(x,s.user))
+      && (!s.tid || p.mainTid===s.tid || (p.optTids||[]).includes(s.tid)));
+    const egal=profile.find(p=>(p.prevNames||[]).some(x=>gl(x,s.user)));
+    kind=imTeam||egal||null;
+    if(kind&&!gl(kind.name,s.user)) neu={...neu, user:kind.name, ...(neu.name?{name:kind.name}:{})};
+  }
+  // 2) Kind in eine andere Mannschaft gewechselt? Dann zieht die Anmeldung mit.
+  //    Sonst zeigt die App den Eltern weiter die Termine der ALTEN Mannschaft -
+  //    die Mannschaft steckt in der Anmeldung, nicht im Profil.
+  //    Eine Zweitmannschaft (Aushilfe) bleibt gueltig und wird nicht angefasst.
+  if(kind && kind.mainTid && neu.tid && kind.mainTid!==neu.tid
+     && !((kind.optTids||[]).includes(neu.tid))){
+    neu={...neu, tid:kind.mainTid};
+  }
+  return neu===s ? s : merken(neu);
 };
 
 // Wird eine Person umbenannt, ziehen ihre Eintraege mit: Zu- und Absagen,

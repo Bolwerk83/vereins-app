@@ -12,7 +12,17 @@ const db = http.createServer((req,res)=>{
   if(req.method==="OPTIONS"){ res.statusCode=204; res.end(); return; }
   res.statusCode=200; res.end(JSON.stringify([]));   // Cloud erreichbar, aber leer
 }).listen(4270);
-const exe=process.env.PLAYWRIGHT_CHROMIUM||"/opt/pw-browsers/chromium-1194/chrome-linux/chrome";
+// Chromium-Pfad nicht festnageln: der Container hat die Version schon
+// zweimal gewechselt (1194 -> 1243, dazu anderer Unterordner) und dann
+// scheitert JEDER Test am Start. Erster Treffer gewinnt.
+const exe=(()=>{ if(process.env.PLAYWRIGHT_CHROMIUM) return process.env.PLAYWRIGHT_CHROMIUM;
+  const basis=process.env.PLAYWRIGHT_BROWSERS_PATH||"/opt/pw-browsers";
+  const kand=[`${basis}/chromium`, ...fs.existsSync(basis)
+    ? fs.readdirSync(basis).filter(d=>d.startsWith("chromium-")).sort().reverse()
+        .flatMap(d=>["chrome-linux64/chrome","chrome-linux/chrome"].map(x=>`${basis}/${d}/${x}`))
+    : []];
+  for(const p of kand){ try{ if(fs.existsSync(p)) return p; }catch{} }
+  return `${basis}/chromium`; })();
 const browser = await chromium.launch({ executablePath:exe, args:["--no-sandbox"] });
 const page = await browser.newPage({ viewport:{ width:390, height:900 } });
 const errors=[]; const fails=[];
