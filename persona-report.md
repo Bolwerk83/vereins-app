@@ -1,6 +1,6 @@
 # Anwender-Check mit 500 Personas
 
-Stand: 2026-10-25
+Stand: 2026-11-05
 
 - Sitzungs-Profile vermessen: **14** (Rolle × Bildschirmbreite × Sprache)
 - Personas geprüft: **500**
@@ -10,7 +10,7 @@ Stand: 2026-10-25
 
 ## Befunde
 
-**1. Zu kleine Knöpfe in „start": 🔔 Erinnern (2) (19px) · 🔔 Erinnern (1) (19px) (Knöpfe groß genug zum Treffen)**  
+**1. Zu kleine Knöpfe in „start": 🔔 Erinnern (2) (20px) · 🔔 Erinnern (1) (20px) (Knöpfe groß genug zum Treffen)**  
 Betrifft 150 Personas (trainer) in den Profilen trainer-klein, trainer-normal, trainer-gross, trainer-en – z. B. p001, p002, p003, p004, p005
 
 **2. „🏗 Aufbau" fehlt in „start" (Aufbau ist die Hauptaufgabe)**  
@@ -22,7 +22,7 @@ Betrifft 150 Personas (helfer) in den Profilen helfer-klein, helfer-normal, helf
 **4. „Ballsack" fehlt in „aufbau" (einfache Liste)**  
 Betrifft 150 Personas (helfer) in den Profilen helfer-klein, helfer-normal, helfer-gross – z. B. p151, p152, p153, p154, p155
 
-**5. Zu kleine Knöpfe in „start": 🔔 Erinnern (1) (19px) · 🔔 Erinnern (2) (19px) · 🔔 Erinnern (1) (19px) (Knöpfe groß genug zum Treffen)**  
+**5. Zu kleine Knöpfe in „start": 🔔 Erinnern (1) (20px) · 🔔 Erinnern (2) (20px) · 🔔 Erinnern (1) (20px) (Knöpfe groß genug zum Treffen)**  
 Betrifft 30 Personas (admin) in den Profilen admin-normal, admin-klein – z. B. p441, p442, p443, p444, p445
 
 ## Beobachtungen (kein Fehlschlag, aber bekannt)

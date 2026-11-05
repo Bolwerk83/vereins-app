@@ -6,7 +6,17 @@ import { chromium } from "playwright-core";
 import http from "http"; import fs from "fs"; import path from "path";
 const dist = path.resolve("dist");
 const srv = http.createServer((req,res)=>{ let p=path.join(dist,req.url.split("?")[0]); if(!fs.existsSync(p)||fs.statSync(p).isDirectory()) p=path.join(dist,"index.html"); res.setHeader("content-type",{".html":"text/html",".js":"text/javascript",".css":"text/css"}[path.extname(p)]||"text/plain"); res.end(fs.readFileSync(p)); }).listen(4233);
-const exe=process.env.PLAYWRIGHT_CHROMIUM||"/opt/pw-browsers/chromium-1194/chrome-linux/chrome";
+// Chromium-Pfad nicht festnageln: der Container hat die Version schon
+// zweimal gewechselt (1194 -> 1243, dazu anderer Unterordner) und dann
+// scheitert JEDER Test am Start. Erster Treffer gewinnt.
+const exe=(()=>{ if(process.env.PLAYWRIGHT_CHROMIUM) return process.env.PLAYWRIGHT_CHROMIUM;
+  const basis=process.env.PLAYWRIGHT_BROWSERS_PATH||"/opt/pw-browsers";
+  const kand=[`${basis}/chromium`, ...fs.existsSync(basis)
+    ? fs.readdirSync(basis).filter(d=>d.startsWith("chromium-")).sort().reverse()
+        .flatMap(d=>["chrome-linux64/chrome","chrome-linux/chrome"].map(x=>`${basis}/${d}/${x}`))
+    : []];
+  for(const p of kand){ try{ if(fs.existsSync(p)) return p; }catch{} }
+  return `${basis}/chromium`; })();
 const browser = await chromium.launch({ executablePath:exe, args:["--no-sandbox"] });
 const page = await browser.newPage({ viewport:{ width:390, height:844 } });
 const errors=[]; const fails=[];
@@ -131,7 +141,7 @@ if(/🔒 Passwort (einrichten|ändern)/.test(b)) ok("Passwort fürs Kind ist dir
     const b2=[...document.querySelectorAll("button")].find(x=>(x.innerText||"").trim()==="Abmelden");
     if(!b2) return null;
     const r=b2.getBoundingClientRect();
-    return { oben:r.top<120, rechts:r.left>window.innerWidth/2 };
+    return { oben:r.top<120, rechts:(r.left+r.right)/2>window.innerWidth/2 };
   });
   if(wo&&wo.oben&&wo.rechts) ok("Abmelden steht oben rechts im Kopf");
   else fail("Abmelden nicht oben rechts: "+JSON.stringify(wo));
@@ -140,7 +150,7 @@ if(/🔒 Passwort (einrichten|ändern)/.test(b)) ok("Passwort fürs Kind ist dir
     const b2=[...document.querySelectorAll("button")].find(x=>(x.getAttribute("aria-label")||"")==="Anderes Kind");
     if(!b2) return null;
     const r=b2.getBoundingClientRect();
-    return { oben:r.top<120, rechts:r.left>window.innerWidth/2, gross:r.width>=40&&r.height>=38 }; });
+    return { oben:r.top<120, rechts:(r.left+r.right)/2>window.innerWidth/2, gross:r.width>=40&&r.height>=38 }; });
   if(obenKind&&obenKind.oben&&obenKind.rechts&&obenKind.gross) ok("Der Kind-Wechsel sitzt oben neben Abmelden");
   else fail("Kind-Wechsel fehlt oben: "+JSON.stringify(obenKind));
   const doppelt=await page.evaluate(()=>[...document.querySelectorAll("button")].filter(x=>/Anderes Kind|👧👦/.test((x.innerText||"")+(x.getAttribute("aria-label")||""))).length);

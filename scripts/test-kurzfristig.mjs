@@ -6,7 +6,17 @@ import { chromium } from "playwright-core";
 import http from "http"; import fs from "fs"; import path from "path";
 const dist = path.resolve("dist");
 const srv = http.createServer((req,res)=>{ let p=path.join(dist,req.url.split("?")[0]); if(!fs.existsSync(p)||fs.statSync(p).isDirectory()) p=path.join(dist,"index.html"); res.setHeader("content-type",{".html":"text/html",".js":"text/javascript",".css":"text/css"}[path.extname(p)]||"text/plain"); res.end(fs.readFileSync(p)); }).listen(4218);
-const exe=process.env.PLAYWRIGHT_CHROMIUM||"/opt/pw-browsers/chromium-1194/chrome-linux/chrome";
+// Chromium-Pfad nicht festnageln: der Container hat die Version schon
+// zweimal gewechselt (1194 -> 1243, dazu anderer Unterordner) und dann
+// scheitert JEDER Test am Start. Erster Treffer gewinnt.
+const exe=(()=>{ if(process.env.PLAYWRIGHT_CHROMIUM) return process.env.PLAYWRIGHT_CHROMIUM;
+  const basis=process.env.PLAYWRIGHT_BROWSERS_PATH||"/opt/pw-browsers";
+  const kand=[`${basis}/chromium`, ...fs.existsSync(basis)
+    ? fs.readdirSync(basis).filter(d=>d.startsWith("chromium-")).sort().reverse()
+        .flatMap(d=>["chrome-linux64/chrome","chrome-linux/chrome"].map(x=>`${basis}/${d}/${x}`))
+    : []];
+  for(const p of kand){ try{ if(fs.existsSync(p)) return p; }catch{} }
+  return `${basis}/chromium`; })();
 const browser = await chromium.launch({ executablePath:exe, args:["--no-sandbox"] });
 const page = await browser.newPage({ viewport:{ width:390, height:900 } });
 const errors=[]; const fails=[];
@@ -52,14 +62,11 @@ if(b.includes("Push-Info ist bereits raus")) ok("Push wurde automatisch ausgelö
 await page.locator('button:has-text("Fertig")').click(); await page.waitForTimeout(600);
 b=await body();
 if(b.includes("⚡ Kurzfristig")) ok("Trainer-Terminliste markiert den Termin (⚡ Kurzfristig)"); else fail("Trainer-Markierung fehlt");
-// Nachfass-Karte: erreicht auch Eltern ohne Push / mit seltenem App-Besuch
-if(b.includes("Kurzfristig – Rückmeldungen fehlen")) ok("Nachfass-Karte für den Trainer sichtbar"); else fail("Nachfass-Karte fehlt");
-if(b.includes("Es fehlt noch von:")) ok("Nachfass-Karte nennt die Namen der Offenen"); else fail("Namen der Offenen fehlen");
-if(b.includes("📤 In die Eltern-Gruppe")&&b.includes("🔔 Push erneut")) ok("Beide Kanäle anklickbar (Gruppe + Push)"); else fail("Nachfass-Knöpfe fehlen");
-await page.evaluate(()=>{ const b2=[...document.querySelectorAll("button")].find(x=>x.innerText.includes("Push erneut")); b2&&b2.click(); });
-await page.waitForTimeout(800);
-b=await body();
-if(b.includes("Zuletzt erinnert:")) ok("Erinnerungs-Zeitpunkt wird festgehalten"); else fail("lastNudge nicht gespeichert");
+// Der Nachfass-Kasten ueber der Terminliste ist bewusst entfernt ("macht die
+// Seite unuebersichtlich"). Die Information steckt jetzt im Termin selbst.
+if(!b.includes("Kurzfristig – Rückmeldungen fehlen")&&!b.includes("🔔 Push erneut"))
+  ok("Kein Nachfass-Kasten über der Liste – die Seite bleibt ruhig");
+else fail("Nachfass-Kasten wieder da: "+b.slice(0,220));
 
 // ===== 2) Normaler Termin (in 30 Tagen) darf NICHT markiert werden =====
 const in30=await page.evaluate(()=>{ const d=new Date(); d.setDate(d.getDate()+30); const p=x=>String(x).padStart(2,"0"); return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`; });

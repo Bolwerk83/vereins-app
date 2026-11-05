@@ -12,7 +12,17 @@ import { chromium } from "playwright-core";
 import http from "http"; import fs from "fs"; import path from "path";
 const dist = path.resolve("dist");
 const srv = http.createServer((req,res)=>{ let p=path.join(dist,req.url.split("?")[0]); if(!fs.existsSync(p)||fs.statSync(p).isDirectory()) p=path.join(dist,"index.html"); res.setHeader("content-type",{".html":"text/html",".js":"text/javascript",".css":"text/css"}[path.extname(p)]||"text/plain"); res.end(fs.readFileSync(p)); }).listen(4329);
-const exe=process.env.PLAYWRIGHT_CHROMIUM||"/opt/pw-browsers/chromium-1194/chrome-linux/chrome";
+// Chromium-Pfad nicht festnageln: der Container hat die Version schon
+// zweimal gewechselt (1194 -> 1243, dazu anderer Unterordner) und dann
+// scheitert JEDER Test am Start. Erster Treffer gewinnt.
+const exe=(()=>{ if(process.env.PLAYWRIGHT_CHROMIUM) return process.env.PLAYWRIGHT_CHROMIUM;
+  const basis=process.env.PLAYWRIGHT_BROWSERS_PATH||"/opt/pw-browsers";
+  const kand=[`${basis}/chromium`, ...fs.existsSync(basis)
+    ? fs.readdirSync(basis).filter(d=>d.startsWith("chromium-")).sort().reverse()
+        .flatMap(d=>["chrome-linux64/chrome","chrome-linux/chrome"].map(x=>`${basis}/${d}/${x}`))
+    : []];
+  for(const p of kand){ try{ if(fs.existsSync(p)) return p; }catch{} }
+  return `${basis}/chromium`; })();
 const browser = await chromium.launch({ executablePath:exe, args:["--no-sandbox"] });
 const page = await browser.newPage({ viewport:{ width:390, height:900 } });
 page.setDefaultTimeout(10000);
@@ -95,16 +105,30 @@ const vorher=await stand();
 await page.reload({waitUntil:"networkidle"}); await page.waitForTimeout(2800); await dismiss();
 
 // ===== Dialog öffnen: Terminkarte → ⋯ → Bearbeiten → Wochentag verlegen =====
-{ const auf=await page.evaluate(d=>{
-    const karten=[...document.querySelectorAll("div")].filter(x=>(x.innerText||"").includes("Training")&&x.querySelector("button")&&(x.innerText||"").length<1400);
-    for(const k of karten.reverse()){
-      const b=[...k.querySelectorAll("button")].find(x=>(x.innerText||"").trim()==="⋯");
-      if(b){ b.click(); return true; } }
-    return false; }, setup.di[1]);
-  if(auf) ok("Das Termin-Menü lässt sich öffnen"); else fail("Kein ⋯-Knopf an der Terminkarte");
+// Genau die Karte EINES bestimmten Termins oeffnen - nicht irgendeine. Sonst
+// haengt der Test davon ab, welcher Wochentag heute ist und was sonst noch
+// ueber der Liste steht. Und jede Karte hat ein eigenes „Bearbeiten": der
+// erste Treffer im Dokument gehoert sonst einem anderen Termin.
+const inKarte=(datum,was)=>page.evaluate(([d,w])=>{
+  const [j,m,t]=String(d).split("-");
+  const marke=`${t}.${m}.`;                          // z. B. 10.11.
+  const k=[...document.querySelectorAll("div")]
+    .filter(x=>(x.innerText||"").includes(marke)
+      && [...x.querySelectorAll("button")].filter(y=>(y.innerText||"").trim()==="⋯").length===1)
+    .sort((a,b)=>(a.innerText||"").length-(b.innerText||"").length)[0];
+  if(!k) return false;
+  const b=[...k.querySelectorAll("button")].find(x=>new RegExp(w).test((x.innerText||"").trim()));
+  if(!b) return false; b.click(); return true; }, [datum, was instanceof RegExp?was.source:was]);
+const bearbeiten=async(datum)=>{
+  const auf=await inKarte(datum,"^⋯$");
   await page.waitForTimeout(700);
-  if(await klick("✏️ Bearbeiten")) ok("„Bearbeiten“ ist da"); else fail("Kein Bearbeiten im Menü");
-  await page.waitForTimeout(900); }
+  const bea=await inKarte(datum,"Bearbeiten");
+  await page.waitForTimeout(900);
+  return auf&&bea;
+};
+{ const auf=await bearbeiten(setup.di[1]);
+  if(auf) ok("Das Termin-Menü und „Bearbeiten“ lassen sich an der richtigen Karte öffnen");
+  else fail("Terminkarte nicht gefunden"); }
 let b=await body();
 if(/Teil einer Serie/.test(b)) ok("Die App erkennt den Serientermin");
 else fail("Kein Serien-Hinweis: "+kurz(b));
@@ -153,11 +177,10 @@ const nachher=await stand();
 
 // ===== Gegenprobe: auf den Donnerstag verlegen wird abgelehnt =====
 await page.reload({waitUntil:"networkidle"}); await page.waitForTimeout(2800); await dismiss();
-{ await page.evaluate(()=>{
-    const karten=[...document.querySelectorAll("div")].filter(x=>(x.innerText||"").includes("Training")&&x.querySelector("button")&&(x.innerText||"").length<1400);
-    for(const k of karten.reverse()){ const b2=[...k.querySelectorAll("button")].find(x=>(x.innerText||"").trim()==="⋯"); if(b2){ b2.click(); return; } } });
-  await page.waitForTimeout(700);
-  await klick("✏️ Bearbeiten"); await page.waitForTimeout(900);
+{ // Den verlegten Montag oeffnen - von dort aus waere der Donnerstag belegt.
+  const montag=await page.evaluate(()=>{ const d=JSON.parse(localStorage.getItem("vereinsapp_v14")||"null");
+    const e=(d.events||[]).find(x=>x.id==="di_1"); return e?e.date:null; });
+  await bearbeiten(montag);
   await klick("📅 Wochentag verlegen"); await page.waitForTimeout(900);
   const heutigerTag=await page.evaluate(()=>{ const t=document.body.innerText; const m=t.match(/liegt bisher am (\w+)/); return m?m[1]:""; });
   ok("Der Dialog ist wieder offen (Tag: "+heutigerTag+")");
