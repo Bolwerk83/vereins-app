@@ -1,12 +1,16 @@
-// E2E-Test: Kind wechselt die Mannschaft – was sehen die Eltern?
-// Gemeldet: Aiden ist von der F2 in die F3 umgezogen, seine Mutter bekam
-// aber weiter die alten F2-Termine. Grund: Die Mannschaft steckt in der
-// ANMELDUNG auf dem Gerät, nicht im Profil – und die blieb auf der F2.
-//   1. Die Eltern sehen nach dem Wechsel die Termine der NEUEN Mannschaft.
-//   2. Die Termine der alten Mannschaft sind weg.
-//   3. Die Anmeldung auf dem Gerät wird dauerhaft nachgezogen.
-//   4. Eine Zweitmannschaft (Aushilfe) wird NICHT angefasst.
-//   5. Umbenennen und Mannschaftswechsel zusammen klappen auch.
+// E2E-Test: Kind wechselt die Mannschaft – F2 und F3 sind getrennt.
+// Gemeldet: „Die Spieler die in die f3 geschoben wurden, können noch die f2
+// Termine sehen, bis sie sich einmal neu angemeldet haben." Grund: Die
+// Mannschaft steckt in der ANMELDUNG auf dem Geraet, nicht im Profil.
+// Gewuenscht: Wer auf der alten Mannschaft steht, aber nicht mehr dahin
+// gehoert, wird abgemeldet und muss sich bei der neuen neu anmelden.
+//   1. Vor dem Wechsel sehen die Eltern die Termine ihrer Mannschaft.
+//   2. Nach dem Wechsel ist die Anmeldung beendet – Code-Abfrage der NEUEN.
+//   3. Dabei steht da, warum: das Kind ist jetzt in der neuen Mannschaft.
+//   4. Solange sie abgemeldet sind, sehen sie KEINE Termine mehr.
+//   5. Mit dem Code der neuen Mannschaft geht es weiter – dann nur deren Termine.
+//   6. Eine Zweitmannschaft (Aushilfe) wird NICHT angefasst.
+//   7. Umbenannt UND gewechselt: der Hinweis nennt den neuen Namen.
 // Aufruf: npm run build && node scripts/test-team-wechsel-eltern.mjs
 import { chromium } from "playwright-core";
 import http from "http"; import fs from "fs"; import path from "path";
@@ -56,7 +60,7 @@ const setup = await page.evaluate(()=>{
   const z=x=>String(x).padStart(2,"0");
   const tg=n=>{ const x=new Date(); x.setHours(12,0,0,0); x.setDate(x.getDate()+n);
     return `${x.getFullYear()}-${z(x.getMonth()+1)}-${z(x.getDate())}`; };
-  const t2={ id:"demo_f9", cid:"demo", name:"F-Jugend 9", icon:"F9", col:"#7c3aed", pub:true, pwd:"x", cat:"F-Jugend", years:"" };
+  const t2={ id:"demo_f9", cid:"demo", name:"F-Jugend 9", icon:"F9", col:"#7c3aed", pub:true, pwd:"neun", cat:"F-Jugend", years:"" };
   d.teams=[...(d.teams||[]).filter(t=>t.id!=="demo_f9"), t2];
   const kind=(d.playerProfiles||[]).filter(p=>p.mainTid==="demo_f1"&&!p.archived)[0];
   const vorlage=(d.events||[]).filter(e=>e.cid==="demo"&&e.tid==="demo_f1")[0];
@@ -81,59 +85,76 @@ const alsEltern=async()=>{
     JSON.stringify({role:"user",cid:"demo",tid:"demo_f1",user:k,name:k})); }, setup.kind);
   await page.reload({waitUntil:"networkidle"}); await page.waitForTimeout(2800); await dismiss();
 };
+const wechsel=async(patch)=>{
+  await page.evaluate(([pid,pa])=>{ const d=JSON.parse(localStorage.getItem("vereinsapp_v14")||"null");
+    d.playerProfiles=(d.playerProfiles||[]).map(p=>p.id===pid?{...p, ...pa}:p);
+    localStorage.setItem("vereinsapp_v14", JSON.stringify(d)); }, [setup.pid, patch]);
+};
 await alsEltern();
 let b=await body();
 if(/ALTE Mannschaft/.test(b)) ok("Vor dem Wechsel sehen die Eltern die Termine ihrer Mannschaft");
 else fail("Keine Termine sichtbar: "+kurz(b));
 
 // ===== Das Kind wechselt die Mannschaft =====
-await page.evaluate(pid=>{ const d=JSON.parse(localStorage.getItem("vereinsapp_v14")||"null");
-  d.playerProfiles=(d.playerProfiles||[]).map(p=>p.id===pid?{...p, mainTid:"demo_f9", optTids:[]}:p);
-  localStorage.setItem("vereinsapp_v14", JSON.stringify(d)); }, setup.pid);
+await wechsel({ mainTid:"demo_f9", optTids:[] });
 await page.reload({waitUntil:"networkidle"}); await page.waitForTimeout(3000); await dismiss();
 
-// ===== 1+2) Neue Termine da, alte weg =====
-b=await body();
-if(/NEUE Mannschaft/.test(b)) ok("Nach dem Wechsel stehen die Termine der neuen Mannschaft da");
-else fail("Neue Termine fehlen – genau der gemeldete Fehler: "+kurz(b));
-if(!/ALTE Mannschaft/.test(b)) ok("Und die Termine der alten Mannschaft sind weg");
-else fail("Alte Termine stehen noch da: "+kurz(b));
-if(/F-Jugend 9/.test(b)) ok("Im Kopf steht die neue Mannschaft");
-else fail("Falsche Mannschaft im Kopf: "+kurz(b));
-
-// ===== 3) Anmeldung dauerhaft nachgezogen =====
+// ===== 2) Anmeldung beendet, Code der NEUEN Mannschaft =====
 { const s=await sitzung();
-  if(s&&s.tid==="demo_f9") ok("Die Anmeldung auf dem Gerät ist auf die neue Mannschaft gezogen");
-  else fail("Anmeldung bleibt auf der alten Mannschaft: "+JSON.stringify(s&&s.tid)); }
+  if(!s) ok("Die alte Anmeldung ist beendet – das Gerät steht nicht mehr in der alten Mannschaft");
+  else fail("Anmeldung besteht weiter: "+JSON.stringify(s)); }
+b=await body();
+if(/F-Jugend 9/.test(b)) ok("Es wird der Zugang der NEUEN Mannschaft abgefragt");
+else fail("Nicht bei der neuen Mannschaft gelandet: "+kurz(b));
 
-// ===== 4) Zweitmannschaft wird nicht angefasst =====
-// Kind hilft in der alten Mannschaft aus: dann darf die Anmeldung dort bleiben.
-await page.evaluate(pid=>{ const d=JSON.parse(localStorage.getItem("vereinsapp_v14")||"null");
-  d.playerProfiles=(d.playerProfiles||[]).map(p=>p.id===pid?{...p, mainTid:"demo_f9", optTids:["demo_f1"]}:p);
-  localStorage.setItem("vereinsapp_v14", JSON.stringify(d)); }, setup.pid);
+// ===== 3) Begründung steht dabei =====
+if(/ist jetzt in der/.test(b)&&/alte Anmeldung beendet/.test(b)) ok("Und es steht dabei, warum: das Kind ist jetzt in der neuen Mannschaft");
+else fail("Kein Hinweis zum Wechsel: "+kurz(b));
+if(new RegExp(String(setup.kind).split(" ")[0]).test(b)) ok("Der Vorname des Kindes steht im Hinweis");
+else fail("Kind nicht genannt: "+kurz(b));
+
+// ===== 4) Abgemeldet heißt: keine Termine =====
+if(!/ALTE Mannschaft/.test(b)&&!/NEUE Mannschaft/.test(b)) ok("Solange niemand angemeldet ist, sind keine Termine zu sehen");
+else fail("Termine trotz Abmeldung sichtbar: "+kurz(b));
+
+// ===== 5) Mit dem Code der neuen Mannschaft weiter =====
+await page.evaluate(()=>{ const i=document.querySelector('input[type="password"],input[type="text"]'); if(i){ i.focus(); } });
+await page.keyboard.type("neun"); await page.waitForTimeout(400);
+await page.keyboard.press("Enter"); await page.waitForTimeout(2200); await dismiss();
+b=await body();
+if(new RegExp(String(setup.kind).split(" ")[0]).test(b)) ok("Der Code der neuen Mannschaft führt zur Kinder-Auswahl");
+else fail("Code nicht angenommen: "+kurz(b));
+// Anmeldung abschliessen (Einwilligungs-Dialog gehoert zu einem anderen Test)
 await page.evaluate(k=>{ sessionStorage.setItem("vereinsapp_v12_session",
-  JSON.stringify({role:"user",cid:"demo",tid:"demo_f1",user:k,name:k})); }, setup.kind);
-await page.reload({waitUntil:"networkidle"}); await page.waitForTimeout(3000); await dismiss();
+  JSON.stringify({role:"user",cid:"demo",tid:"demo_f9",user:k,name:k})); }, setup.kind);
+await page.reload({waitUntil:"networkidle"}); await page.waitForTimeout(2900); await dismiss();
+b=await body();
+if(/NEUE Mannschaft/.test(b)&&!/ALTE Mannschaft/.test(b)) ok("Danach stehen nur die Termine der neuen Mannschaft da");
+else fail("Falsche Termine nach dem Neu-Anmelden: "+kurz(b));
+{ const s=await sitzung();
+  if(s&&s.tid==="demo_f9") ok("Die Anmeldung gehört jetzt zur neuen Mannschaft");
+  else fail("Anmeldung falsch: "+JSON.stringify(s&&s.tid)); }
+
+// ===== 6) Zweitmannschaft wird nicht angefasst =====
+// Kind hilft in der alten Mannschaft aus: dann darf die Anmeldung dort bleiben.
+await wechsel({ mainTid:"demo_f9", optTids:["demo_f1"] });
+await alsEltern();
 { const s=await sitzung();
   if(s&&s.tid==="demo_f1") ok("Als Aushilfe in der alten Mannschaft bleibt die Anmeldung dort – nichts wird überfahren");
-  else fail("Aushilfe-Anmeldung wurde verschoben: "+JSON.stringify(s&&s.tid)); }
-
-// ===== 5) Umbenannt UND gewechselt =====
-await page.evaluate(([pid,alt])=>{ const d=JSON.parse(localStorage.getItem("vereinsapp_v14")||"null");
-  d.playerProfiles=(d.playerProfiles||[]).map(p=>p.id===pid
-    ? {...p, name:"Neuer Name T.", prevNames:[alt], mainTid:"demo_f9", optTids:[]} : p);
-  localStorage.setItem("vereinsapp_v14", JSON.stringify(d)); }, [setup.pid, setup.kind]);
-await page.evaluate(k=>{ sessionStorage.setItem("vereinsapp_v12_session",
-  JSON.stringify({role:"user",cid:"demo",tid:"demo_f1",user:k,name:k})); }, setup.kind);
-await page.reload({waitUntil:"networkidle"}); await page.waitForTimeout(3000); await dismiss();
-{ const s=await sitzung();
-  if(s&&s.user==="Neuer Name T.") ok("Umbenannt und gewechselt: der Name zieht mit");
-  else fail("Name nicht nachgezogen: "+JSON.stringify(s&&s.user));
-  if(s&&s.tid==="demo_f9") ok("Und die Mannschaft ebenfalls");
-  else fail("Mannschaft nicht nachgezogen: "+JSON.stringify(s&&s.tid)); }
+  else fail("Aushilfe-Anmeldung wurde beendet: "+JSON.stringify(s)); }
 b=await body();
-if(/NEUE Mannschaft/.test(b)&&!/ALTE Mannschaft/.test(b)) ok("Die Eltern sehen die richtigen Termine");
-else fail("Falsche Termine: "+kurz(b));
+if(/ALTE Mannschaft/.test(b)) ok("Und die Aushilfe sieht die Termine dieser Mannschaft weiter");
+else fail("Aushilfe sieht keine Termine: "+kurz(b));
+
+// ===== 7) Umbenannt UND gewechselt =====
+await wechsel({ name:"Neuer Name T.", prevNames:[setup.kind], mainTid:"demo_f9", optTids:[] });
+await alsEltern();
+{ const s=await sitzung();
+  if(!s) ok("Umbenannt und gewechselt: die Anmeldung endet ebenfalls");
+  else fail("Anmeldung besteht weiter: "+JSON.stringify(s)); }
+b=await body();
+if(/Neuer/.test(b)&&/F-Jugend 9/.test(b)) ok("Der Hinweis nennt den neuen Namen und die neue Mannschaft");
+else fail("Hinweis falsch: "+kurz(b));
 
 if(errors.length){ console.log("JS-FEHLER:"); [...new Set(errors)].forEach(e=>console.log(" -",e.slice(0,150))); }
 console.log(errors.length||fails.length?`ERGEBNIS: ${fails.length} Fehlschläge, ${errors.length} JS-Fehler`:"ERGEBNIS: ALLES OK");

@@ -7716,7 +7716,7 @@ function LinkTeilen({cl,team,namen=[],onClose,onFire}){
   );
 }
 
-function UserFlow({cl,teams,players,playerProfiles,trainers=[],onDone,onBack,preselectTid,preselectName=null,onWaitlist,onOffer,onConsent,onGuestConsent,onSetChildPw,lang="de",setLang=()=>{}}) {
+function UserFlow({cl,teams,players,playerProfiles,trainers=[],onDone,onBack,preselectTid,preselectName=null,umzug=null,onWaitlist,onOffer,onConsent,onGuestConsent,onSetChildPw,lang="de",setLang=()=>{}}) {
   const [showWait,setShowWait]=useState(false);
   const [gastAuf,setGastAuf]=useState(false);      // Gast-Wizard (eigenes Fenster)
   const [mitAuf,setMitAuf]=useState(false);        // "Mitspielen / mittrainieren"-Anfrage
@@ -7889,6 +7889,18 @@ function UserFlow({cl,teams,players,playerProfiles,trainers=[],onDone,onBack,pre
           <h2 style={{color:"#fff",fontSize:22,fontWeight:900,margin:"0 0 4px"}}>{ct?.name}</h2>
           <p style={{color:"rgba(255,255,255,.5)",fontSize:13}}>{tr("ufPwEnter")}</p>
         </div>
+        {/* Kind hat die Mannschaft gewechselt: erklaeren, warum die alte
+            Anmeldung weg ist - sonst wirkt es wie ein Fehler. */}
+        {umzug&&umzug.tid===ct?.id&&(
+          <div style={{background:"rgba(255,255,255,.14)",border:"1px solid rgba(255,255,255,.28)",borderRadius:14,padding:"12px 14px",marginBottom:14,lineHeight:1.5}}>
+            <div style={{color:"#fff",fontWeight:800,fontSize:13.5,marginBottom:3}}>
+              {String(umzug.kind||"Dein Kind").split(" ")[0]} ist jetzt in der {umzug.team||"neuen Mannschaft"}
+            </div>
+            <div style={{color:"rgba(255,255,255,.72)",fontSize:12}}>
+              Deshalb ist die alte Anmeldung beendet. Einmal mit dem Code dieser Mannschaft anmelden – danach siehst du nur noch ihre Termine. Den Code hat der Trainer.
+            </div>
+          </div>
+        )}
         <div style={{background:"rgba(255,255,255,.1)",backdropFilter:"blur(16px)",borderRadius:22,padding:"24px 22px",border:"1px solid rgba(255,255,255,.15)"}}>
           <PwInput value={pwd} onChange={e=>{setPwd(e.target.value);setPwdErr(false);}}
             onKeyDown={e=>{if(e.key==="Enter"){if(ct?.locked){setPwdErr(true);}else if(checkPw(pwd,ct?.pwd||"")){merkSet("va_teamok_"+ct.id, ct?.pwd||"1"); const assigned=(playerProfiles||[]).some(p=>p.mainTid===ct.id);if(assigned)setStep("name");else setStep("locked");}else{setPwdErr(true);setTimeout(()=>setPwdErr(false),1800);}}}}
@@ -16865,9 +16877,12 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
           {!isHelper&&<VertretungsBoard data={local} cid={cid} session={session} save={save} fire={fire}/>}
           {/* Andere Mannschaft fragt eines meiner Kinder als Aushilfe an */}
           {!isHelper&&<AushilfeAnfragen data={local} cid={cid} session={session} myTids={myTids} save={save} fire={fire} cl={myClub}/>}
-          {/* ⚡ Kurzfristige Termine mit fehlenden Rueckmeldungen nachfassen */}
-          {!isHelper&&<KurzfristigNachfassen data={local} myTids={myTids} cid={cid} cl={myClub} save={save} fire={fire}
-            selfName={selfName} onOpen={ev=>setViewEv(ev)}/>}
+          {/* Der Nachfass-Kasten zu kurzfristigen Terminen ist raus: Er stand
+              bei Trainern und Helfern dauerhaft ueber der Terminliste und hat
+              die Seite unuebersichtlich gemacht. Die kurzfristigen Termine
+              sind in der Liste selbst mit ⚡ markiert, die Eltern bekommen
+              beim Anlegen weiterhin sofort eine Push-Info, und der fertige
+              Text fuer die Eltern-Gruppe steht direkt nach dem Anlegen. */}
           {/* Helfer mit mehreren Jugenden: einfacher Wechsel ohne Neu-Login */}
           {isHelper&&myTids.length>1&&(
             <div style={{display:"flex",gap:6,marginBottom:12,overflowX:"auto",touchAction:"pan-x pan-y",paddingBottom:2}}>
@@ -17233,6 +17248,11 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
               const ev2={...viewEv,spielGr:g,spielFest:null};
               save({...local,events:local.events.map(e=>e.id===viewEv.id?ev2:e)});
               setViewEv(prev=>({...prev,spielGr:g,spielFest:null}));
+            }}
+            onTW={v=>{
+              const ev2={...viewEv,spielTW:v,spielFest:null};
+              save({...local,events:local.events.map(e=>e.id===viewEv.id?ev2:e)});
+              setViewEv(prev=>({...prev,spielTW:v,spielFest:null}));
             }}
             onFest={f=>{
               // null = freigeben, {neuMischen} = andere Einteilung, sonst festhalten
@@ -20201,15 +20221,40 @@ const sitzungNachUmbenennung = (s, cd) => {
     kind=imTeam||egal||null;
     if(kind&&!gl(kind.name,s.user)) neu={...neu, user:kind.name, ...(neu.name?{name:kind.name}:{})};
   }
-  // 2) Kind in eine andere Mannschaft gewechselt? Dann zieht die Anmeldung mit.
-  //    Sonst zeigt die App den Eltern weiter die Termine der ALTEN Mannschaft -
-  //    die Mannschaft steckt in der Anmeldung, nicht im Profil.
-  //    Eine Zweitmannschaft (Aushilfe) bleibt gueltig und wird nicht angefasst.
-  if(kind && kind.mainTid && neu.tid && kind.mainTid!==neu.tid
-     && !((kind.optTids||[]).includes(neu.tid))){
-    neu={...neu, tid:kind.mainTid};
-  }
+  // Die Mannschaft wird hier NICHT mehr still umgehaengt - siehe
+  // sitzungFremdeMannschaft: ein Wechsel beendet die Anmeldung, damit die
+  // Mannschaften sauber getrennt bleiben.
   return neu===s ? s : merken(neu);
+};
+
+// Mannschaftswechsel: Die Mannschaft steckt in der ANMELDUNG auf dem Geraet,
+// nicht im Profil. Wird ein Kind in eine andere Mannschaft gesetzt, zeigte die
+// App den Eltern weiter die Termine der ALTEN - ihre Anmeldung lief ja noch
+// dort. Jetzt gilt: Wer in der Anmeldung auf einer Mannschaft steht, zu der er
+// nicht mehr gehoert, wird abgemeldet und meldet sich einmal bei der neuen an
+// (mit deren Code). Damit sind die Mannschaften wirklich getrennt - niemand
+// sieht Termine einer Mannschaft, in der er nichts mehr verloren hat.
+// Zurueckgegeben wird, wohin es geht - oder null, wenn alles stimmt.
+const sitzungFremdeMannschaft = (s, cd) => {
+  if(!s || s.role!=="user" || !s.user || !s.tid || !cd) return null;
+  const gl=(a,b)=>_nrmName(a)===_nrmName(b);
+  const profile=cd.playerProfiles||[];
+  // Ohne Profil (Gast, frisch angelegtes Kind) wird nichts angefasst: dann
+  // wissen wir nichts Besseres als die Anmeldung selbst.
+  // Gibt es den Namen in DIESER Mannschaft, ist alles in Ordnung - das faengt
+  // auch zwei gleichnamige Kinder in verschiedenen Mannschaften ab.
+  if(profile.some(p=>gl(p.name,s.user)&&!p.archived
+      &&(p.mainTid===s.tid||(p.optTids||[]).includes(s.tid)))) return null;
+  const kind=profile.find(p=>gl(p.name,s.user)&&!p.archived)
+         || profile.find(p=>(p.prevNames||[]).some(x=>gl(x,s.user))&&!p.archived);
+  if(!kind || !kind.mainTid || kind.archived) return null;
+  // Aushilfe in dieser Mannschaft? Dann ist die Anmeldung dort gewollt.
+  if(kind.mainTid===s.tid || (kind.optTids||[]).includes(s.tid)) return null;
+  // Gibt es die alte Mannschaft gar nicht mehr, ist es kein Wechsel, sondern
+  // eine aufgeloeste Mannschaft - auch dann gehoert das Geraet woanders hin.
+  const tm=(cd.teams||[]).find(t=>t.id===kind.mainTid);
+  if(!tm) return null;
+  return { kind:kind.name, tid:kind.mainTid, team:tm.name||"" };
 };
 
 // Wird eine Person umbenannt, ziehen ihre Eintraege mit: Zu- und Absagen,
@@ -20438,101 +20483,6 @@ async function pushTeamInfo({cid,tid,title,text,from}){
     if(!r.ok) r=await post({mode:"chat",message:{cid,tid,title,text,from}});
     return r.ok;
   }catch{ return false; }
-}
-
-// ⚡ Nachfassen bei kurzfristigen Terminen.
-// Push erreicht nur Geraete mit aktivierten Benachrichtigungen - wer selten
-// in die App schaut, bekommt die Info sonst gar nicht. Deshalb bleibt der
-// Termin beim Trainer sichtbar, solange Rueckmeldungen fehlen: mit Namen der
-// Offenen, fertigem Text fuer die Eltern-Gruppe (erreicht ALLE) und einem
-// zweiten Push-Anlauf. Verschwindet automatisch, wenn alle geantwortet haben.
-function KurzfristigNachfassen({data,myTids,cid,cl,save,fire,onOpen,selfName}){
-  const tod=now();
-  const alle=(data.events||[])
-    .filter(e=>myTids.includes(e.tid)&&e.cid===cid&&(e.pt==="att"||!e.pt)&&shortNoticeOpen(e,cl,tod)&&!e.nudgeOff)
-    .map(ev=>{
-      const roster=(data.playerProfiles||[]).filter(p=>p.mainTid===ev.tid&&!p.archived&&!isPausedP(p)).map(p=>p.name);
-      const voted=new Set(Object.keys(ev.votes||{}));
-      return { ev, roster, missing: roster.filter(n=>!voted.has(n)) };
-    })
-    .filter(r=>r.roster.length>0 && r.missing.length>0)
-    .sort((a,b)=>String(a.ev.date).localeCompare(String(b.ev.date)));
-  const rows=alle.slice(0,3);
-  if(!rows.length) return null;
-
-  const linkFor=ev=>(typeof window!=="undefined"?window.location.origin:"")+"/?club="+(cl?.slug||cid)+"&event="+ev.id;
-  const textFor=(ev,missing)=>[
-    `⚡ Kurzfristiger Termin – bitte kurz abstimmen`,
-    `${ev.title} · ${fmtD(ev.date)}${ev.time?" um "+ev.time+" Uhr":""}${ev.loc?"\n📍 "+ev.loc:""}`,
-    ``,
-    `Es fehlt noch von: ${missing.join(", ")}`,
-    ``,
-    linkFor(ev),
-  ].join("\n");
-  const stamp=ev=>save({...data,events:(data.events||[]).map(e=>e.id===ev.id?{...e,lastNudge:new Date().toISOString()}:e)});
-  // Wegklicken: der Hinweis ist eine Erinnerung, keine Pflicht. Wer ihn
-  // gesehen hat, soll ihn loswerden koennen - dauerhaft, nicht nur bis zum
-  // naechsten Laden. Bei NEUEN kurzfristigen Terminen kommt er wieder.
-  const ausblenden=(ids,text)=>{
-    const w=new Set(ids);
-    save({...data,events:(data.events||[]).map(e=>w.has(e.id)?{...e,nudgeOff:true}:e)});
-    fire&&fire(text);
-  };
-  const share=(ev,missing)=>{
-    const txt=textFor(ev,missing);
-    if(navigator.share){ navigator.share({title:ev.title,text:txt}).catch(()=>{}); }
-    else { navigator.clipboard?.writeText(txt); fire&&fire("Text kopiert – in die Eltern-Gruppe einfügen"); }
-    stamp(ev);
-  };
-  const pushAgain=(ev,missing)=>{
-    pushTeamInfo({ cid, tid:ev.tid, from:selfName,
-      title:`⚡ Erinnerung: ${ev.title}`,
-      text:`${fmtD(ev.date)}${ev.time?" um "+ev.time+" Uhr":""} – ${missing.length} Rückmeldung${missing.length===1?"":"en"} fehlen noch.` });
-    stamp(ev); fire&&fire("Push-Erinnerung raus – für alle ohne Push bitte zusätzlich teilen");
-  };
-  const seit=iso=>{ const h=Math.round((Date.now()-new Date(iso).getTime())/3600000);
-    return h<1?"gerade eben":h<24?`vor ${h} Std.`:`vor ${Math.round(h/24)} Tg.`; };
-
-  return (
-    <div style={{background:"#fff7ed",border:"1.5px solid #fed7aa",borderRadius:14,padding:"12px 14px",marginBottom:12}}>
-      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:3}}>
-        <span style={{fontSize:17}}>⚡</span>
-        <span style={{fontWeight:800,fontSize:13.5,color:"#9a3412",flex:1}}>Kurzfristig – Rückmeldungen fehlen</span>
-        <button onClick={()=>ausblenden(alle.map(r=>r.ev.id),"Hinweis ausgeblendet – er kommt nur bei neuen kurzfristigen Terminen wieder")}
-          title="Hinweis ausblenden"
-          style={{flexShrink:0,width:28,height:28,borderRadius:9,border:"1.5px solid #fed7aa",background:"#fff",color:"#9a3412",fontWeight:900,fontSize:14,lineHeight:1,cursor:"pointer",fontFamily:"inherit"}}>✕</button>
-      </div>
-      <div style={{fontSize:11.5,color:"#b45309",marginBottom:9,lineHeight:1.45}}>
-        Nicht alle haben Benachrichtigungen an oder schauen täglich rein. Der Text unten erreicht auch sie – einmal in die Eltern-Gruppe, fertig.
-      </div>
-      {rows.map(({ev,missing,roster})=>{
-        const tage=Math.max(0,Math.round((new Date(ev.date+"T12:00:00")-new Date(tod+"T12:00:00"))/86400000));
-        return (
-          <div key={ev.id} style={{background:"#fff",border:"1.5px solid #fed7aa",borderRadius:12,padding:"10px 12px",marginBottom:7}}>
-            <div style={{display:"flex",alignItems:"flex-start",gap:8}}>
-            <div onClick={()=>onOpen&&onOpen(ev)} style={{cursor:"pointer",flex:1,minWidth:0}}>
-              <div style={{fontWeight:800,fontSize:13.5,color:"#0f172a"}}>{ev.title}</div>
-              <div style={{fontSize:11.5,color:"#9a3412",marginTop:2,fontWeight:700}}>
-                {tage===0?"HEUTE":tage===1?"MORGEN":`in ${tage} Tagen`} · {fmtD(ev.date)}{ev.time?` · ${ev.time} Uhr`:""} · {roster.length-missing.length}/{roster.length} geantwortet
-              </div>
-            </div>
-            <button onClick={()=>ausblenden([ev.id],"Für diesen Termin ausgeblendet")}
-              title="Für diesen Termin ausblenden"
-              style={{flexShrink:0,width:26,height:26,borderRadius:8,border:"1.5px solid #fed7aa",background:"#fff7ed",color:"#9a3412",fontWeight:900,fontSize:13,lineHeight:1,cursor:"pointer",fontFamily:"inherit"}}>✕</button>
-            </div>
-            <div style={{fontSize:11.5,color:"#7c2d12",background:"#fff7ed",borderRadius:8,padding:"6px 9px",marginTop:7,lineHeight:1.45}}>
-              Es fehlt noch von: <b>{missing.slice(0,8).join(", ")}</b>{missing.length>8?` +${missing.length-8} weitere`:""}
-            </div>
-            <div style={{display:"flex",gap:6,marginTop:8,flexWrap:"wrap"}}>
-              <button onClick={()=>share(ev,missing)} style={{flex:"1 1 150px",padding:"9px",borderRadius:10,border:"none",background:"#16a34a",color:"#fff",fontWeight:800,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>📤 In die Eltern-Gruppe</button>
-              <button onClick={()=>pushAgain(ev,missing)} style={{flex:"1 1 120px",padding:"9px",borderRadius:10,border:"1.5px solid #fdba74",background:"#fff",color:"#b45309",fontWeight:800,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>🔔 Push erneut</button>
-            </div>
-            {ev.lastNudge&&<div style={{fontSize:10.5,color:"#a16207",marginTop:6}}>Zuletzt erinnert: {seit(ev.lastNudge)}</div>}
-          </div>
-        );
-      })}
-    </div>
-  );
 }
 
 function FerienHinweis({hols,from,to}){
@@ -23626,6 +23576,12 @@ const stelleAuf = (namen, profiles, mitTorwart) => {
   const basis=LINEUP_SHAPE[Math.max(3,Math.min(11,n))]||LINEUP_SHAPE[6];
   const shape={...basis};
   if(!mitTorwart && shape.T){ shape.M+=shape.T; shape.T=0; }
+  // Umgekehrt: Soll ausdruecklich mit Torwart gespielt werden, die Form sieht
+  // aber keinen vor (3 gegen 3), geht einer aus der groessten Linie ins Tor.
+  if(mitTorwart && !shape.T && n>=3){
+    const gr=["M","A","S"].filter(k=>shape[k]>0).sort((a,b)=>shape[b]-shape[a])[0];
+    if(gr){ shape[gr]-=1; shape.T=1; }
+  }
   const linien={T:[],A:[],M:[],S:[]};
   const offen=[...namen];
   // Erst die, die auf der Linie zu Hause sind (Hauptposition vor Nebenposition).
@@ -23667,10 +23623,20 @@ const spielGrStandard = (cat) => {
   if(/\bd-?jugend|\bd\b/.test(c)) return 9;             // 8+1
   return 6;
 };
-const spielchenPaarungen = (gruppen=[], profiles=[], jaNamen=[], groesse=6, saat="") => {
+// Wird mit Torwart gespielt? Die Spielform entscheidet, nicht der Kader:
+// 5+1, 6+1, 8+1 heissen MIT Torwart - auch wenn kein Kind "Torwart" im Profil
+// stehen hat. In dem Alter gibt es ohnehin keine Stamm-Torhueter, sondern
+// Kinder, die auch mal im Tor stehen; wer hinein geht, wechselt mit der
+// Einteilung durch. Nur 3 gegen 3 (Bambini) laeuft ohne. Der Trainer kann es
+// je Termin umstellen (ev.spielTW).
+const spielchenMitTW = (groesse, n, wahl) => {
+  if(wahl===false) return false;          // ausdruecklich Futsal ohne Torwart
+  if(wahl===true)  return n>=3;           // ausdruecklich mit
+  return Number(groesse)>=4 && n>=4;      // Standard: jede "+1"-Spielform
+};
+const spielchenPaarungen = (gruppen=[], profiles=[], jaNamen=[], groesse=6, saat="", twWahl=null) => {
   const prof = n => (profiles||[]).find(p=>(p.name||"").toLowerCase()===String(n).toLowerCase())||null;
   const grpVon = n => { const p=prof(n); return p&&p.intGrp ? p.intGrp : null; };
-  const hatTor = liste => liste.some(n=>_linienVon(n,profiles).includes("T"));
   const paarungen=[]; const rest=[];
 
   const bauen=(titel, gruppe, leute, ix) => {
@@ -23688,9 +23654,9 @@ const spielchenPaarungen = (gruppen=[], profiles=[], jaNamen=[], groesse=6, saat
       if(!lb||lb.id===la.id) lb=LEIBCHEN.find(l=>l.id!==la.id);
       return [la,lb];
     })();
-    // Torwart nur, wenn BEIDE Seiten einen stellen koennen - sonst spielen
-    // beide ohne. Alles andere waere unfair.
-    const mitTW = hatTor(aStart) && hatTor(bStart);
+    // Beide Seiten spielen gleich - entweder beide mit Torwart oder beide ohne.
+    const mitTW = spielchenMitTW(groesse, aStart.length, twWahl)
+               && spielchenMitTW(groesse, bStart.length, twWahl);
     paarungen.push({
       titel, gruppe,
       a:{ leib:farben[0], namen:aStart, linien:stelleAuf(aStart, profiles, mitTW) },
@@ -23717,8 +23683,10 @@ const spielchenPaarungen = (gruppen=[], profiles=[], jaNamen=[], groesse=6, saat
 // nehmen. Deshalb laesst sich jeder Spieler verschieben oder tauschen - die
 // Linien werden danach neu gestellt, damit die Aufstellung stimmig bleibt.
 const _spielchenStellen = (ps, profiles) => ps.map(p=>{
-  const hatTor = l => (l||[]).some(n=>_linienVon(n,profiles).includes("T"));
-  const mitTW = hatTor(p.a.namen) && hatTor(p.b.namen);
+  // Die Spielform bleibt, wenn von Hand verschoben wird: ob mit Torwart
+  // gespielt wird, haengt an der Spielform - nicht daran, wer gerade wo steht.
+  // Nur wenn eine Seite zu klein wird, fehlt das Tor.
+  const mitTW = !!p.torwart && p.a.namen.length>=3 && p.b.namen.length>=3;
   return { ...p, torwart:mitTW,
     a:{ ...p.a, linien:stelleAuf(p.a.namen, profiles, mitTW) },
     b:{ ...p.b, linien:stelleAuf(p.b.namen, profiles, mitTW) } };
@@ -23831,7 +23799,8 @@ const spielchenStand = (ev, gruppen=[], profiles=[], jaNamen=[], cat="") => {
         a:{ ...p.a, leib:(LEIBCHEN.find(l=>l.id===p.a.leib)||LEIBCHEN[0]) },
         b:{ ...p.b, leib:(LEIBCHEN.find(l=>l.id===p.b.leib)||LEIBCHEN[1]) } }))
     : spielchenPaarungen(gruppen, profiles, jaNamen, groesse,
-        String(ev.id||"")+String(ev.date||"")+String(ev.spielMix||"")).paarungen;
+        String(ev.id||"")+String(ev.date||"")+String(ev.spielMix||""),
+        ev.spielTW===undefined?null:ev.spielTW).paarungen;
   if(!paarungen.length) return null;
   return { paarungen, fest, groesse };
 };
@@ -23887,7 +23856,7 @@ const gruppenProps = (ev, local, save, fire, jaNamen=[]) => {
 // Spielchen im Training: je Gruppe eine Paarung - Leistung gegen Leistung,
 // Entwicklung gegen Entwicklung. Dargestellt wie die Aufstellung im Spiel,
 // mit Linien passend zur Spielform.
-function SpielchenTeams({ ev, gruppen=[], profiles=[], jaNamen=[], titel="", cat="", fire, onGroesse, onFest }){
+function SpielchenTeams({ ev, gruppen=[], profiles=[], jaNamen=[], titel="", cat="", fire, onGroesse, onTW, onFest }){
   // Ausgewaehlter Spieler beim Verschieben von Hand - ganz oben, damit die
   // fruehen Abbrueche weiter unten keine Hooks ueberspringen.
   const [gewaehlt,setGewaehlt]=useState(null);
@@ -23899,7 +23868,9 @@ function SpielchenTeams({ ev, gruppen=[], profiles=[], jaNamen=[], titel="", cat
   const stand=spielchenStand(ev, gruppen, profiles, jaNamen, cat);
   if(!stand) return null;
   const { paarungen, fest } = stand;
-  const frisch=spielchenPaarungen(gruppen, profiles, jaNamen, groesse, String(ev.id||"")+String(ev.date||"")+String(ev.spielMix||""));
+  const frisch=spielchenPaarungen(gruppen, profiles, jaNamen, groesse,
+    String(ev.id||"")+String(ev.date||"")+String(ev.spielMix||""),
+    ev.spielTW===undefined?null:ev.spielTW);
   // Haben sich die Zusagen seit dem Festhalten geaendert?
   const festNamen=fest?paarungen.flatMap(p=>[...p.a.namen,...p.b.namen,...p.bank]):[];
   const dazu=fest?jaNamen.filter(n=>!festNamen.includes(n)):[];
@@ -24019,9 +23990,24 @@ function SpielchenTeams({ ev, gruppen=[], profiles=[], jaNamen=[], titel="", cat
         ))}
         {!ev.spielGr&&<span style={{fontSize:10.5,color:"#94a3b8"}}>· passend zur {cat||"Jugend"}</span>}
       </div>
+      {/* Mit oder ohne Torwart - je Termin umstellbar. */}
+      <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap",marginBottom:8}}>
+        <span style={{fontSize:10.5,fontWeight:800,color:"#64748b",letterSpacing:.3}}>TORWART</span>
+        {[[true,"🧤 mit Torwart"],[false,"ohne (Futsal)"]].map(([v,l])=>{
+          const an = (ev.spielTW===undefined||ev.spielTW===null) ? (groesse>=4)===v : ev.spielTW===v;
+          return (
+            <button key={String(v)} onClick={()=>onTW&&onTW(v)}
+              style={{padding:"5px 10px",minHeight:32,borderRadius:99,border:`1.5px solid ${an?"#0f172a":"#e2e8f0"}`,
+                background:an?"#0f172a":"#fff",color:an?"#fff":"#64748b",
+                fontWeight:800,fontSize:11.5,cursor:"pointer",fontFamily:"inherit"}}>{l}</button>
+          );
+        })}
+        {(ev.spielTW===undefined||ev.spielTW===null)&&<span style={{fontSize:10.5,color:"#94a3b8"}}>· passend zur Spielform</span>}
+      </div>
       <div style={{fontSize:11.5,color:"#64748b",lineHeight:1.5,marginBottom:9}}>
         Aus den {jaNamen.length} Zusagen. Jede Gruppe spielt gegen sich selbst – die Leibchen unterscheiden die beiden Mannschaften.
-        Ein Torwart wird aufgestellt, wenn jemand dabei ist, der ins Tor kann; sonst wird Futsal ohne gespielt.
+        Die Spielform entscheidet über das Tor: 5+1, 6+1 und 8+1 werden mit Torwart gespielt, 3 gegen 3 ohne.
+        Wer ins Tor geht, muss dafür kein Torwart sein – wer eine Torwart-Position im Profil hat, kommt zuerst dran, sonst rückt jemand nach und wechselt beim nächsten Mal durch.
         <br/>Zum Ändern einen Namen antippen: dann ein Ziel wählen oder einen zweiten Namen – die beiden tauschen dann die Plätze.
       </div>
       {/* Laufende Verschiebung: Co-Pilot-Zeile, damit klar ist, was als Nächstes passiert. */}
@@ -24040,7 +24026,9 @@ function SpielchenTeams({ ev, gruppen=[], profiles=[], jaNamen=[], titel="", cat
             <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:7}}>
               <span style={{fontWeight:900,fontSize:13,color:"#0f172a",flex:1}}>{p.titel}</span>
               <span style={{fontSize:11,fontWeight:800,color:"#64748b"}}>{p.a.namen.length} gegen {p.b.namen.length}</span>
-              {!p.torwart&&<span title="Futsal: ohne Torwart" style={{fontSize:10,fontWeight:800,color:"#7c3aed",background:"#f3e8ff",borderRadius:6,padding:"2px 6px"}}>ohne Torwart</span>}
+              {p.torwart
+                ? <span title="Mit Torwart - die Spielform sieht ihn vor" style={{fontSize:10,fontWeight:800,color:"#15803d",background:"#dcfce7",borderRadius:6,padding:"2px 6px"}}>🧤 mit Torwart</span>
+                : <span title="Futsal: ohne Torwart" style={{fontSize:10,fontWeight:800,color:"#7c3aed",background:"#f3e8ff",borderRadius:6,padding:"2px 6px"}}>ohne Torwart</span>}
             </div>
             <div style={{display:"flex",gap:7,alignItems:"stretch"}}>
               <Seite s={p.a} pi={i} wo="a"/>
@@ -26702,6 +26690,9 @@ function AppInner({lang,setLang}) {
   const [cid,setCid]      = useState(null);
   const [linkTeam,setLinkTeam] = useState(null);
   const [linkKind,setLinkKind] = useState(null);   // Kind aus dem Direktlink
+  // Kind hat die Mannschaft gewechselt: Anmeldung beendet, Hinweis beim
+  // Neu-Anmelden. {kind, tid, team}
+  const [umzug,setUmzug] = useState(null);
   const [session,setSess] = useState(null);
   const [showSetup,setShowSetup] = useState(false);
   const [showLegal,setShowLegal] = useState(false);
@@ -26797,6 +26788,14 @@ function AppInner({lang,setLang}) {
         if (sb.hasPending()) { const loc=localGet(); if (loc) cd=normData(loc); }
         // Wurde das Kind zwischenzeitlich umbenannt, zieht die Anmeldung mit.
         const s2=sitzungNachUmbenennung(s, cd);
+        // Gehoert das Kind inzwischen zu einer anderen Mannschaft, endet die
+        // Anmeldung hier - sonst saehe es weiter die Termine der alten.
+        const weg=sitzungFremdeMannschaft(s2, cd);
+        if(weg){
+          sess.del(); setSess(null); setData(cd); setCid(s.cid);
+          setLinkTeam(weg.tid); setLinkKind(weg.kind); setUmzug(weg);
+          setScr("flow"); return;
+        }
         setData(cd); setCid(s.cid); setSess(s2); setScr(s2.role==="user"?"user":"dash"); return;
       }
       // Direktlink ?club=<slug|id>&team=<id> → Verein laden, dann zur Anmeldung
@@ -26880,6 +26879,17 @@ function AppInner({lang,setLang}) {
       setScr(role==="user"?"user":"dash");
     }
   };
+  // Der Wechsel kann auch waehrend der Benutzung ankommen (der Trainer setzt
+  // das Kind um, der Sync traegt es nach). Dann gilt dasselbe: abmelden und
+  // bei der neuen Mannschaft neu anmelden.
+  useEffect(()=>{
+    if(!session || session.role!=="user" || screen!=="user") return;
+    const weg=sitzungFremdeMannschaft(session, data);
+    if(!weg) return;
+    sess.del(); setSess(null);
+    setLinkTeam(weg.tid); setLinkKind(weg.kind); setUmzug(weg);
+    setScr("flow");
+  },[data, session, screen]);
   const logout=()=>{
     if(session){const e={...createAuditEntry("logout","Logout: "+(session.name||session.role),session),cid};sb.set({...data,securityLog:[...(data.securityLog||[]),e]}, cid).catch(()=>{});}
     sess.del(); setSess(null); setScr(cid?"role":"dir");
@@ -27003,7 +27013,7 @@ function AppInner({lang,setLang}) {
         }}/>}
       {screen==="role"  &&activeCl&&<RolePicker cl={activeCl} onRole={r=>setScr(r==="user"?"flow":r==="trainer"?"tlogin":r==="helper"?"hlogin":"alogin")} onGuest={()=>setScr("guest")} onBack={()=>setScr("dir")}/>}
       {screen==="guest" &&activeCl&&<ClubGuestList cl={activeCl} liveEvents={data.liveEvents||[]} onOpen={(eid,club)=>setVisitor({eid,club})} onBack={()=>setScr("role")}/>}
-      {screen==="flow"  &&activeCl&&<UserFlow lang={lang} setLang={setLang} preselectName={linkKind} cl={activeCl} teams={clTeams} players={data.players} playerProfiles={data.playerProfiles||[]} trainers={(data.trainers||[]).filter(t=>t.cid===cid)} preselectTid={linkTeam} onDone={(tid,user)=>login("user",{tid,user})} onBack={()=>setScr(linkTeam?"role":"role")}
+      {screen==="flow"  &&activeCl&&<UserFlow lang={lang} setLang={setLang} preselectName={linkKind} umzug={umzug} cl={activeCl} teams={clTeams} players={data.players} playerProfiles={data.playerProfiles||[]} trainers={(data.trainers||[]).filter(t=>t.cid===cid)} preselectTid={linkTeam} onDone={(tid,user)=>{ setUmzug(null); login("user",{tid,user}); }} onBack={()=>setScr(linkTeam?"role":"role")}
         onWaitlist={entry=>{ save({...data, waitlist:[...(data.waitlist||[]), { ...entry, id:uid(), cid:activeCl.id, ts:new Date().toISOString(), status:"open" }]}); }}
         onOffer={angebot=>{
           // Eltern bieten ihr Kind als Aushilfe an - der Trainer entscheidet.
