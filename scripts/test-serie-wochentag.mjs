@@ -105,16 +105,30 @@ const vorher=await stand();
 await page.reload({waitUntil:"networkidle"}); await page.waitForTimeout(2800); await dismiss();
 
 // ===== Dialog öffnen: Terminkarte → ⋯ → Bearbeiten → Wochentag verlegen =====
-{ const auf=await page.evaluate(d=>{
-    const karten=[...document.querySelectorAll("div")].filter(x=>(x.innerText||"").includes("Training")&&x.querySelector("button")&&(x.innerText||"").length<1400);
-    for(const k of karten.reverse()){
-      const b=[...k.querySelectorAll("button")].find(x=>(x.innerText||"").trim()==="⋯");
-      if(b){ b.click(); return true; } }
-    return false; }, setup.di[1]);
-  if(auf) ok("Das Termin-Menü lässt sich öffnen"); else fail("Kein ⋯-Knopf an der Terminkarte");
+// Genau die Karte EINES bestimmten Termins oeffnen - nicht irgendeine. Sonst
+// haengt der Test davon ab, welcher Wochentag heute ist und was sonst noch
+// ueber der Liste steht. Und jede Karte hat ein eigenes „Bearbeiten": der
+// erste Treffer im Dokument gehoert sonst einem anderen Termin.
+const inKarte=(datum,was)=>page.evaluate(([d,w])=>{
+  const [j,m,t]=String(d).split("-");
+  const marke=`${t}.${m}.`;                          // z. B. 10.11.
+  const k=[...document.querySelectorAll("div")]
+    .filter(x=>(x.innerText||"").includes(marke)
+      && [...x.querySelectorAll("button")].filter(y=>(y.innerText||"").trim()==="⋯").length===1)
+    .sort((a,b)=>(a.innerText||"").length-(b.innerText||"").length)[0];
+  if(!k) return false;
+  const b=[...k.querySelectorAll("button")].find(x=>new RegExp(w).test((x.innerText||"").trim()));
+  if(!b) return false; b.click(); return true; }, [datum, was instanceof RegExp?was.source:was]);
+const bearbeiten=async(datum)=>{
+  const auf=await inKarte(datum,"^⋯$");
   await page.waitForTimeout(700);
-  if(await klick("✏️ Bearbeiten")) ok("„Bearbeiten“ ist da"); else fail("Kein Bearbeiten im Menü");
-  await page.waitForTimeout(900); }
+  const bea=await inKarte(datum,"Bearbeiten");
+  await page.waitForTimeout(900);
+  return auf&&bea;
+};
+{ const auf=await bearbeiten(setup.di[1]);
+  if(auf) ok("Das Termin-Menü und „Bearbeiten“ lassen sich an der richtigen Karte öffnen");
+  else fail("Terminkarte nicht gefunden"); }
 let b=await body();
 if(/Teil einer Serie/.test(b)) ok("Die App erkennt den Serientermin");
 else fail("Kein Serien-Hinweis: "+kurz(b));
@@ -163,11 +177,10 @@ const nachher=await stand();
 
 // ===== Gegenprobe: auf den Donnerstag verlegen wird abgelehnt =====
 await page.reload({waitUntil:"networkidle"}); await page.waitForTimeout(2800); await dismiss();
-{ await page.evaluate(()=>{
-    const karten=[...document.querySelectorAll("div")].filter(x=>(x.innerText||"").includes("Training")&&x.querySelector("button")&&(x.innerText||"").length<1400);
-    for(const k of karten.reverse()){ const b2=[...k.querySelectorAll("button")].find(x=>(x.innerText||"").trim()==="⋯"); if(b2){ b2.click(); return; } } });
-  await page.waitForTimeout(700);
-  await klick("✏️ Bearbeiten"); await page.waitForTimeout(900);
+{ // Den verlegten Montag oeffnen - von dort aus waere der Donnerstag belegt.
+  const montag=await page.evaluate(()=>{ const d=JSON.parse(localStorage.getItem("vereinsapp_v14")||"null");
+    const e=(d.events||[]).find(x=>x.id==="di_1"); return e?e.date:null; });
+  await bearbeiten(montag);
   await klick("📅 Wochentag verlegen"); await page.waitForTimeout(900);
   const heutigerTag=await page.evaluate(()=>{ const t=document.body.innerText; const m=t.match(/liegt bisher am (\w+)/); return m?m[1]:""; });
   ok("Der Dialog ist wieder offen (Tag: "+heutigerTag+")");
