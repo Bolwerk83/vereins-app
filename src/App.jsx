@@ -2173,7 +2173,56 @@ const BruteForce = {
       ? Math.ceil((state.blockedUntil - Date.now()) / 60000)
       : 0;
   },
+  // Sekundengenau fuer den Countdown in der Sperr-Anzeige.
+  rest: (cid) => {
+    const state = BruteForce.get(cid);
+    return state.blockedUntil && Date.now() < state.blockedUntil
+      ? Math.ceil((state.blockedUntil - Date.now()) / 1000) : 0;
+  },
+  versuche: (cid) => ((BruteForce.get(cid).attempts) || []).length,
 };
+
+// Anmelde-Sperre nach zu vielen Fehlversuchen - EINE Stelle fuer alle Masken:
+// Team-Code, Kind-Passwort, Trainer, Helfer, Admin. Wer dreimal daneben liegt,
+// kommt fuenf Minuten lang nicht mehr zur Eingabe. Ein Tippfehler kostet damit
+// hoechstens eine kurze Pause, wer raet kommt nicht durch.
+// Ehrlich bleiben: Das laeuft auf dem Geraet. Es haelt Raten und neugierige
+// Geschwister auf, nicht jemanden, der weiss, wie man Browserdaten loescht.
+function useLoginSperre(cid, onFail){
+  const [rest,setRest]=useState(()=>BruteForce.rest(cid));
+  useEffect(()=>{
+    if(!rest) return;
+    const t=setInterval(()=>setRest(BruteForce.rest(cid)),1000);
+    return ()=>clearInterval(t);
+  },[rest,cid]);
+  return {
+    gesperrt: rest>0,
+    rest,
+    // Falscher Code: zaehlen, ins Protokoll schreiben, ggf. sperren.
+    falsch: (was) => {
+      const r=BruteForce.record(cid,false);
+      const n=BruteForce.versuche(cid);
+      setRest(BruteForce.rest(cid));
+      if(onFail) onFail(`${was}: falsche Eingabe (Versuch ${n} von 3)`, r.blocked);
+      return r;
+    },
+    richtig: () => { BruteForce.record(cid,true); setRest(0); },
+  };
+}
+// Anzeige statt der Eingabe, solange gesperrt ist.
+function SperrHinweis({rest}){
+  const m=Math.floor(rest/60), sek=rest%60;
+  return (
+    <div style={{background:"rgba(220,38,38,.16)",border:"1.5px solid rgba(252,165,165,.7)",borderRadius:14,padding:"16px 16px",textAlign:"center"}}>
+      <div style={{fontSize:30,lineHeight:1,marginBottom:8}}>🔒</div>
+      <div style={{color:"#fff",fontWeight:900,fontSize:15,marginBottom:5}}>Zu viele Fehlversuche</div>
+      <div style={{color:"rgba(255,255,255,.8)",fontSize:12.5,lineHeight:1.5}}>
+        Die Eingabe ist gesperrt. Noch <b>{m>0?`${m}:${String(sek).padStart(2,"0")} Minuten`:`${sek} Sekunden`}</b>.
+        <br/>Den richtigen Zugangscode hat dein Trainer.
+      </div>
+    </div>
+  );
+}
 
 // Audit-Log Eintrag erstellen
 const createAuditEntry = (type, detail, session, extra = {}) => ({
@@ -2223,20 +2272,39 @@ function SecurityTab({ data, cid, save }) {
     admin_action: { icon: "A",  label: "Admin",         col: "#7c3aed", bg: "#ede9fe" },
     pw_change:    { icon: "PW", label: "Passwort",      col: "#d97706", bg: "#fef3c7" },
     suspicious:   { icon: "!",  label: "Verdaechtig",   col: "#dc2626", bg: "#fee2e2" },
-    brute_force:  { icon: "!!", label: "Brute Force",   col: "#dc2626", bg: "#fee2e2" },
+    login_fail:   { icon: "✕",  label: "Fehlversuch",   col: "#b45309", bg: "#ffedd5" },
+    brute_force:  { icon: "🔒", label: "Gesperrt",      col: "#dc2626", bg: "#fee2e2" },
     dsgvo_delete: { icon: "DS", label: "DSGVO-Losch",   col: "#7c3aed", bg: "#ede9fe" },
     new_device:   { icon: "ND", label: "Neues Gerät",  col: "#d97706", bg: "#fef3c7" },
   };
 
   const filtered = log.filter(e => {
-    if(filter === "logins") return ["login","logout","brute_force","suspicious"].includes(e.type);
+    if(filter === "logins") return ["login","logout","login_fail","brute_force","suspicious"].includes(e.type);
     if(filter === "changes") return ["player_add","player_edit","player_del","event_add","event_edit","event_del","admin_action","pw_change","dsgvo_delete"].includes(e.type);
-    if(filter === "suspicious") return ["suspicious","brute_force","new_device"].includes(e.type);
+    if(filter === "suspicious") return ["suspicious","brute_force","new_device","login_fail"].includes(e.type);
     return true;
   });
 
   const suspicious = log.filter(e => ["suspicious","brute_force","new_device"].includes(e.type));
+  const fehlversuche = log.filter(e => ["login_fail","brute_force"].includes(e.type));
   const todayLogins = log.filter(e => e.type === "login" && e.ts.startsWith(new Date().toISOString().slice(0,10)));
+
+  // Die wichtigste Frage bei einem auffaelligen Eintrag: Ist er reingekommen?
+  // Dafuer wird geschaut, ob vom SELBEN Geraet danach eine Anmeldung gelang.
+  const naechsterLogin = (entry) => log
+    .filter(x => x.type==="login" && x.deviceId && x.deviceId===entry.deviceId && x.ts > entry.ts)
+    .sort((a,b)=>a.ts.localeCompare(b.ts))[0] || null;
+  const ergebnisVon = (entry) => {
+    if(entry.type==="login")      return { txt:"✓ angemeldet als "+(entry.name||entry.role), col:"#15803d" };
+    if(entry.type==="new_device") return { txt:"✓ angemeldet – aber von einem Gerät, das hier sonst nicht auftaucht", col:"#b45309" };
+    if(entry.type==="login_fail" || entry.type==="brute_force" || entry.type==="suspicious"){
+      const n=naechsterLogin(entry);
+      return n
+        ? { txt:`⚠ danach angemeldet als ${n.name||n.role} (${formatTime(n.ts)})`, col:"#b45309" }
+        : { txt:"✓ nicht hereingekommen – von diesem Gerät gab es danach keine Anmeldung", col:"#15803d" };
+    }
+    return null;
+  };
 
   const formatTime = ts => {
     const d = new Date(ts);
@@ -2257,7 +2325,7 @@ function SecurityTab({ data, cid, save }) {
         {[
           [todayLogins.length, "Logins heute", "#16a34a"],
           [suspicious.length,  "Verdaechtig",  suspicious.length>0?"#dc2626":"#64748b"],
-          [Object.keys(knownDevices).length, "Bekannte Geräte", "#2563eb"],
+          [fehlversuche.length, "Fehlversuche", fehlversuche.length>0?"#b45309":"#64748b"],
         ].map(([v,l,col])=>(
           <div key={l} style={{background:"#fff",borderRadius:13,padding:"12px",
             textAlign:"center",border:"1.5px solid #e2e8f0"}}>
@@ -2275,7 +2343,7 @@ function SecurityTab({ data, cid, save }) {
           </div>
           <div style={{fontSize:12,color:"#dc2626"}}>
             {suspicious.slice(0,2).map(e=>(
-              <div key={e.id}>{formatTime(e.ts)}: {e.detail}</div>
+              <div key={e.id}>{formatTime(e.ts)}: {e.detail} – {(ergebnisVon(e)||{}).txt}</div>
             ))}
           </div>
         </div>
@@ -2290,7 +2358,7 @@ function SecurityTab({ data, cid, save }) {
               fontWeight:700,fontSize:12,cursor:"pointer",whiteSpace:"nowrap",
               fontFamily:"inherit",flexShrink:0}}>
             {l}
-            {v==="suspicious"&&suspicious.length>0&&<span style={{marginLeft:5,background:"#dc2626",color:"#fff",borderRadius:99,padding:"0px 6px",fontSize:10}}>{suspicious.length}</span>}
+            {v==="suspicious"&&(suspicious.length+fehlversuche.length)>0&&<span style={{marginLeft:5,background:"#dc2626",color:"#fff",borderRadius:99,padding:"0px 6px",fontSize:10}}>{suspicious.length+fehlversuche.length}</span>}
           </button>
         ))}
       </div>
@@ -2305,7 +2373,8 @@ function SecurityTab({ data, cid, save }) {
         {filtered.slice(0,100).map(entry => {
           const cfg = TYPE_CONFIG[entry.type] || { icon:"?", label:entry.type, col:"#64748b", bg:"#f1f5f9" };
           const isNew = !knownDevices[entry.deviceId] || knownDevices[entry.deviceId] <= 1;
-          const isSuspicious = ["suspicious","brute_force","new_device"].includes(entry.type);
+          const isSuspicious = ["suspicious","brute_force","new_device","login_fail"].includes(entry.type);
+          const erg = ergebnisVon(entry);
           return (
             <div key={entry.id} onClick={()=>setShowDetails(showDetails===entry.id?null:entry.id)}
               style={{background:"#fff",borderRadius:13,padding:"11px 14px",
@@ -2328,6 +2397,8 @@ function SecurityTab({ data, cid, save }) {
                     {entry.device?.os&&<span>{entry.device.os}</span>}
                     {entry.device?.suspicious&&<span style={{color:"#dc2626",fontWeight:700}}>Ausland?</span>}
                   </div>
+                  {/* Die eigentliche Frage: Ist jemand reingekommen? */}
+                  {erg&&<div style={{fontSize:11.5,color:erg.col,fontWeight:700,marginTop:3,lineHeight:1.4,overflowWrap:"anywhere"}}>{erg.txt}</div>}
                 </div>
                 <div style={{fontSize:11,color:"#64748b",flexShrink:0,textAlign:"right"}}>
                   {cfg.label}
@@ -7183,7 +7254,7 @@ function RolePicker({cl,onRole,onBack,onGuest}) {
   );
 }
 
-function TrainerLogin({cl,trainers,teams,onLogin,onBack,onSetTrainerPw}) {
+function TrainerLogin({cl,trainers,teams,onLogin,onBack,onSetTrainerPw,onFail}) {
   const t=TH(cl);
   const [showForgotTr,setShowForgotTr]=useState(false);
   const [step,setStep]=useState("cat");  // cat -> trainer -> pwd -> setpw
@@ -7201,12 +7272,15 @@ function TrainerLogin({cl,trainers,teams,onLogin,onBack,onSetTrainerPw}) {
   const trainersInCat = cat ? trainers.filter(tr=>catOf(tr)===cat) : [];
   const selTr=trainers.find(x=>x.id===sel);
 
+  const sperre=useLoginSperre(cl.id,onFail);
   const go=()=>{
+    if(sperre.gesperrt) return;
     if(selTr&&!selTr.locked&&checkPw(pw,selTr.pw||"")){
+      sperre.richtig();
       if(selTr.mustChangePw){ setNp1("");setNp2("");setNpErr("");setStep("setpw"); }
       else onLogin({...selTr,role:"trainer"});
     }
-    else{setErr(true);setTimeout(()=>setErr(false),1800);}
+    else{ sperre.falsch(`Trainer-Passwort (${selTr?.name||"unbekannt"})`); setErr(true); setTimeout(()=>setErr(false),1800); }
   };
   const saveNewPw=()=>{
     if(!validTrainerPw(np1)){ setNpErr("Mind. 6 Zeichen, Buchstaben UND Zahlen."); return; }
@@ -7309,11 +7383,12 @@ function TrainerLogin({cl,trainers,teams,onLogin,onBack,onSetTrainerPw}) {
           <p style={{color:"rgba(255,255,255,.5)",fontSize:13}}>{cat} . {cl.name}</p>
         </div>
         <div style={{background:"rgba(255,255,255,.1)",backdropFilter:"blur(16px)",borderRadius:22,padding:"24px 22px",border:"1px solid rgba(255,255,255,.15)"}}>
+          {sperre.gesperrt ? <div style={{marginBottom:10}}><SperrHinweis rest={sperre.rest}/></div> : <>
           <PwInput value={pw} onChange={e=>{setPw(e.target.value);setErr(false);}}
             onKeyDown={e=>{if(e.key==="Enter")go();}}
             placeholder="Passwort..." autoFocus autoCapitalize="none" autoCorrect="off" spellCheck={false}
             style={{width:"100%",padding:"13px 16px",fontSize:16,background:"rgba(255,255,255,.12)",border:`2px solid ${err?"#ff6b6b":pw?"rgba(255,255,255,.4)":"rgba(255,255,255,.2)"}`,borderRadius:13,outline:"none",color:"#fff",marginBottom:10}}/>
-          {err&&<FriendlyError type="wrongPassword"/>}
+          {err&&<FriendlyError type="wrongPassword"/>}</>}
           {cl.id==="demo"&&<div style={{background:"rgba(255,255,255,.08)",borderRadius:10,padding:"8px 12px",marginBottom:10,fontSize:11,color:"rgba(255,255,255,.6)"}}>Demo: Trainer A = trainer1 | Trainer B = trainer2</div>}
           <button onClick={()=>setShowForgotTr(true)}
             style={{background:"none",border:"none",color:"rgba(255,255,255,.4)",
@@ -7323,8 +7398,8 @@ function TrainerLogin({cl,trainers,teams,onLogin,onBack,onSetTrainerPw}) {
           </button>
           {showForgotTr&&<ForgotPasswordHelp cl={cl} trainers={trainers}
             forRole="trainer" onBack={()=>setShowForgotTr(false)}/>}
-          <button onClick={go} disabled={!pw.trim()}
-            style={{width:"100%",padding:"13px",fontSize:15,fontWeight:800,background:pw.trim()?cl.pri:"rgba(255,255,255,.15)",color:pw.trim()?"#fff":"rgba(255,255,255,.4)",border:"none",borderRadius:13,cursor:pw.trim()?"pointer":"not-allowed",transition:"all .18s"}}>
+          <button onClick={go} disabled={!pw.trim()||sperre.gesperrt}
+            style={{width:"100%",padding:"13px",fontSize:15,fontWeight:800,background:(pw.trim()&&!sperre.gesperrt)?cl.pri:"rgba(255,255,255,.15)",color:(pw.trim()&&!sperre.gesperrt)?"#fff":"rgba(255,255,255,.4)",border:"none",borderRadius:13,cursor:(pw.trim()&&!sperre.gesperrt)?"pointer":"not-allowed",transition:"all .18s"}}>
              Einloggen
           </button>
         </div>
@@ -7367,10 +7442,14 @@ function ClubJoinGate({ cl, onJoined, onBack }) {
   );
 }
 
-function AdminLogin({cl,onLogin,onBack}) {
+function AdminLogin({cl,onLogin,onBack,onFail}) {
   const t=TH(cl); const [pw,setPw]=useState(""); const [err,setErr]=useState(false); const [showForgot,setShowForgot]=useState(false);
   const pwRef=useRef(null);
-  const go=()=>{ const val=(pwRef.current?.value)||pw; if(checkPw(val,cl.adm||"")){onLogin({id:"admin",role:"admin",cid:cl.id,name:"Vereinsadmin"});}else{setErr(true);setTimeout(()=>setErr(false),1800);} };
+  const sperre=useLoginSperre(cl.id,onFail);
+  const go=()=>{ if(sperre.gesperrt) return;
+    const val=(pwRef.current?.value)||pw;
+    if(checkPw(val,cl.adm||"")){ sperre.richtig(); onLogin({id:"admin",role:"admin",cid:cl.id,name:"Vereinsadmin"}); }
+    else{ sperre.falsch("Admin-Passwort"); setErr(true); setTimeout(()=>setErr(false),1800); } };
   return (
     <div style={{minHeight:"100dvh",background:`linear-gradient(135deg,${t.s},${t.p}66)`,display:"flex",alignItems:"center",justifyContent:"center",padding:22}}>
       <style>{CSS}</style>
@@ -7378,7 +7457,9 @@ function AdminLogin({cl,onLogin,onBack}) {
         <button onClick={onBack} style={{background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer",marginBottom:26}}>← Zurück</button>
         <div style={{background:"#fff",borderRadius:24,padding:"34px 26px",boxShadow:"0 24px 80px rgba(0,0,0,.4)"}}>
           <div style={{textAlign:"center",marginBottom:22}}><Logo cl={cl} sz={68} sx={{margin:"0 auto 12px"}}/><h2 style={{fontSize:22,fontWeight:900,color:"#0f172a",margin:"0 0 4px"}}>Vereinsadmin</h2><p style={{color:"#64748b",fontSize:13}}>{cl.name}</p></div>
-          <Inp label="Admin-Passwort" type="password" val={pw} set={setPw} ph="Passwort..." af cl={cl} onEnter={go} inputRef={pwRef}/>
+          {sperre.gesperrt
+            ? <SperrHinweis rest={sperre.rest}/>
+            : <Inp label="Admin-Passwort" type="password" val={pw} set={setPw} ph="Passwort..." af cl={cl} onEnter={go} inputRef={pwRef}/>}
           {cl.id==="demo"&&<div style={{background:"#f0fdf4",borderRadius:10,padding:"9px 13px",marginTop:8,fontSize:12,color:"#166534",border:"1px solid #bbf7d0"}}>Demo-Zugangsdaten: Passwort <strong>admin</strong></div>}
           {showForgot&&<AdminForgotPassword cl={cl} onBack={()=>setShowForgot(false)} onReset={newHash=>{onLogin({id:"admin",role:"admin",cid:cl.id,name:"Vereinsadmin"});}}/>}
           {err&&<FriendlyError type="wrongPassword" onClose={()=>setErr(false)}/>}
@@ -7388,7 +7469,7 @@ function AdminLogin({cl,onLogin,onBack}) {
               textDecoration:"underline",marginTop:4,padding:0}}>
             Passwort vergessen?
           </button>
-          <div style={{height:14}}/><Btn full ch="Als Admin einloggen" onClick={go} v="drk"/>
+          <div style={{height:14}}/><Btn full ch="Als Admin einloggen" onClick={go} v="drk" dis={sperre.gesperrt}/>
           
         </div>
       </div>
@@ -7396,7 +7477,7 @@ function AdminLogin({cl,onLogin,onBack}) {
   );
 }
 
-function HelperLogin({cl,helpers,teams=[],onLogin,onSetHelperPw,onBack}) {
+function HelperLogin({cl,helpers,teams=[],onLogin,onSetHelperPw,onBack,onFail}) {
   // Gleicher Aufbau & Look wie der Trainer-Login: Jugend waehlen -> Name -> Passwort.
   const t=TH(cl);
   const clHelpers=(helpers||[]).filter(h=>h.cid===cl.id&&h.active!==false);
@@ -7411,8 +7492,9 @@ function HelperLogin({cl,helpers,teams=[],onLogin,onSetHelperPw,onBack}) {
   const [np1,setNp1]=useState(""); const [np2,setNp2]=useState(""); const [perr,setPerr]=useState("");
   const helpersInCat=cat?clHelpers.filter(h=>catsOf(h).includes(cat)):[];
   const doLogin=(h)=>onLogin({id:h.id,role:"helper",cid:cl.id,name:h.name,helperId:h.id,tids:h.tids||[]});
+  const sperre=useLoginSperre(cl.id,onFail);
   const go=()=>{
-    const h=sel; if(!h) return;
+    const h=sel; if(!h||sperre.gesperrt) return;
     // Einmal-Passwoerter bestehen aus Grossbuchstaben und Ziffern. Viele tippen
     // sie klein ab oder kopieren Leerzeichen mit - beides darf nicht scheitern.
     const entered=pw.trim().replace(/\s+/g,"");
@@ -7422,7 +7504,8 @@ function HelperLogin({cl,helpers,teams=[],onLogin,onSetHelperPw,onBack}) {
     // danach wird ein eigenes Passwort gesetzt.
     const codeOk=c=>h.code===c||(String(h.code).startsWith("s")&&hashPw(c)===h.code)||(String(h.code).startsWith("h")&&checkPw(c,h.code));
     const okLegacy=!h.pw&&h.code&&(codeOk(entered)||codeOk(gross));
-    if(!okPw&&!okLegacy){ setErr(true); setTimeout(()=>setErr(false),2600); return; }
+    if(!okPw&&!okLegacy){ sperre.falsch(`Helfer-Passwort (${h.name||"unbekannt"})`); setErr(true); setTimeout(()=>setErr(false),2600); return; }
+    sperre.richtig();
     if(h.mustChangePw||okLegacy){ setNp1("");setNp2("");setPerr(""); setStep("setpw"); return; }
     doLogin(h);
   };
@@ -7526,15 +7609,16 @@ function HelperLogin({cl,helpers,teams=[],onLogin,onSetHelperPw,onBack}) {
           <p style={{color:"rgba(255,255,255,.6)",fontSize:13}}>{sel?.mustChangePw?"Einmal-Passwort vom Trainer eingeben":"Gib dein Passwort ein"}</p>
         </div>
         <div style={{background:"rgba(255,255,255,.1)",backdropFilter:"blur(16px)",borderRadius:22,padding:"22px",border:"1px solid rgba(255,255,255,.15)",display:"flex",flexDirection:"column",gap:10}}>
+          {sperre.gesperrt ? <SperrHinweis rest={sperre.rest}/> :
           <PwInput value={pw} onChange={e=>setPw(e.target.value)} onKeyDown={e=>e.key==="Enter"&&go()} placeholder="Passwort…" autoFocus autoCapitalize="none" autoCorrect="off" spellCheck={false}
-            style={{width:"100%",padding:"13px 16px",fontSize:16,background:"rgba(255,255,255,.12)",border:`2px solid ${err?"#ff6b6b":"rgba(255,255,255,.25)"}`,borderRadius:13,outline:"none",color:"#fff",boxSizing:"border-box"}}/>
+            style={{width:"100%",padding:"13px 16px",fontSize:16,background:"rgba(255,255,255,.12)",border:`2px solid ${err?"#ff6b6b":"rgba(255,255,255,.25)"}`,borderRadius:13,outline:"none",color:"#fff",boxSizing:"border-box"}}/>}
           {err&&<p style={{fontSize:12.5,color:"#fca5a5",fontWeight:700,margin:0,lineHeight:1.5}}>
             {(!sel?.pw&&!sel?.code)
               ? "Für dich ist noch kein Zugang gespeichert. Der Trainer muss das Einmal-Passwort erzeugen UND auf „Speichern“ tippen – erst danach funktioniert die Anmeldung."
               : "Passwort falsch. Groß- und Kleinschreibung ist beim Einmal-Passwort egal. Bei Verlust erzeugt der Trainer ein neues."}
           </p>}
-          <button onClick={go} disabled={!pw}
-            style={{width:"100%",padding:"13px",fontSize:15,fontWeight:800,background:pw?cl.pri:"rgba(255,255,255,.15)",color:pw?"#fff":"rgba(255,255,255,.4)",border:"none",borderRadius:13,cursor:pw?"pointer":"not-allowed",fontFamily:"inherit"}}>
+          <button onClick={go} disabled={!pw||sperre.gesperrt}
+            style={{width:"100%",padding:"13px",fontSize:15,fontWeight:800,background:(pw&&!sperre.gesperrt)?cl.pri:"rgba(255,255,255,.15)",color:(pw&&!sperre.gesperrt)?"#fff":"rgba(255,255,255,.4)",border:"none",borderRadius:13,cursor:(pw&&!sperre.gesperrt)?"pointer":"not-allowed",fontFamily:"inherit"}}>
             Anmelden
           </button>
         </div>
@@ -7716,7 +7800,7 @@ function LinkTeilen({cl,team,namen=[],onClose,onFire}){
   );
 }
 
-function UserFlow({cl,teams,players,playerProfiles,trainers=[],onDone,onBack,preselectTid,preselectName=null,umzug=null,onWaitlist,onOffer,onConsent,onGuestConsent,onSetChildPw,lang="de",setLang=()=>{}}) {
+function UserFlow({cl,teams,players,playerProfiles,trainers=[],onDone,onBack,onFail,preselectTid,preselectName=null,umzug=null,onWaitlist,onOffer,onConsent,onGuestConsent,onSetChildPw,lang="de",setLang=()=>{}}) {
   const [showWait,setShowWait]=useState(false);
   const [gastAuf,setGastAuf]=useState(false);      // Gast-Wizard (eigenes Fenster)
   const [mitAuf,setMitAuf]=useState(false);        // "Mitspielen / mittrainieren"-Anfrage
@@ -7728,6 +7812,7 @@ function UserFlow({cl,teams,players,playerProfiles,trainers=[],onDone,onBack,pre
   const [childPwNew,setChildPwNew]=useState("");
   const [pwGate,setPwGate]=useState(null);         // {tid,name} wenn Kind-Passwort gesetzt
   const [pwTry,setPwTry]=useState(""); const [pwErr,setPwErr]=useState(false);
+  const sperre=useLoginSperre(cl.id,onFail);
   const t=TH(cl);
   const [step,setStep]=useState("cat");
   const [cat,setCat]=useState(null);
@@ -7902,11 +7987,12 @@ function UserFlow({cl,teams,players,playerProfiles,trainers=[],onDone,onBack,pre
           </div>
         )}
         <div style={{background:"rgba(255,255,255,.1)",backdropFilter:"blur(16px)",borderRadius:22,padding:"24px 22px",border:"1px solid rgba(255,255,255,.15)"}}>
+          {sperre.gesperrt ? <div style={{marginBottom:10}}><SperrHinweis rest={sperre.rest}/></div> : <>
           <PwInput value={pwd} onChange={e=>{setPwd(e.target.value);setPwdErr(false);}}
-            onKeyDown={e=>{if(e.key==="Enter"){if(ct?.locked){setPwdErr(true);}else if(checkPw(pwd,ct?.pwd||"")){merkSet("va_teamok_"+ct.id, ct?.pwd||"1"); const assigned=(playerProfiles||[]).some(p=>p.mainTid===ct.id);if(assigned)setStep("name");else setStep("locked");}else{setPwdErr(true);setTimeout(()=>setPwdErr(false),1800);}}}}
+            onKeyDown={e=>{if(e.key==="Enter"){if(sperre.gesperrt){return;}else if(ct?.locked){setPwdErr(true);}else if(checkPw(pwd,ct?.pwd||"")){sperre.richtig();merkSet("va_teamok_"+ct.id, ct?.pwd||"1"); const assigned=(playerProfiles||[]).some(p=>p.mainTid===ct.id);if(assigned)setStep("name");else setStep("locked");}else{sperre.falsch(`Zugangscode ${ct?.name||"Mannschaft"}`);setPwdErr(true);setTimeout(()=>setPwdErr(false),1800);}}}}
             placeholder={tr("ufPwPh")} autoFocus autoCapitalize="none" autoCorrect="off" spellCheck={false}
             style={{width:"100%",padding:"13px 16px",fontSize:16,background:"rgba(255,255,255,.12)",border:`2px solid ${pwdErr?"#ff6b6b":pwd?"rgba(255,255,255,.4)":"rgba(255,255,255,.2)"}`,borderRadius:13,outline:"none",color:"#fff",marginBottom:10}}/>
-          {pwdErr&&<FriendlyError type="wrongPassword"/>}
+          {pwdErr&&<FriendlyError type="wrongPassword"/>}</>}
           {showForgotParent&&<ForgotPasswordHelp cl={cl} trainers={trainers}
             forRole="user" teamId={ct?.id}
             onBack={()=>setShowForgotParent(false)}/>}
@@ -7917,13 +8003,14 @@ function UserFlow({cl,teams,players,playerProfiles,trainers=[],onDone,onBack,pre
               textDecoration:"underline",marginTop:4,padding:0}}>
             {tr("ufPwForgot")}
           </button>
-          <button onClick={()=>{if(ct?.locked){setPwdErr(true);}else if(checkPw(pwd,ct?.pwd||"")){
+          <button onClick={()=>{if(sperre.gesperrt){return;}else if(ct?.locked){setPwdErr(true);}else if(checkPw(pwd,ct?.pwd||"")){
+            sperre.richtig();
             merkSet("va_teamok_"+ct.id, ct?.pwd||"1");   // Geraet merkt sich das Team-Passwort
             const assigned=(playerProfiles||[]).some(p=>p.mainTid===ct.id);
             if(assigned) setStep("name");
             else setStep("locked"); // team not yet released
-          }else{setPwdErr(true);setTimeout(()=>setPwdErr(false),1800);}}} disabled={!pwd.trim()}
-            style={{width:"100%",padding:"13px",fontSize:15,fontWeight:800,background:pwd.trim()?cl.pri:"rgba(255,255,255,.15)",color:pwd.trim()?"#fff":"rgba(255,255,255,.4)",border:"none",borderRadius:13,cursor:pwd.trim()?"pointer":"not-allowed",transition:"all .18s"}}>
+          }else{sperre.falsch(`Zugangscode ${ct?.name||"Mannschaft"}`);setPwdErr(true);setTimeout(()=>setPwdErr(false),1800);}}} disabled={!pwd.trim()||sperre.gesperrt}
+            style={{width:"100%",padding:"13px",fontSize:15,fontWeight:800,background:(pwd.trim()&&!sperre.gesperrt)?cl.pri:"rgba(255,255,255,.15)",color:(pwd.trim()&&!sperre.gesperrt)?"#fff":"rgba(255,255,255,.4)",border:"none",borderRadius:13,cursor:(pwd.trim()&&!sperre.gesperrt)?"pointer":"not-allowed",transition:"all .18s"}}>
              {tr("ufOpenTeam")}
           </button>
           
@@ -7961,12 +8048,12 @@ function UserFlow({cl,teams,players,playerProfiles,trainers=[],onDone,onBack,pre
             <div style={{fontWeight:900,fontSize:17,color:"#0f172a",marginBottom:4}}>{tr("pwGateT")} {maskName(pwGate.name)}</div>
             <p style={{fontSize:12.5,color:"#64748b",marginBottom:12}}>{tr("pwGateSub")}</p>
             <input type="password" autoFocus value={pwTry} onChange={e=>{setPwTry(e.target.value);setPwErr(false);}}
-              onKeyDown={e=>{ if(e.key==="Enter"){ const prof=profileFor(pwGate.tid,pwGate.name); if(prof&&checkPw(pwTry,prof.childPw)){ merkSet("va_childok_"+prof.id, prof.childPw); const g=pwGate; setPwGate(null); startAfterPw(g.tid,g.name);} else { setPwErr(true);} } }}
+              onKeyDown={e=>{ if(e.key==="Enter"){ if(sperre.gesperrt) return; const prof=profileFor(pwGate.tid,pwGate.name); if(prof&&checkPw(pwTry,prof.childPw)){ sperre.richtig(); merkSet("va_childok_"+prof.id, prof.childPw); const g=pwGate; setPwGate(null); startAfterPw(g.tid,g.name);} else { sperre.falsch("Kind-Passwort"); setPwErr(true);} } }}
               placeholder={tr("pwGatePh")} style={{width:"100%",padding:"12px 14px",fontSize:15,border:`1.5px solid ${pwErr?"#fca5a5":"#e2e8f0"}`,borderRadius:12,outline:"none",fontFamily:"inherit",boxSizing:"border-box",marginBottom:pwErr?6:12}}/>
             {pwErr&&<div style={{fontSize:12,color:"#dc2626",fontWeight:700,marginBottom:8}}>{tr("pwGateErr")}</div>}
             <div style={{display:"flex",gap:9}}>
               <button onClick={()=>setPwGate(null)} style={{flex:1,padding:"12px",borderRadius:12,border:"1.5px solid #e2e8f0",background:"#fff",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit",color:"#475569"}}>{tr("cgCancel")}</button>
-              <button onClick={()=>{ const prof=profileFor(pwGate.tid,pwGate.name); if(prof&&checkPw(pwTry,prof.childPw)){ merkSet("va_childok_"+prof.id, prof.childPw); const g=pwGate; setPwGate(null); startAfterPw(g.tid,g.name);} else { setPwErr(true);} }}
+              <button onClick={()=>{ if(sperre.gesperrt) return; const prof=profileFor(pwGate.tid,pwGate.name); if(prof&&checkPw(pwTry,prof.childPw)){ sperre.richtig(); merkSet("va_childok_"+prof.id, prof.childPw); const g=pwGate; setPwGate(null); startAfterPw(g.tid,g.name);} else { sperre.falsch("Kind-Passwort"); setPwErr(true);} }}
                 style={{flex:2,padding:"12px",borderRadius:12,border:"none",background:t.p,color:contrast(t.p),fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>{tr("pwGateBtn")}</button>
             </div>
             <div style={{fontSize:11,color:"#64748b",marginTop:10,textAlign:"center"}}>{tr("pwHintReset")}</div>
@@ -26890,6 +26977,19 @@ function AppInner({lang,setLang}) {
     setLinkTeam(weg.tid); setLinkKind(weg.kind); setUmzug(weg);
     setScr("flow");
   },[data, session, screen]);
+  // Fehlversuch festhalten. Ohne diese Spur steht im Protokoll nur, wer
+  // hereingekommen ist - nie, dass es jemand vergeblich versucht hat.
+  const meldeFehlversuch=(detail, gesperrt=false)=>{
+    if(!cid) return;
+    try{
+      const e={...createAuditEntry(gesperrt?"brute_force":"login_fail",
+        gesperrt?`${detail} – danach 5 Minuten gesperrt`:detail,
+        {role:"unbekannt",name:"Unbekannt"}), cid};
+      const neu={...data, securityLog:[...(data.securityLog||[]), e].slice(-500)};
+      setData(neu);
+      sb.set(neu, cid).catch(()=>{});
+    }catch{}
+  };
   const logout=()=>{
     if(session){const e={...createAuditEntry("logout","Logout: "+(session.name||session.role),session),cid};sb.set({...data,securityLog:[...(data.securityLog||[]),e]}, cid).catch(()=>{});}
     sess.del(); setSess(null); setScr(cid?"role":"dir");
@@ -27013,7 +27113,7 @@ function AppInner({lang,setLang}) {
         }}/>}
       {screen==="role"  &&activeCl&&<RolePicker cl={activeCl} onRole={r=>setScr(r==="user"?"flow":r==="trainer"?"tlogin":r==="helper"?"hlogin":"alogin")} onGuest={()=>setScr("guest")} onBack={()=>setScr("dir")}/>}
       {screen==="guest" &&activeCl&&<ClubGuestList cl={activeCl} liveEvents={data.liveEvents||[]} onOpen={(eid,club)=>setVisitor({eid,club})} onBack={()=>setScr("role")}/>}
-      {screen==="flow"  &&activeCl&&<UserFlow lang={lang} setLang={setLang} preselectName={linkKind} umzug={umzug} cl={activeCl} teams={clTeams} players={data.players} playerProfiles={data.playerProfiles||[]} trainers={(data.trainers||[]).filter(t=>t.cid===cid)} preselectTid={linkTeam} onDone={(tid,user)=>{ setUmzug(null); login("user",{tid,user}); }} onBack={()=>setScr(linkTeam?"role":"role")}
+      {screen==="flow"  &&activeCl&&<UserFlow lang={lang} setLang={setLang} preselectName={linkKind} umzug={umzug} onFail={meldeFehlversuch} cl={activeCl} teams={clTeams} players={data.players} playerProfiles={data.playerProfiles||[]} trainers={(data.trainers||[]).filter(t=>t.cid===cid)} preselectTid={linkTeam} onDone={(tid,user)=>{ setUmzug(null); login("user",{tid,user}); }} onBack={()=>setScr(linkTeam?"role":"role")}
         onWaitlist={entry=>{ save({...data, waitlist:[...(data.waitlist||[]), { ...entry, id:uid(), cid:activeCl.id, ts:new Date().toISOString(), status:"open" }]}); }}
         onOffer={angebot=>{
           // Eltern bieten ihr Kind als Aushilfe an - der Trainer entscheidet.
@@ -27031,11 +27131,11 @@ function AppInner({lang,setLang}) {
           addAuditLog(next, save, {id:uid(), cid, ts:new Date().toISOString(), type:"consent", device:"Eltern-Gerät", msg:`Einwilligung für ${prof?.name||profId} erteilt durch ${by||"Eltern (App-Anmeldung)"}`}); }}
         onGuestConsent={({tid,name,by})=>{ addAuditLog(data, save, {id:uid(), cid, ts:new Date().toISOString(), type:"consent", device:"Eltern-Gerät", msg:`Einwilligung (Gast ohne Profil) für ${name} erteilt durch ${by||"Eltern"} · Team ${(data.teams||[]).find(tm=>tm.id===tid)?.name||tid}`}); }}
         onSetChildPw={(profId,pw)=>{ save({...data, playerProfiles:(data.playerProfiles||[]).map(p=>p.id===profId?{...p, childPw:hashPw(pw), childPwAt:new Date().toISOString()}:p)}); }}/>}
-      {screen==="tlogin"&&activeCl&&<TrainerLogin cl={activeCl} trainers={data.trainers.filter(t=>t.cid===cid&&isActive(t))} teams={(data.teams||[]).filter(tm=>tm.cid===cid)} onLogin={tr=>login("trainer",tr)} onSetTrainerPw={(trId,newHash)=>{ save({...data,trainers:(data.trainers||[]).map(t=>t.id===trId?{...t,pw:newHash,mustChangePw:false,sharedAt:t.sharedAt||new Date().toISOString()}:t)}); }} onBack={()=>setScr("role")}/>}
-      {screen==="hlogin"&&activeCl&&<HelperLogin cl={activeCl} helpers={data.helpers||[]} teams={(data.teams||[]).filter(tm=>tm.cid===cid)} onLogin={h=>login("helper",{...h,cid})}
+      {screen==="tlogin"&&activeCl&&<TrainerLogin onFail={meldeFehlversuch} cl={activeCl} trainers={data.trainers.filter(t=>t.cid===cid&&isActive(t))} teams={(data.teams||[]).filter(tm=>tm.cid===cid)} onLogin={tr=>login("trainer",tr)} onSetTrainerPw={(trId,newHash)=>{ save({...data,trainers:(data.trainers||[]).map(t=>t.id===trId?{...t,pw:newHash,mustChangePw:false,sharedAt:t.sharedAt||new Date().toISOString()}:t)}); }} onBack={()=>setScr("role")}/>}
+      {screen==="hlogin"&&activeCl&&<HelperLogin onFail={meldeFehlversuch} cl={activeCl} helpers={data.helpers||[]} teams={(data.teams||[]).filter(tm=>tm.cid===cid)} onLogin={h=>login("helper",{...h,cid})}
         onSetHelperPw={(hid,nh)=>{ save({...data,helpers:(data.helpers||[]).map(h=>h.id===hid?{...h,pw:nh,mustChangePw:false,sharedAt:h.sharedAt||new Date().toISOString()}:h)}); }}
         onBack={()=>setScr("role")}/>}
-      {screen==="alogin"&&activeCl&&<AdminLogin cl={activeCl} onLogin={a=>login("admin",{...a,cid})} onBack={()=>setScr("role")}/>}
+      {screen==="alogin"&&activeCl&&<AdminLogin onFail={meldeFehlversuch} cl={activeCl} onLogin={a=>login("admin",{...a,cid})} onBack={()=>setScr("role")}/>}
       {screen==="user"  &&session&&activeCl&&<UserHome data={data} session={session} onSave={save} onLogout={logout} lang={lang} setLang={setLang}
         onSwitchChild={(tid2)=>{ sess.del(); setSess(null); setLinkTeam(tid2); setScr("flow"); }}/>}
       {screen==="dash"  &&session&&activeCl&&<Dashboard data={data} session={session} onSave={save} onLogout={logout} lang={lang} setLang={setLang}/>}
