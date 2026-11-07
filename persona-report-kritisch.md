@@ -1,6 +1,6 @@
 # Härte-Test: 500 sehr kritische Personas
 
-Stand: 2026-11-05
+Stand: 2026-11-07
 
 Diese Personas finden fast nichts gut. Ihre Messlatten liegen bewusst höher als der Alltag:
 höchstens 120 Wörter auf dem ersten Blick, höchstens 12 Knöpfe, kein Fachwort ohne Erklärung,
@@ -16,14 +16,14 @@ höchstens 120 Wörter auf dem ersten Blick, höchstens 12 Knöpfe, kein Fachwor
 
 **1. Knöpfe unter 44 px – schwer zu treffen**  
 36 Personas (Die Zittrige) in k-admin-normal, k-trainer-normal, k-eltern-normal, k-trainer-klein, k-eltern-klein
-  - Neu laden (36px) · Bin dabei (34px) · Sage ab (34px)
+  - Neu laden (36px) · Alle Mannschaften (38px) · G G-Jugend (38px) · F F-Jugend 1 (38px) · E E-Jugend (38px) · Späte Anmeldung (34px)
   - Neu laden (36px) · 🔔 Erinnern (2) (20px) · ✓ Bin dabei (34px) · Sage ab (34px)
   - 👧👦 Kind (40px) · Abmelden (40px) · 🔒 Passwort einricht (42px) · 🔗 Link weitergeben (42px)
 
 **2. Zu blasse Schrift (unter dem lesbaren Mindestkontrast)**  
 35 Personas (Die Brillenträgerin) in k-eltern-klein, k-admin-normal, k-trainer-normal, k-eltern-normal, k-trainer-klein
   - „Training" 3.3:1 statt 4.5:1 · „in 3 Tagen" 2.6:1 statt 4.5:1 · „in 5 Tagen" 2.6:1 statt 4.5:1 · „freiwillig" 4.3:1 statt 4.5:1
-  - „ALS NÄCHSTES" 2.3:1 statt 4.5:1 · „Training" 3.3:1 statt 4.5:1 · „morgen" 2.6:1 statt 4.5:1 · „📍 Sportplatz Platz 1" 2.6:1 statt 4.5:1 · „Ich:" 2.6:1 statt 4.5:1 · „DANACH" 2.3:1 statt 4.5:1 · „in 2 Tagen" 2.6:1 statt 4.5:1 · „📍 Sportplatz Platz 2" 2.6:1 statt 4.5:1
+  - „Alle Mannschaften" 3.3:1 statt 4.5:1 · „ALS NÄCHSTES" 2.3:1 statt 4.5:1 · „Training" 3.3:1 statt 4.5:1 · „morgen" 2.6:1 statt 4.5:1 · „📍 Sportplatz Platz 1" 2.6:1 statt 4.5:1 · „Ich:" 2.6:1 statt 4.5:1 · „DANACH" 2.3:1 statt 4.5:1 · „in 2 Tagen" 2.6:1 statt 4.5:1
   - „(2)" 2.6:1 statt 4.5:1 · „ALS NÄCHSTES" 2.3:1 statt 4.5:1 · „Training" 3.3:1 statt 4.5:1 · „in 3 Tagen" 2.6:1 statt 4.5:1 · „1:30 Std · 📍 Sportplatz Platz 1" 2.6:1 statt 4.5:1 · „· 2 offen" 2.6:1 statt 4.5:1 · „· 1 Betreuer" 2.6:1 statt 4.5:1 · „Ich:" 2.6:1 statt 4.5:1
 
 **3. Fachbegriffe ohne Erklärung: Kader**  
@@ -35,11 +35,11 @@ höchstens 120 Wörter auf dem ersten Blick, höchstens 12 Knöpfe, kein Fachwor
 **5. Hauptaktion liegt unter dem sichtbaren Bereich („Ansehen" bei 688 px)**  
 7 Personas (Die Ungeduldige) in k-trainer-klein
 
-**6. Zu viel Text auf dem ersten Blick: 127 Wörter auf dem ersten Bildschirm (Grenze 120)**  
+**6. Zu viel Text auf dem ersten Blick: 126 Wörter auf dem ersten Bildschirm (Grenze 120)**  
 7 Personas (Der Lesefaule) in k-trainer-normal
 
-**7. Zu viele Knöpfe gleichzeitig sichtbar: 18 Knöpfe gleichzeitig (Grenze 12)**  
+**7. Zu viele Knöpfe gleichzeitig sichtbar: 21 Knöpfe gleichzeitig (Grenze 12)**  
 7 Personas (Die Entscheidungsmüde) in k-admin-normal
 
-**8. Zu viele Knöpfe gleichzeitig sichtbar: 21 Knöpfe gleichzeitig (Grenze 12)**  
+**8. Zu viele Knöpfe gleichzeitig sichtbar: 20 Knöpfe gleichzeitig (Grenze 12)**  
 7 Personas (Die Entscheidungsmüde) in k-trainer-normal
