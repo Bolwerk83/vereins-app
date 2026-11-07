@@ -48,7 +48,7 @@ await dismiss();
 
 // ===== 1) TRAINER: hat alle Werkzeuge =====
 let b=await body();
-if(/🏗 Aufbau/.test(b)) ok("Trainer: Aufbau direkt auf der Terminkarte"); else fail("Trainer ohne Aufbau-Knopf");
+if(!/🏗 Aufbau/.test(b)) ok("Trainer: kein Aufbau-Knopf mehr – die Funktion ist raus"); else fail("Aufbau-Knopf noch da");
 if(/Training (planen|steht)/.test(b)) ok("Trainer: Trainingsplan von der Karte"); else fail("Trainer ohne Trainings-Knopf");
 // "Ansehen" und "Anwesenheit" sind ein Knopf: vor dem Termin fuehrt er zu den
 // Rueckmeldungen, ab dem Termintag direkt zur Anwesenheit.
@@ -56,7 +56,7 @@ if(/✅ Anwesenheit|Ansehen/.test(b)) ok("Trainer: ein Knopf öffnet Rückmeldun
 else fail("Trainer ohne Ansehen-/Anwesenheits-Knopf");
 await page.locator('button[aria-label="Weitere Aktionen"]').first().click(); await page.waitForTimeout(400);
 b=await body();
-if(/📋 Spickzettel/.test(b)) ok("Trainer: Spickzettel im Menü"); else fail("Trainer ohne Spickzettel");
+if(!/📋 Spickzettel/.test(b)) ok("Trainer: kein Spickzettel mehr im Menü – die Funktion ist raus"); else fail("Spickzettel noch da");
 await page.locator('button[aria-label="Weitere Aktionen"]').first().click(); await page.waitForTimeout(300);
 // Termin oeffnen: Orga-Reiter vorhanden
 await page.locator('button:has-text("Ansehen")').first().click(); await page.waitForTimeout(900);
@@ -64,7 +64,7 @@ b=await body();
 if(/👥 Orga/.test(b)) ok("Trainer: Orga-Reiter im Termin"); else fail("Trainer ohne Orga-Reiter");
 await page.locator('button:has-text("👥 Orga")').first().click().catch(()=>{}); await page.waitForTimeout(600);
 b=await body();
-if(/Das wird gebraucht/.test(b)) ok("Trainer: Aufbau-Liste in der Orga"); else fail("Aufbau-Liste in der Orga fehlt");
+if(!/Das wird gebraucht/.test(b)) ok("Trainer: keine Aufbau-Liste mehr in der Orga"); else fail("Aufbau-Liste noch in der Orga");
 if(/EINSTELLUNGEN FÜR DIESEN TERMIN/.test(b)) ok("Trainer: Einstellungen (Ort, Spielform, Felder)"); else fail("Einstellungen fehlen");
 await page.evaluate(()=>{ const x=[...document.querySelectorAll("button")].find(y=>y.innerText.trim()==="Schließen"); x&&x.click(); });
 await page.keyboard.press("Escape").catch(()=>{}); await page.waitForTimeout(500);
