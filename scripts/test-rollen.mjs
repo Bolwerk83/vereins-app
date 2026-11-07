@@ -1,5 +1,5 @@
-// E2E-Test Rollen-Durchstich: greifen die neuen Bausteine (Aufbau, Material,
-// Spielzuege, Entwicklungs-Log) sauber in die vier Rollen - Trainer, Helfer,
+// E2E-Test Rollen-Durchstich: greifen die Bausteine (Material, Spielzuege,
+// Entwicklungs-Log) sauber in die vier Rollen - Trainer, Helfer,
 // Eltern, Vereinsadmin - und bleibt jede Rolle bei ihren Rechten?
 // Aufruf: npm run build && node scripts/test-rollen.mjs
 import { chromium } from "playwright-core";
@@ -48,7 +48,7 @@ await dismiss();
 
 // ===== 1) TRAINER: hat alle Werkzeuge =====
 let b=await body();
-if(/🏗 Aufbau/.test(b)) ok("Trainer: Aufbau direkt auf der Terminkarte"); else fail("Trainer ohne Aufbau-Knopf");
+if(!/🏗 Aufbau/.test(b)) ok("Trainer: kein Aufbau-Knopf mehr – die Funktion ist raus"); else fail("Aufbau-Knopf noch da");
 if(/Training (planen|steht)/.test(b)) ok("Trainer: Trainingsplan von der Karte"); else fail("Trainer ohne Trainings-Knopf");
 // "Ansehen" und "Anwesenheit" sind ein Knopf: vor dem Termin fuehrt er zu den
 // Rueckmeldungen, ab dem Termintag direkt zur Anwesenheit.
@@ -56,7 +56,7 @@ if(/✅ Anwesenheit|Ansehen/.test(b)) ok("Trainer: ein Knopf öffnet Rückmeldun
 else fail("Trainer ohne Ansehen-/Anwesenheits-Knopf");
 await page.locator('button[aria-label="Weitere Aktionen"]').first().click(); await page.waitForTimeout(400);
 b=await body();
-if(/📋 Spickzettel/.test(b)) ok("Trainer: Spickzettel im Menü"); else fail("Trainer ohne Spickzettel");
+if(!/📋 Spickzettel/.test(b)) ok("Trainer: kein Spickzettel mehr im Menü – die Funktion ist raus"); else fail("Spickzettel noch da");
 await page.locator('button[aria-label="Weitere Aktionen"]').first().click(); await page.waitForTimeout(300);
 // Termin oeffnen: Orga-Reiter vorhanden
 await page.locator('button:has-text("Ansehen")').first().click(); await page.waitForTimeout(900);
@@ -64,8 +64,10 @@ b=await body();
 if(/👥 Orga/.test(b)) ok("Trainer: Orga-Reiter im Termin"); else fail("Trainer ohne Orga-Reiter");
 await page.locator('button:has-text("👥 Orga")').first().click().catch(()=>{}); await page.waitForTimeout(600);
 b=await body();
-if(/Das wird gebraucht/.test(b)) ok("Trainer: Aufbau-Liste in der Orga"); else fail("Aufbau-Liste in der Orga fehlt");
-if(/EINSTELLUNGEN FÜR DIESEN TERMIN/.test(b)) ok("Trainer: Einstellungen (Ort, Spielform, Felder)"); else fail("Einstellungen fehlen");
+if(!/Das wird gebraucht/.test(b)) ok("Trainer: keine Aufbau-Liste mehr in der Orga"); else fail("Aufbau-Liste noch in der Orga");
+// Die Termin-Einstellungen (Ort, Spielform, Felder) gehoerten zum Aufbau-Plan
+// und sind mit ihm entfernt worden.
+if(!/EINSTELLUNGEN FÜR DIESEN TERMIN/.test(b)) ok("Trainer: keine Aufbau-Einstellungen mehr im Termin"); else fail("Aufbau-Einstellungen noch da");
 await page.evaluate(()=>{ const x=[...document.querySelectorAll("button")].find(y=>y.innerText.trim()==="Schließen"); x&&x.click(); });
 await page.keyboard.press("Escape").catch(()=>{}); await page.waitForTimeout(500);
 
@@ -82,7 +84,8 @@ if(!/⚡ Spielzüge/.test(b)) ok("Eltern: keine Spielzug-Bibliothek"); else fail
 // ===== 3) HELFER: nur Einsatz und Aufbau =====
 await asUser({ id:"dh2", role:"helper", cid:"demo", name:"Markus Lang", helperId:"dh2", tids:["demo_f1"] });
 b=await body();
-if(/🏗 Aufbau/.test(b)&&/Ansehen/.test(b)) ok("Helfer: Ansehen und Aufbau auf der Karte"); else fail("Helfer-Knöpfe fehlen");
+if(/Ansehen/.test(b)) ok("Helfer: Termin ansehen auf der Karte"); else fail("Helfer ohne Ansehen-Knopf");
+if(!/🏗 Aufbau/.test(b)) ok("Helfer: kein Aufbau mehr – die Funktion ist raus"); else fail("Aufbau beim Helfer noch da");
 if(!/Training (planen|steht)/.test(b)) ok("Helfer: kein Trainingsplan"); else fail("Trainingsplan beim Helfer");
 if(!/📋 Spickzettel/.test(b)) ok("Helfer: kein Spickzettel"); else fail("Spickzettel beim Helfer");
 if(!/✏️ Bearbeiten/.test(b)) ok("Helfer: kein Bearbeiten"); else fail("Bearbeiten beim Helfer");
@@ -91,7 +94,7 @@ let m=await modalTxt();
 if(m) ok("Helfer: Termin lässt sich öffnen"); else fail("Termin beim Helfer nicht geöffnet");
 if(m&&!/👥 Orga/.test(m)) ok("Helfer: kein Orga-Reiter"); else fail("Orga-Reiter beim Helfer");
 if(/Betreuung|Helfer-Einsatz|Helfer-Dienste|Orga & Verkauf|Bereitschaft/i.test(m)) ok("Helfer: Einsatz und Dienste stehen trotzdem im Termin"); else fail("Helfer-Bereiche im Termin verschwunden: "+m.slice(0,220).replace(/\n/g," | "));
-if(!/Das wird gebraucht/.test(m)) ok("Helfer: Aufbau steht nur im eigenen Fenster"); else fail("Aufbau doppelt im Termin");
+if(!/Das wird gebraucht/.test(m)) ok("Helfer: keine Aufbau-Liste im Termin"); else fail("Aufbau-Liste im Termin");
 await page.evaluate(()=>{ const x=[...document.querySelectorAll("button")].find(y=>y.innerText.trim()==="Schließen"); x&&x.click(); });
 await page.keyboard.press("Escape").catch(()=>{}); await page.waitForTimeout(500);
 

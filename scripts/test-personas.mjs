@@ -112,12 +112,6 @@ const messe = async prof => {
       await page.evaluate(()=>{ const x=[...document.querySelectorAll("button")].find(y=>y.innerText.trim()==="Schließen"); x&&x.click(); });
       await page.keyboard.press("Escape").catch(()=>{}); await page.waitForTimeout(500);
     }
-    // Aufbau oeffnen
-    if(await klick("🏗 Aufbau")){ await page.waitForTimeout(1100);
-      fakt.aufbau=await txt(); fakt.overflow.aufbau=await over();
-      await page.evaluate(()=>{ const x=[...document.querySelectorAll("button")].find(y=>y.innerText.trim()==="Schließen"); x&&x.click(); });
-      await page.keyboard.press("Escape").catch(()=>{}); await page.waitForTimeout(500);
-    }
     // Mehr-Bereich und Entwicklungs-Log
     if(await klickExakt("Mehr")){ await page.waitForTimeout(800); fakt.mehr=await txt();
       if(await klick("📈 Entwicklung")){ await page.waitForTimeout(900); fakt.log=await txt(); fakt.overflow.log=await over(); }
@@ -198,7 +192,7 @@ enProf.forEach(p=>{
   const deutsch=["Anstehende Termine","Mannschaften","Rückmeldungen","Das wird gebraucht","Spielzüge","Entwicklung","Material"].filter(w=>(f.start+f.aufbau+f.mehr+f.log).includes(w));
   md.push(`- **${p.id}** (Sprache ${p.lang}): Navigation übersetzt (${(f.nav||[]).slice(0,6).join(", ")}). Inhaltlich weiterhin deutsch: ${deutsch.length?deutsch.join(", "):"– nichts gefunden"}.`);
 });
-md.push("", "Die Sprachwahl greift in der Navigation und im Eltern-/Spieler-Bereich. Die Trainer- und Helfer-Inhalte (Kacheln, Erklärtexte, Aufbau, Spielzüge, Material, Entwicklungs-Log) sind bewusst noch deutsch – eine vollständige Übersetzung dieser Bereiche wäre ein eigenes Paket.","");
+md.push("", "Die Sprachwahl greift in der Navigation und im Eltern-/Spieler-Bereich. Die Trainer- und Helfer-Inhalte (Kacheln, Erklärtexte, Spielzüge, Material, Entwicklungs-Log) sind bewusst noch deutsch – eine vollständige Übersetzung dieser Bereiche wäre ein eigenes Paket.","");
 md.push("## Profile","", "| Profil | Rolle | Breite | Sprache | Fehler |","|---|---|---|---|---|");
 PROFILE.forEach(p=>md.push(`| ${p.id} | ${p.rolle} | ${p.w}px | ${p.lang} | ${F[p.id].fehler.length||(F[p.id].crash?"Fehlerseite":"–")} |`));
 fs.writeFileSync("persona-report.md", md.join("\n"));

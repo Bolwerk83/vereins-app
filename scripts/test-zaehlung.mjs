@@ -97,15 +97,13 @@ if(liste&&!/Demo T\./.test(liste)) ok("Abgekürzter Trainer-Name („Demo T.“)
 if(liste&&!/Markus Lang/.test(liste)) ok("Helfer fehlt in der Anwesenheitsliste"); else fail("Helfer in der Anwesenheitsliste");
 if(liste&&/Ben Fischer/.test(liste)) ok("Die Spieler stehen weiterhin drin"); else fail("Spieler fehlen in der Liste");
 
-// ===== 4) Spickzettel zählt ebenfalls nur Spieler =====
+// ===== 4) Den Spickzettel gibt es nicht mehr =====
 await page.evaluate(()=>{ const x=[...document.querySelectorAll("button")].find(y=>y.innerText.trim()==="Schließen"); x&&x.click(); });
 await page.keyboard.press("Escape").catch(()=>{}); await page.waitForTimeout(600);
 await inKarte("⋯"); await page.waitForTimeout(400);
-if(await inKarte("Spickzettel")){ await page.waitForTimeout(900);
-  const sp=await body();
-  const m=sp.match(/👟\s*(\d+)/);
-  if(m&&m[1]==="3") ok("Spickzettel zeigt 3 Zusagen (ohne Trainer und Helfer)"); else fail("Spickzettel zählt falsch: "+(m?m[1]:"?"));
-} else fail("Spickzettel nicht erreichbar");
+{ const sp=await body();
+  if(!/Spickzettel/.test(sp)) ok("Der Spickzettel ist entfernt – die Zahlen stehen in den Rückmeldungen");
+  else fail("Spickzettel noch erreichbar"); }
 
 if(errors.length){ console.log("JS-FEHLER:"); [...new Set(errors)].forEach(e=>console.log(" -",e.slice(0,150))); }
 console.log(errors.length||fails.length?`ERGEBNIS: ${fails.length} Fehlschläge, ${errors.length} JS-Fehler`:"ERGEBNIS: ALLES OK");

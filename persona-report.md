@@ -1,37 +1,28 @@
 # Anwender-Check mit 500 Personas
 
-Stand: 2026-11-05
+Stand: 2026-11-07
 
 - Sitzungs-Profile vermessen: **14** (Rolle × Bildschirmbreite × Sprache)
 - Personas geprüft: **500**
-- Geprüfte Erwartungen: **5270**
-- Personas ohne Befund: **170/500**
-- Verschiedene Befunde: **5**
+- Geprüfte Erwartungen: **3610**
+- Personas ohne Befund: **320/500**
+- Verschiedene Befunde: **2**
 
 ## Befunde
 
 **1. Zu kleine Knöpfe in „start": 🔔 Erinnern (2) (20px) · 🔔 Erinnern (1) (20px) (Knöpfe groß genug zum Treffen)**  
 Betrifft 150 Personas (trainer) in den Profilen trainer-klein, trainer-normal, trainer-gross, trainer-en – z. B. p001, p002, p003, p004, p005
 
-**2. „🏗 Aufbau" fehlt in „start" (Aufbau ist die Hauptaufgabe)**  
-Betrifft 150 Personas (helfer) in den Profilen helfer-klein, helfer-normal, helfer-gross – z. B. p151, p152, p153, p154, p155
-
-**3. „Ansehen" fehlt in „start" (Termin ansehen)**  
-Betrifft 150 Personas (helfer) in den Profilen helfer-klein, helfer-normal, helfer-gross – z. B. p151, p152, p153, p154, p155
-
-**4. „Ballsack" fehlt in „aufbau" (einfache Liste)**  
-Betrifft 150 Personas (helfer) in den Profilen helfer-klein, helfer-normal, helfer-gross – z. B. p151, p152, p153, p154, p155
-
-**5. Zu kleine Knöpfe in „start": 🔔 Erinnern (1) (20px) · 🔔 Erinnern (2) (20px) · 🔔 Erinnern (1) (20px) (Knöpfe groß genug zum Treffen)**  
+**2. Zu kleine Knöpfe in „start": 🔔 Erinnern (1) (20px) · 🔔 Erinnern (2) (20px) · 🔔 Erinnern (1) (20px) (Knöpfe groß genug zum Treffen)**  
 Betrifft 30 Personas (admin) in den Profilen admin-normal, admin-klein – z. B. p441, p442, p443, p444, p445
 
 ## Beobachtungen (kein Fehlschlag, aber bekannt)
 
-- **trainer-en** (Sprache en): Navigation übersetzt (Copy link, Events, Team, Tactics, Field, Chat). Inhaltlich weiterhin deutsch: Anstehende Termine, Mannschaften, Rückmeldungen, Das wird gebraucht, Material.
+- **trainer-en** (Sprache en): Navigation übersetzt (Copy link, Events, Team, Tactics, Field, Chat). Inhaltlich weiterhin deutsch: Anstehende Termine, Mannschaften, Rückmeldungen.
 - **eltern-en** (Sprache en): Navigation übersetzt (👧👦 Kind, Abmelden, Ändern, Ändern, I can drive, Need a ride). Inhaltlich weiterhin deutsch: – nichts gefunden.
 - **eltern-tr** (Sprache tr): Navigation übersetzt (👧👦 Kind, Abmelden, Ändern, Ändern, Ben götürürüm, Araç arıyorum). Inhaltlich weiterhin deutsch: – nichts gefunden.
 
-Die Sprachwahl greift in der Navigation und im Eltern-/Spieler-Bereich. Die Trainer- und Helfer-Inhalte (Kacheln, Erklärtexte, Aufbau, Spielzüge, Material, Entwicklungs-Log) sind bewusst noch deutsch – eine vollständige Übersetzung dieser Bereiche wäre ein eigenes Paket.
+Die Sprachwahl greift in der Navigation und im Eltern-/Spieler-Bereich. Die Trainer- und Helfer-Inhalte (Kacheln, Erklärtexte, Spielzüge, Material, Entwicklungs-Log) sind bewusst noch deutsch – eine vollständige Übersetzung dieser Bereiche wäre ein eigenes Paket.
 
 ## Profile
 

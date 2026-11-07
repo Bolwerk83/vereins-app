@@ -94,7 +94,7 @@ const messe = async prof => {
     M.kontrast=await kontrast();
     // Liegt die Hauptaktion im sichtbaren Bereich?
     M.hauptaktion=await page.evaluate(()=>{
-      const re2=/^(Ansehen|✓ Bin dabei|🙋 Ich helfe!|🙋 Ich kann helfen|🏗 Aufbau|Ändern|Doch nicht)$|(^|\s)(JA|NEIN)$/;
+      const re2=/^(Ansehen|✓ Bin dabei|🙋 Ich helfe!|🙋 Ich kann helfen|Ändern|Doch nicht)$|(^|\s)(JA|NEIN)$/;
       const b=[...document.querySelectorAll("button")].find(x=>re2.test((x.innerText||"").trim().replace(/\n/g," ")));
       if(!b) return {gefunden:false};
       const r=b.getBoundingClientRect();

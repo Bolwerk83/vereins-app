@@ -70,20 +70,19 @@ if(b.includes("Was möchtet ihr nutzen?")){
   if(navTxt2.includes("Taktik")) ok("Taktik über Mehr→Module wieder aktiviert"); else fail("Reaktivierung fehlgeschlagen");
 } else fail("Modul-Wizard fehlt: "+b.slice(0,120));
 
-// ===== 2) Terminliste: 21 Tage, Ferien, Training-Knopf, ✅, Spickzettel =====
+// ===== 2) Terminliste: 21 Tage, Ferien, Training-Knopf, ✅ =====
 await page.locator('button:has-text("Termine")').last().click(); await page.waitForTimeout(700);
 b=await body();
 if(b.includes("NÄCHSTE 21 TAGE")) ok("21-Tage-Fenster aktiv"); else fail("21-Tage-Label fehlt");
 if(b.includes("Test-Ferien")&&b.includes("Serientermine pausieren")) ok("Ferien-Hinweisbalken sichtbar"); else fail("Ferien-Hinweis fehlt");
 if(/Training (planen|steht)/.test(b)) ok("Training-Knopf mit klarem Status (planen/steht)"); else fail("Training-Knopf fehlt");
-// Spickzettel ueber ⋯
+// Spickzettel und Aufbau sind bewusst entfernt - sie sollen auch im Menue
+// nicht mehr auftauchen.
 await page.locator('button[aria-label="Weitere Aktionen"]').first().click(); await page.waitForTimeout(400);
-await page.locator('button:has-text("📋 Spickzettel")').first().click(); await page.waitForTimeout(600);
 b=await body();
-if(b.includes("Spickzettel")&&b.includes("MATERIAL DER MANNSCHAFT")&&b.includes("Zusagen")) ok("Spickzettel: Personen + Material der Mannschaft"); else fail("Spickzettel unvollständig");
-// Material wird nicht mehr am Termin gepflegt, sondern einmal je Mannschaft
-if(b.includes("Mannschaft › 🧰 Material")||/Einmal je Mannschaft gepflegt/.test(b)) ok("Spickzettel verweist auf das Material der Mannschaft"); else fail("Material-Hinweis im Spickzettel fehlt");
-await page.getByRole('button',{name:'Schließen',exact:true}).first().click().catch(()=>{}); await page.keyboard.press("Escape").catch(()=>{}); await page.waitForTimeout(400);
+if(!/📋 Spickzettel/.test(b)&&!/🏗 Aufbau/.test(b)) ok("Weder Spickzettel noch Aufbau im Menü");
+else fail("Entfernte Funktion noch im Menü: "+b.slice(0,200).replace(/\n/g," | "));
+await page.locator('button[aria-label="Weitere Aktionen"]').first().click(); await page.waitForTimeout(300);
 // ✅ Anwesenheit oeffnet Orga
 // Kuenftige Termine: der Hauptknopf oeffnet den Termin, die Anwesenheit
 // steckt darin als Reiter (ab dem Termintag fuehrt der Knopf direkt hin).

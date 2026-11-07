@@ -75,7 +75,7 @@ if(!/Plane Trainings, Spiele & Turniere/.test(b)) ok("Der lange Erklärkasten is
   else fail("Zu große Schrift: "+gross.slice(0,3).join(" | ")); }
 
 // ===== 2) Alle Funktionen erreichbar =====
-for(const [was,re] of [["Termin ansehen","^Ansehen$|✅ Anwesenheit"],["Aufbau","🏗 Aufbau"],["Trainingsplan","📋 Training"],["Erinnern","🔔 Erinnern \\(\\d+\\)"],["Neuer Termin","Neuen Termin anlegen"],["Alles anzeigen","Alles anzeigen"]]){
+for(const [was,re] of [["Termin ansehen","^Ansehen$|✅ Anwesenheit"],["Trainingsplan","📋 Training"],["Erinnern","🔔 Erinnern \\(\\d+\\)"],["Neuer Termin","Neuen Termin anlegen"],["Alles anzeigen","Alles anzeigen"]]){
   if(await knopf(re)) ok("Direkt erreichbar: "+was); else fail("Fehlt im Fokus: "+was);
 }
 // Die Karte "Neuen Termin anlegen" steht ueber dem naechsten Termin
@@ -92,18 +92,17 @@ for(const [was,re] of [["Termin ansehen","^Ansehen$|✅ Anwesenheit"],["Aufbau",
   else fail("Eigene Zu-/Absage fehlt auf der Fokus-Karte"); }
 await clickTxt("⋯ Mehr"); await page.waitForTimeout(600);
 b=await body();
-for(const [was,re] of [["Rückmeldungen",/📊 Rückmeldungen/],["Bearbeiten",/✏️ Bearbeiten/],["Spickzettel",/📋 Spickzettel/],["Vertretung",/🆘 Vertretung/],["Stimmen zurücksetzen",/↺ Stimmen/],["Löschen",/🗑 Löschen/]]){
+for(const [was,re] of [["Rückmeldungen",/📊 Rückmeldungen/],["Bearbeiten",/✏️ Bearbeiten/],["Vertretung",/🆘 Vertretung/],["Stimmen zurücksetzen",/↺ Stimmen/],["Löschen",/🗑 Löschen/]]){
   if(re.test(b)) ok("Unter „mehr“ erreichbar: "+was); else fail("Fehlt unter „mehr“: "+was);
 }
+// Aufbau und Spickzettel sind aus der App genommen - auch hier nicht mehr.
+if(!/🏗 Aufbau/.test(b)&&!/📋 Spickzettel/.test(b)) ok("Aufbau und Spickzettel tauchen nirgends mehr auf");
+else fail("Entfernte Funktion noch da: "+b.slice(0,200).replace(/\n/g," | "));
 
 // ===== 3) Die Knöpfe tun auch etwas =====
 await clickTxt("^Ansehen$|^✅ Anwesenheit$"); await page.waitForTimeout(1200);
 b=await body();
 if(/Rückmeldungen|Anwesenheit abhaken/.test(b)) ok("„Ansehen“ öffnet den Termin"); else fail("Termin öffnet nicht: "+b.slice(0,160).replace(/\n/g," | "));
-await zurueck();
-await clickTxt("🏗 Aufbau"); await page.waitForTimeout(1200);
-b=await body();
-if(/Aufbau|Das wird gebraucht|Feld 1/.test(b)) ok("„Aufbau“ öffnet die Aufbau-Liste"); else fail("Aufbau öffnet nicht");
 await zurueck();
 
 // ===== 4) Anderen Termin antippen macht ihn groß =====

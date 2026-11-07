@@ -229,13 +229,9 @@ m=await messung();
 if(m.woerter<=70) ok("Auch beim Helfer kaum Text ("+m.woerter+" Wörter)"); else fail("Zu viel Text beim Helfer: "+m.woerter);
 if(await clickTxt("JA")){ await page.waitForTimeout(1000); b=await body();
   if(/Du bist dabei|Warteliste/.test(b)) ok("Ein Tipp – und der Helfer ist eingetragen"); else fail("Zusage ohne Rückmeldung");
-  if(/Was muss ich aufbauen/.test(b)) ok("Direkt daneben: was aufzubauen ist"); else fail("Aufbau-Knopf fehlt");
-  await clickTxt("Was muss ich aufbauen"); await page.waitForTimeout(1000);
-  b=await body();
-  if(/Das wird gebraucht|Feld 1/.test(b)) ok("Aufbau-Liste öffnet sich direkt"); else fail("Aufbau-Liste fehlt: "+b.slice(0,150).replace(/\n/g," | "));
-  await page.keyboard.press("Escape").catch(()=>{});
-  await page.evaluate(()=>{ const x=[...document.querySelectorAll("button")].find(y=>y.innerText.trim()==="Schließen"); x&&x.click(); });
-  await page.waitForTimeout(600);
+  // Der Aufbau ist aus der App genommen - er darf hier nicht mehr auftauchen.
+  if(!/Was muss ich aufbauen|🏗 Aufbau/.test(b)) ok("Kein Aufbau-Knopf mehr – die Helfer-Ansicht bleibt bei der einen Frage");
+  else fail("Aufbau-Knopf noch da: "+b.slice(0,150).replace(/\n/g," | "));
 } else fail("Helfer kann nicht zusagen");
 b=await body();
 if(/NEIN|Absagen|Doch nicht/.test(b)) ok("Absagen ist genauso einfach"); else fail("Kein Nein-Weg");
