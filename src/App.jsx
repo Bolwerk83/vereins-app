@@ -17006,9 +17006,11 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
             (local.events||[]).filter(e=>myTids.includes(e.tid)).forEach(e=>{
               if(e.date>=tod&&e.date<=todoBis)
                 eventWarnings(e,tod,{ events:local.events, teams:local.teams, perStaff:myClub?.clubSettings?.playersPerStaff||6, trainers:(local.trainers||[]).filter(trn=>(trn.tids||[]).includes(e.tid)&&isActive(trn)).length, squad:(local.playerProfiles||[]).filter(pp=>pp.mainTid===e.tid&&!pp.archived).length, trainerNames, helperNames, squadNames:squadPlusOf(e.tid), profiles:local.playerProfiles||[] }).forEach(x=>todos.push({ev:e,label:x.label,col:x.col,bg:x.bg}));
-              // Der Spielbericht schaut zurueck statt voraus - er bleibt, bis er
-              // geschrieben ist (sonst geht er einfach verloren).
-              if(["heimspiel","auswarts","freundschaft"].includes(e.type)&&e.date<tod&&e.date>=addD(tod,-21)&&!(e.report&&e.report.ts)) todos.push({ev:e,label:"Spielbericht eintragen",col:"#2563eb",bg:"#eff6ff"});
+              // Der Spielbericht steht NICHT mehr in der Aufgabenliste. Er ist
+              // freiwillig, und eine Aufgabe zu einem Termin, der schon vorbei
+              // ist, kann man ohnehin nicht mehr erledigen - sie bleibt nur
+              // stehen und macht die Liste voll. Geschrieben wird er weiterhin
+              // im Termin selbst.
               // Der Trainingsplan ist freiwillig - er gehoert nicht in die
               // Aufgabenliste. Planen geht weiter ueber den Termin selbst.
             });
