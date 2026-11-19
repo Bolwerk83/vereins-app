@@ -6,7 +6,8 @@ import {
   round2, clampSkill, monthKey, skillsMean, blendSkill,
   germanPublicHolidays, publicHolidayName, DE_STATES,
   parseRosterText, parseSpielplan,
-  lateChangeEntries, lateChangesOpen } from "./logic.js";
+  lateChangeEntries, lateChangesOpen,
+  terminUebernehmen, EV_LEBENDIG } from "./logic.js";
 
 const isoDaysFromNow = (n) => new Date(Date.now() + n*86400000).toISOString().slice(0,10);
 
@@ -276,4 +277,54 @@ test("lateChangesOpen: ohne Aenderungen null, robust gegen leere Termine", () =>
   assert.equal(lateChangesOpen({}), 0);
   assert.equal(lateChangesOpen(null), 0);
   assert.equal(lateChangesOpen({votes:{"F Kind":{val:"yes"}}}), 0);
+});
+
+// ---- Termin bearbeiten: das Leben des Termins bleibt ----
+const _termin = () => ({
+  id:"e1", title:"Spieltag ALT", loc:"Alter Platz", time:"11:00",
+  votes:{ "A Kind":{val:"yes"}, "B Kind":{val:"yes"} },
+  present:{ "A Kind":true },
+  lineup:{T:[],A:["A Kind"],M:[],S:[],E:[]},
+  duties:[{id:"d1",text:"Kuchen",assignee:"Mutter A"}],
+  extraPolls:[{id:"l1",title:"Kuchen",items:["Blech"],votes:{"A Kind":["Blech"]}}],
+});
+test("terminUebernehmen: Titel und Ort werden uebernommen", () => {
+  const e=_termin();
+  const neu=terminUebernehmen(e,{...e, title:"Spieltag NEU", loc:"Neuer Platz"});
+  assert.equal(neu.title,"Spieltag NEU");
+  assert.equal(neu.loc,"Neuer Platz");
+});
+test("terminUebernehmen: ein veralteter Stimmen-Stand ueberschreibt nichts", () => {
+  const e=_termin();
+  // Das Formular kennt nur die Stimme von vorhin - B Kind kam waehrend des
+  // Bearbeitens dazu und muss bleiben.
+  const alt={...e, votes:{ "A Kind":{val:"yes"} }, title:"Spieltag NEU"};
+  const neu=terminUebernehmen(e,alt);
+  assert.deepEqual(Object.keys(neu.votes).sort(), ["A Kind","B Kind"]);
+  assert.equal(neu.title,"Spieltag NEU");
+});
+test("terminUebernehmen: Anwesenheit, Aufstellung und Dienste bleiben am Termin", () => {
+  const e=_termin();
+  const neu=terminUebernehmen(e,{...e, present:{}, lineup:null, duties:[], title:"X"});
+  assert.deepEqual(neu.present, {"A Kind":true});
+  assert.deepEqual(neu.lineup.A, ["A Kind"]);
+  assert.equal(neu.duties.length, 1);
+});
+test("terminUebernehmen: Zusatzliste - Fragen vom Formular, Antworten vom Termin", () => {
+  const e=_termin();
+  const neu=terminUebernehmen(e,{...e, extraPolls:[{id:"l1",title:"Kuchen & Salat",items:["Blech","Salat"],votes:{}}]});
+  assert.equal(neu.extraPolls[0].title,"Kuchen & Salat");
+  assert.deepEqual(neu.extraPolls[0].items,["Blech","Salat"]);
+  assert.deepEqual(neu.extraPolls[0].votes,{"A Kind":["Blech"]});
+});
+test("terminUebernehmen: neue Zusatzliste startet ohne Antworten", () => {
+  const e=_termin();
+  const neu=terminUebernehmen(e,{...e, extraPolls:[{id:"l2",title:"Fahren",items:["Ja"],votes:{"X":["Ja"]}}]});
+  assert.equal(neu.extraPolls.length,1);
+  assert.deepEqual(neu.extraPolls[0].votes,{});
+});
+test("terminUebernehmen: robust ohne Termin und ohne Patch", () => {
+  assert.deepEqual(terminUebernehmen(null,null), {});
+  assert.equal(terminUebernehmen({id:"a"},{title:"T"}).title,"T");
+  assert.ok(EV_LEBENDIG.includes("votes"));
 });
