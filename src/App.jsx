@@ -1,6 +1,6 @@
 import React, { useState,useEffect,useCallback,useRef,useMemo,createContext,useContext } from "react";
 import { splitData, mergeData, merge3Obj } from "./data.js";
-import { eventStart, eventDeadline, isDeadlinePassed, isEventPast, needsLateReason, lateChangeEntries, lateChangesOpen, daysUntil, isUpcoming5, formatCountdown, round2, clampSkill, monthKey, skillsMean, blendSkill, germanPublicHolidays, publicHolidayName, DE_STATES, parseRosterText, parseSpielplan } from "./logic.js";
+import { eventStart, eventDeadline, isDeadlinePassed, isEventPast, needsLateReason, lateChangeEntries, lateChangesOpen, terminUebernehmen, daysUntil, isUpcoming5, formatCountdown, round2, clampSkill, monthKey, skillsMean, blendSkill, germanPublicHolidays, publicHolidayName, DE_STATES, parseRosterText, parseSpielplan } from "./logic.js";
 import { ACOLORS, acol, inits, contrast, mix, readable } from "./util.js";
 import { feat } from "./features.js";
 import { SK, SS, CFG, DEFAULT_CFG, JOIN_CODE, getConfig, setConfig, MULTI_TENANT, auth, _DATA_ARRAYS, normData, sb, localGet, localSet, sess, dbHealth } from "./storage.js";
@@ -16771,7 +16771,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
       // Die Frist wird als Abstand zum Anpfiff uebernommen - sonst haetten alle
       // Termine der Serie dasselbe Fristdatum wie der bearbeitete.
       const abstand=fristAbstand(saved);
-      const mitFrist=(e)=>({...e,...common,deadline:abstand?fristFuer(e,abstand):undefined});
+      const mitFrist=(e)=>({...terminUebernehmen(e,common),deadline:abstand?fristFuer(e,abstand):undefined});
       if(editEv._editSeries==="future"&&editEv.sid){
         save({...local,events:local.events.map(e=>{
           if(e.sid===editEv.sid&&e.date>=editEv.date) return mitFrist(e);
@@ -16787,10 +16787,12 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
       } else {
         // Verbund-Termin: gemeinsame Felder auf die Termine der anderen Teams
         // uebertragen; team-eigenes (Stimmen, Anwesenheit, Dienste, ...) bleibt.
-        const {id:_gi,tid:_gt,votes:_gv,present:_gp,guests:_gg,sid:_gs,sidx:_gx,seasonId:_gsn,lateCancellations:_glc,pollLink:_gpl,groupId:_ggr,trainerPresence:_gtp,groups:_ggs,playtime:_gpt,report:_grp,duties:_gd,carpool:_gc,extraPolls:_gep,nsDecision:_gnd,...gemeinsam}=saved;
+        // Datum wandert beim Verbund-Termin mit (gemeinsamer Tag), die
+        // Zusatzlisten der anderen Mannschaften bleiben unangetastet.
+        const {id:_gi,tid:_gt,sid:_gs,sidx:_gx,seasonId:_gsn,groupId:_ggr,extraPolls:_gep,...gemeinsam}=saved;
         save({...local,events:(local.events||[]).map(e=>{
-          if(e.id===saved.id) return saved;
-          if(saved.groupId&&e.groupId===saved.groupId) return {...e,...gemeinsam};
+          if(e.id===saved.id) return terminUebernehmen(e,saved);
+          if(saved.groupId&&e.groupId===saved.groupId) return terminUebernehmen(e,gemeinsam);
           return e;
         })});
         fire(saved.groupId?"Verbund-Termin für alle Teams aktualisiert":"Termin aktualisiert");

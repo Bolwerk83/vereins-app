@@ -76,6 +76,35 @@ export const lateChangeEntries = (ev) => {
 };
 export const lateChangesOpen = (ev) => lateChangeEntries(ev).filter((x) => x.offen).length;
 
+// Was im Bearbeiten-Fenster eines Termins steht, ist der Stand von dem
+// Moment, in dem es GEOEFFNET wurde. Alles, was andere seitdem beigetragen
+// haben - Zusagen, Anwesenheit, Helfer-Dienste, Aufstellung, Spielbericht -,
+// darf daraus nicht zurueckgeschrieben werden. Sonst verschwinden Antworten,
+// die waehrend des Bearbeitens eingegangen sind. Diese Felder gehoeren dem
+// Termin, nicht dem Formular.
+export const EV_LEBENDIG = ["votes","present","guests","lateCancellations","lateJoins",
+  "duties","carpool","trainerPresence","report","playtime","groups","lineup","lineups",
+  "lineupPublic","spielFest","spielGr","spielTW","spielLevel","spielMix","nsDecision",
+  "conflictOk","setup","stations","orga","helperOffers","helperInterest","helperNo",
+  "helferNote","helferOpen","staffTarget","trainingPlan","planBy","timer","published",
+  "mode","pollLink","lastNudge","nudgeOff"];
+// Zusatzlisten: Die Fragen kommen aus dem Formular, die Antworten vom Termin.
+const _listenMitAntworten = (neu, ziel) => (neu||[]).map((p)=>{
+  const alt = (ziel||[]).find((x)=>x && x.id===p.id);
+  return { ...p, votes:(alt && alt.votes) || {} };
+});
+// Formular-Aenderungen auf einen Termin uebertragen, ohne sein Leben zu
+// ueberschreiben. Gibt IMMER ein neues Objekt zurueck.
+export const terminUebernehmen = (ev, patch) => {
+  const e = ev || {};
+  const p = { ...(patch||{}) };
+  EV_LEBENDIG.forEach((k)=>{ delete p[k]; });
+  const out = { ...e, ...p };
+  if (patch && patch.extraPolls !== undefined)
+    out.extraPolls = _listenMitAntworten(patch.extraPolls, e.extraPolls);
+  return out;
+};
+
 // Tage bis zum Termin (negativ = vergangen, Infinity = kein Datum).
 export const daysUntil = (ev) => {
   const s = eventStart(ev); if (!s) return Infinity;
