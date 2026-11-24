@@ -13318,13 +13318,19 @@ function ChatTab({data,cid,myTids,session,save,fire,cl,teamOnly=false}) {
     // daran anhaengen. Da beim Speichern das ganze Chat-Dokument geschrieben
     // wird, wuerden sonst parallele Nachrichten anderer Geraete verloren gehen;
     // so bleiben sie im Normalfall (Nachrichten im Sekundenabstand) erhalten.
-    let baseChats = chats;
-    try { const fresh = await sb.getClub(cid); if(fresh && fresh._v) baseChats = fresh.chats||[]; } catch {}
+    // WICHTIG: Der frische Cloud-Stand wird die neue Grundlage fuer den
+    // GANZEN Speichervorgang - nicht nur fuer die Chats. sb.getClub setzt den
+    // Vergleichsstand fuer den 3-Wege-Merge neu; wuerde danach der alte
+    // Bildschirm-Stand geschrieben, saehe jede Zusage, die seit dem letzten
+    // Laden eingegangen ist, wie ein bewusstes Loeschen aus - und waere weg.
+    let basis = data;
+    try { const fresh = await sb.getClub(cid); if(fresh && fresh._v) basis = fresh; } catch {}
+    const baseChats = basis.chats||[];
     const exists = baseChats.find(c=>c.id===selScope);
     const next = exists
       ? baseChats.map(c=>c.id===selScope?{...c,messages:[...(c.messages||[]),msg]}:c)
       : [...baseChats,{id:selScope,cid,messages:[msg]}];
-    save({...data,chats:next});
+    save({...basis,chats:next});
     // Push an die anderen Chat-Teilnehmer (Edge Function "notify", Modus chat);
     // Fehler bewusst still - die Nachricht selbst ist bereits gespeichert.
     try {
@@ -16640,6 +16646,27 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
   // Beim Bearbeiten bekommt der Wizard alles mit, was im Termin steckt:
   // die Verbund-Mannschaften und - bei Serien - Rhythmus und Zeitraum.
   const WOCHENTAGE=["Mo","Di","Mi","Do","Fr","Sa","So"];
+  // Der offene Termin muss mitwachsen. Der Hintergrund-Sync holt alle 10
+  // Sekunden den frischen Stand in "local" - das Fenster zeigte aber weiter
+  // die Kopie vom Oeffnen. Zwei Folgen: Neue Antworten waren nicht zu sehen,
+  // und jede Eintragung rechnete auf dem alten Stand und schrieb sie weg.
+  useEffect(()=>{
+    if(!viewEv) return;
+    const akt=(local.events||[]).find(e=>e.id===viewEv.id);
+    if(akt && akt!==viewEv) setViewEv(akt);
+  },[local.events]);   // eslint-disable-line react-hooks/exhaustive-deps
+  // Eine Aenderung am offenen Termin: fn bekommt den AKTUELLEN Termin und gibt
+  // zurueck, was sich aendert. So kann nichts ueberschrieben werden, was
+  // waehrend des Ansehens hereingekommen ist.
+  const amTermin=(fn, extra=null)=>{
+    if(!viewEv) return null;
+    let neu=null;
+    const events=(local.events||[]).map(e=>{ if(e.id!==viewEv.id) return e; neu={...e,...(fn(e)||{})}; return neu; });
+    if(!neu) return null;
+    save({...local, ...(extra||{}), events});
+    setViewEv(prev=>(prev&&prev.id===neu.id)?neu:prev);
+    return neu;
+  };
   const editInfo = ev => {
     if(!ev) return ev;
     const alle=local.events||[];
@@ -17406,13 +17433,11 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
             readOnly={isHelper} trainerNames={trainerNames} helperNames={helperNames} allEvents={local.events} allTeams={local.teams}
             myKids={isHelper?[]:(((local.trainers||[]).find(x=>x.id===session?.id)?.childNames)||"").split(",").map(x=>x.trim()).filter(Boolean)}
             staff={staffNeed(viewEv,{ perStaff:myClub?.clubSettings?.playersPerStaff||6, trainers:(local.trainers||[]).filter(trn=>(trn.tids||[]).includes(viewEv.tid)&&isActive(trn)).length, squad:(local.playerProfiles||[]).filter(pp=>pp.mainTid===viewEv.tid&&!pp.archived).length, yesPlayers:jaSpieler(viewEv) })}
-            onSetDeadline={deadline=>{ save({...local,events:local.events.map(e=>e.id===viewEv.id?{...e,deadline}:e)}); setViewEv(prev=>({...prev,deadline})); fire("Frist gesetzt"); }}
-            onSetPresent={present=>{ save({...local,events:local.events.map(e=>e.id===viewEv.id?{...e,present}:e)}); setViewEv(prev=>({...prev,present})); }}
-            onSetGuests={guests=>{ save({...local,events:local.events.map(e=>e.id===viewEv.id?{...e,guests}:e)}); setViewEv(prev=>({...prev,guests})); }}
+            onSetDeadline={deadline=>{ amTermin(()=>({deadline})); fire("Frist gesetzt"); }}
+            onSetPresent={present=>{ amTermin(()=>({present})); }}
+            onSetGuests={guests=>{ amTermin(()=>({guests})); }}
             onSetVote={isHelper?null:(name,val,grund)=>{
-              const nv={...(viewEv.votes||{}),[name]:{val,ts:new Date().toISOString(),byTrainer:true,role:"player",...(String(grund||"").trim()?{reason:String(grund).trim()}:{})}};
-              save({...local,events:local.events.map(e=>e.id===viewEv.id?{...e,votes:nv}:e)});
-              setViewEv(prev=>({...prev,votes:nv}));
+              amTermin(e=>({votes:{...(e.votes||{}),[name]:{val,ts:new Date().toISOString(),byTrainer:true,role:"player",...(String(grund||"").trim()?{reason:String(grund).trim()}:{})}}}));
               fire(val==="yes"?name+": zugesagt (vom Trainer eingetragen)":name+": abgesagt (vom Trainer eingetragen)");
             }}
             onFremd={isHelper?null:(name,ziel)=>{
@@ -17420,29 +17445,26 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
               // Kind zuschlagen. Beim Zuordnen wird der alte Name am Profil
               // vermerkt - damit zieht die App die Anmeldung der Eltern beim
               // naechsten Laden mit, sonst stimmen sie weiter alt ab.
-              const nv={...(viewEv.votes||{})};
-              const alt2=nv[name]; delete nv[name];
               const zt=x=>(x&&typeof x==="object"&&x.ts)?String(x.ts):"";
               let profile=local.playerProfiles||[];
               if(ziel){
-                const vorh=nv[ziel];
-                nv[ziel]=(vorh===undefined||zt(alt2)>zt(vorh))?alt2:vorh;
                 profile=profile.map(p=>_nrmName(p.name)===_nrmName(ziel)
                   ? {...p, prevNames:[...new Set([String(name).trim(),...((p.prevNames)||[])])]
                       .filter(x=>x&&_nrmName(x)!==_nrmName(p.name)).slice(0,5)}
                   : p);
               }
-              save({...local, playerProfiles:profile,
-                events:local.events.map(e=>e.id===viewEv.id?{...e,votes:nv}:e)});
-              setViewEv(prev=>({...prev,votes:nv}));
+              amTermin(e=>{
+                const nv={...(e.votes||{})};
+                const alt2=nv[name]; delete nv[name];
+                if(ziel){ const vorh=nv[ziel]; nv[ziel]=(vorh===undefined||zt(alt2)>zt(vorh))?alt2:vorh; }
+                return {votes:nv};
+              }, {playerProfiles:profile});
               fire(ziel?`${name} → ${ziel} übernommen`:`${name} entfernt`);
             }}
             onVotePatch={isHelper?null:(name,patch)=>{
-              const alt=(viewEv.votes||{})[name];
-              const basis=(typeof alt==="object"&&alt!==null)?alt:{val:alt,ts:new Date().toISOString()};
-              const nv={...(viewEv.votes||{}),[name]:{...basis,...patch,okAt:new Date().toISOString(),okBy:session?.name||"Trainer"}};
-              save({...local,events:local.events.map(e=>e.id===viewEv.id?{...e,votes:nv}:e)});
-              setViewEv(prev=>({...prev,votes:nv}));
+              amTermin(e=>{ const alt=(e.votes||{})[name];
+                const basis=(typeof alt==="object"&&alt!==null)?alt:{val:alt,ts:new Date().toISOString()};
+                return {votes:{...(e.votes||{}),[name]:{...basis,...patch,okAt:new Date().toISOString(),okBy:session?.name||"Trainer"}}}; });
               fire(patch&&patch.declined?name+": späte Anmeldung abgelehnt":name+": freigegeben – du kannst mit ihm planen");
             }}/>
         )}
@@ -17501,17 +17523,13 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
                 fire("Frist gesetzt");
               }}
               onSetPresent={present=>{
-                save({...local,events:local.events.map(e=>e.id===viewEv.id?{...e,present}:e)});
-                setViewEv(prev=>({...prev,present}));
+                amTermin(()=>({present}));
               }}
               onSetGuests={guests=>{
-                save({...local,events:local.events.map(e=>e.id===viewEv.id?{...e,guests}:e)});
-                setViewEv(prev=>({...prev,guests}));
+                amTermin(()=>({guests}));
               }}
               onSetVote={isHelper?null:(name,val,grund)=>{
-                const nv={...(viewEv.votes||{}),[name]:{val,ts:new Date().toISOString(),byTrainer:true,role:"player",...(String(grund||"").trim()?{reason:String(grund).trim()}:{})}};
-                save({...local,events:local.events.map(e=>e.id===viewEv.id?{...e,votes:nv}:e)});
-                setViewEv(prev=>({...prev,votes:nv}));
+                amTermin(e=>({votes:{...(e.votes||{}),[name]:{val,ts:new Date().toISOString(),byTrainer:true,role:"player",...(String(grund||"").trim()?{reason:String(grund).trim()}:{})}}}));
                 fire(val==="yes"?name+": zugesagt (vom Trainer eingetragen)":name+": abgesagt (vom Trainer eingetragen)");
               }}
               onFremd={isHelper?null:(name,ziel)=>{
@@ -17519,29 +17537,26 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
               // Kind zuschlagen. Beim Zuordnen wird der alte Name am Profil
               // vermerkt - damit zieht die App die Anmeldung der Eltern beim
               // naechsten Laden mit, sonst stimmen sie weiter alt ab.
-              const nv={...(viewEv.votes||{})};
-              const alt2=nv[name]; delete nv[name];
               const zt=x=>(x&&typeof x==="object"&&x.ts)?String(x.ts):"";
               let profile=local.playerProfiles||[];
               if(ziel){
-                const vorh=nv[ziel];
-                nv[ziel]=(vorh===undefined||zt(alt2)>zt(vorh))?alt2:vorh;
                 profile=profile.map(p=>_nrmName(p.name)===_nrmName(ziel)
                   ? {...p, prevNames:[...new Set([String(name).trim(),...((p.prevNames)||[])])]
                       .filter(x=>x&&_nrmName(x)!==_nrmName(p.name)).slice(0,5)}
                   : p);
               }
-              save({...local, playerProfiles:profile,
-                events:local.events.map(e=>e.id===viewEv.id?{...e,votes:nv}:e)});
-              setViewEv(prev=>({...prev,votes:nv}));
+              amTermin(e=>{
+                const nv={...(e.votes||{})};
+                const alt2=nv[name]; delete nv[name];
+                if(ziel){ const vorh=nv[ziel]; nv[ziel]=(vorh===undefined||zt(alt2)>zt(vorh))?alt2:vorh; }
+                return {votes:nv};
+              }, {playerProfiles:profile});
               fire(ziel?`${name} → ${ziel} übernommen`:`${name} entfernt`);
             }}
             onVotePatch={isHelper?null:(name,patch)=>{
-                const alt=(viewEv.votes||{})[name];
-                const basis=(typeof alt==="object"&&alt!==null)?alt:{val:alt,ts:new Date().toISOString()};
-                const nv={...(viewEv.votes||{}),[name]:{...basis,...patch,okAt:new Date().toISOString(),okBy:session?.name||"Trainer"}};
-                save({...local,events:local.events.map(e=>e.id===viewEv.id?{...e,votes:nv}:e)});
-                setViewEv(prev=>({...prev,votes:nv}));
+                amTermin(e=>{ const alt=(e.votes||{})[name];
+                  const basis=(typeof alt==="object"&&alt!==null)?alt:{val:alt,ts:new Date().toISOString()};
+                  return {votes:{...(e.votes||{}),[name]:{...basis,...patch,okAt:new Date().toISOString(),okBy:session?.name||"Trainer"}}}; });
                 fire(patch&&patch.declined?name+": späte Anmeldung abgelehnt":name+": freigegeben – du kannst mit ihm planen");
               }}
             />}
@@ -17618,9 +17633,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
         {/* Aushilfen aus anderen Mannschaften + Warnung bei Doppelmeldung */}
         {!isHelper&&<AushilfenBoard ev={viewEv} data={local} cl={myClub}
           onSetVote={(name,val,grund)=>{
-            const nv={...(viewEv.votes||{}),[name]:{val,ts:new Date().toISOString(),byTrainer:true,role:"player",...(String(grund||"").trim()?{reason:String(grund).trim()}:{})}};
-            save({...local,events:local.events.map(e=>e.id===viewEv.id?{...e,votes:nv}:e)});
-            setViewEv(prev=>({...prev,votes:nv}));
+            amTermin(e=>({votes:{...(e.votes||{}),[name]:{val,ts:new Date().toISOString(),byTrainer:true,role:"player",...(String(grund||"").trim()?{reason:String(grund).trim()}:{})}}}));
             fire(name+": als Aushilfe eingetragen");
           }}
           onAnfrage={(pl,text)=>{
@@ -17635,15 +17648,11 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
             fire("Anfrage an die Eltern gesendet – der eigene Trainer wurde informiert");
           }}
           onAustragen={name=>{
-            const nv={...(viewEv.votes||{})}; delete nv[name];
-            save({...local,events:local.events.map(e=>e.id===viewEv.id?{...e,votes:nv}:e)});
-            setViewEv(prev=>({...prev,votes:nv}));
+            amTermin(e=>{ const nv={...(e.votes||{})}; delete nv[name]; return {votes:nv}; });
             fire(name+": aus dem Termin genommen");
           }}
           onIgnorieren={(name,an)=>{
-            const liste=an ? [...new Set([...(viewEv.conflictOk||[]),name])] : (viewEv.conflictOk||[]).filter(x=>x!==name);
-            save({...local,events:local.events.map(e=>e.id===viewEv.id?{...e,conflictOk:liste}:e)});
-            setViewEv(prev=>({...prev,conflictOk:liste}));
+            amTermin(e=>({conflictOk: an ? [...new Set([...(e.conflictOk||[]),name])] : (e.conflictOk||[]).filter(x=>x!==name)}));
             fire(an?"Warnung ausgeblendet – bewusst doppelt eingeplant":"Warnung wird wieder gezeigt");
           }}/>}
         {/* Checkliste direkt in der Orga: Zusagen sehen, ganzen Kader abhaken, Gaeste anlegen */}
@@ -17652,13 +17661,11 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
           trainerNames={trainerNames} helperNames={helperNames} allEvents={local.events} allTeams={local.teams}
           {...gruppenProps(viewEv, local, save, fire, jaSpielerNamen(viewEv))}
           onSetVote={(name,val,grund)=>{
-            const nv={...(viewEv.votes||{}),[name]:{val,ts:new Date().toISOString(),byTrainer:true,role:"player",...(String(grund||"").trim()?{reason:String(grund).trim()}:{})}};
-            save({...local,events:local.events.map(e=>e.id===viewEv.id?{...e,votes:nv}:e)});
-            setViewEv(prev=>({...prev,votes:nv}));
+            amTermin(e=>({votes:{...(e.votes||{}),[name]:{val,ts:new Date().toISOString(),byTrainer:true,role:"player",...(String(grund||"").trim()?{reason:String(grund).trim()}:{})}}}));
             fire(val==="yes"?name+": zugesagt (vom Trainer eingetragen)":name+": abgesagt (vom Trainer eingetragen)");
           }}
-          onSetPresent={present=>{ save({...local,events:local.events.map(e=>e.id===viewEv.id?{...e,present}:e)}); setViewEv(prev=>({...prev,present})); }}
-          onSetGuests={guests=>{ save({...local,events:local.events.map(e=>e.id===viewEv.id?{...e,guests}:e)}); setViewEv(prev=>({...prev,guests})); }}/>}
+          onSetPresent={present=>{ amTermin(()=>({present})); }}
+          onSetGuests={guests=>{ amTermin(()=>({guests})); }}/>}
         {viewEv.type==="training"&&(
           <StaffingBoard ev={viewEv} profiles={local.playerProfiles||[]} team={(local.teams||[]).find(tm=>tm.id===viewEv.tid)} session={session} isHelper={isHelper}
             trainerNames={trainerNames} helperNames={helperNames} squadNames={squadPlusOf(viewEv.tid)}
@@ -26365,7 +26372,7 @@ function AppInner({lang,setLang}) {
           setLinkTeam(weg.tid); setLinkKind(weg.kind); setUmzug(weg);
           setScr("flow"); return;
         }
-        setData(cd); setCid(s.cid); setSess(s2); setScr(s2.role==="user"?"user":"dash"); return;
+        setData(cd); sb.commitRead(); setCid(s.cid); setSess(s2); setScr(s2.role==="user"?"user":"dash"); return;
       }
       // Direktlink ?club=<slug|id>&team=<id> → Verein laden, dann zur Anmeldung
       const params=new URLSearchParams(window.location.search);
@@ -26407,7 +26414,11 @@ function AppInner({lang,setLang}) {
         const cur=cidRef.current;
         const r = cur ? await sb.getClub(cur) : await sb.getDirectory();
         if (sb._writing) return; // Read koennte mit einem zwischenzeitlichen Write kollidieren
-        if(r?._v>=12){ const rr=(cur==="demo")?refreshDemo(r):r; setData(p=>JSON.stringify(p)===JSON.stringify(rr)?p:rr); }
+        if(r?._v>=12){ const rr=(cur==="demo")?refreshDemo(r):r; setData(p=>JSON.stringify(p)===JSON.stringify(rr)?p:rr);
+          // Erst JETZT gilt der gelesene Stand als angezeigt. Ohne diese
+          // Meldung liefe der Vergleichsstand dem Bildschirm davon und der
+          // naechste Schreibvorgang wuerde fremde Zusagen entfernen.
+          sb.commitRead(); }
       } catch {}
     },10000);
     return()=>clearInterval(syncRef.current);
