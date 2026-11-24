@@ -221,7 +221,14 @@ export const sb = {
   _clubKey: cid => SK+"__club_"+cid,
   _lastWrite: null,
   _writing: false,
-  _snap: {}, // letzter gelesener Roh-Zeilenwert je key (Basis fuer 3-Wege-Merge)
+  _snap: {}, // Stand, den die App WIRKLICH anzeigt (Basis fuer den 3-Wege-Merge)
+  // Frisch gelesene Zeilen warten hier, bis die App sie uebernommen hat.
+  // Wichtig: Der Vergleichsstand darf dem Bildschirm nicht davonlaufen. Sonst
+  // sieht ein spaeterer Schreibvorgang alles, was zwischendurch hereinkam,
+  // wie ein bewusstes Loeschen - und entfernt fremde Zusagen wieder.
+  _stage: {},
+  // Die App meldet: "Diesen gelesenen Stand zeige ich jetzt an."
+  commitRead: () => { try { Object.assign(sb._snap, sb._stage); sb._stage={}; } catch {} },
   // Header mit Bearer-Token aus auth (fällt auf anon-Key zurück, wenn Auth noch nicht da).
   _hdr: async () => {
     const cfg = getConfig();
@@ -272,7 +279,7 @@ export const sb = {
       if (r.ok) {
         const rows = await r.json();
         if (rows && rows.length) {
-          rows.forEach(x=>{ sb._snap[x.key]=x.value; });
+          rows.forEach(x=>{ sb._stage[x.key]=x.value; });
           const gl = rows.find(x=>x.key===sb._glKey)?.value || {};
           const shardRows = rows.filter(x=>x.key!==sb._glKey).map(x=>x.value);
           const merged = normData(mergeData(gl, shardRows));
@@ -296,7 +303,7 @@ export const sb = {
       const r = await sb._fetch(`/rest/v1/app_data?key=eq.${sb._glKey}&select=value`);
       if (r.ok) {
         const rows = await r.json();
-        if (rows[0]?.value) { sb._snap[sb._glKey]=rows[0].value; setDbHealth("ok"); return normData(rows[0].value); }
+        if (rows[0]?.value) { sb._stage[sb._glKey]=rows[0].value; setDbHealth("ok"); return normData(rows[0].value); }
         const m = await sb._migrate();
         if (m) { const { global } = splitData(m); return normData(global); }
         // Cloud ist erreichbar, aber wirklich leer - das Init darf seedn.
@@ -316,7 +323,7 @@ export const sb = {
       if (r.ok) {
         const rows = await r.json();
         if (rows && rows.length) {
-          rows.forEach(x=>{ sb._snap[x.key]=x.value; });
+          rows.forEach(x=>{ sb._stage[x.key]=x.value; });
           const gl = rows.find(x=>x.key===sb._glKey)?.value || {};
           const shard = rows.find(x=>x.key===sb._clubKey(cid))?.value || {};
           setDbHealth("ok");
@@ -400,7 +407,8 @@ export const sb = {
       }
       localSet(d); // Cache erst nach Cloud-Erfolg
       sb.clearPending(); // evtl. offene Offline-Aenderungen sind jetzt in der Cloud
-      rows.forEach(x=>{ sb._snap[x.key]=x.value; }); // Snapshot = neuer Cloud-Stand
+      // Eigener Schreibvorgang: Was geschrieben wurde, zeigt die App auch an.
+      rows.forEach(x=>{ sb._snap[x.key]=x.value; delete sb._stage[x.key]; });
       sb._lastWrite = { ok:true, status:r.status, error:"", at:Date.now() };
       return sb._lastWrite;
     } catch (e) {

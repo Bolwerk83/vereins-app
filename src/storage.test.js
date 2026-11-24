@@ -17,17 +17,25 @@ globalThis.localStorage = {
 globalThis.window = { addEventListener(){}, dispatchEvent(){}, location:{ search:"" } };
 let antwort = { ok:true, status:200 };
 let geschrieben = [];
+let cloudRows = {};                 // key -> value, so tut die nachgebaute Cloud
+let zuletztGeschrieben = {};        // key -> value, was wirklich rausging
 globalThis.fetch = async (url, init={}) => {
   if (String(url).includes("/auth/v1/")) return { ok:true, status:200, json:async()=>({access_token:"t", refresh_token:"r", expires_in:3600}) };
-  if ((init.method||"GET")==="GET") return { ok:true, status:200, json:async()=>[] };
+  if ((init.method||"GET")==="GET") {
+    const q = decodeURIComponent(String(url));
+    const treffer = Object.keys(cloudRows).filter(k=>q.includes(k));
+    return { ok:true, status:200, json:async()=>treffer.map(k=>({key:k,value:cloudRows[k]})) };
+  }
   geschrieben.push(url);
+  try { JSON.parse(init.body||"[]").forEach(r=>{ if(r&&r.key) zuletztGeschrieben[r.key]=r.value; }); } catch {}
   return { ok:antwort.ok, status:antwort.status, text:async()=>"abgelehnt", json:async()=>({}) };
 };
 
 const { sb, SK, CFG } = await import("./storage.js");
 
 const vorbereiten = () => {
-  store.clear(); geschrieben = [];
+  store.clear(); geschrieben = []; cloudRows = {}; zuletztGeschrieben = {};
+  sb._snap = {}; if (sb._stage) sb._stage = {};
   localStorage.setItem(CFG, JSON.stringify({ url:"https://example.test", key:"anon" }));
   // Gueltiger Zugang, damit getToken ohne Netz auskommt
   localStorage.setItem("vereinsapp_auth", JSON.stringify({
@@ -62,4 +70,54 @@ test("Gelungener Schreibversuch: nichts bleibt offen", async () => {
   assert.equal(r.ok, true);
   assert.equal(sb.hasPending(), false, "nach Erfolg darf nichts mehr offen sein");
   assert.ok(geschrieben.length >= 1, "es wurde wirklich geschrieben");
+});
+
+// ---- Vergleichsstand darf dem Bildschirm nicht davonlaufen ----------------
+// Gemeldet: „Zusagen waren wieder raus." Der 10-Sekunden-Sync liest den
+// frischen Cloud-Stand. Wird der dabei als Vergleichsstand uebernommen, die
+// App zeigt aber weiter den alten, dann sieht der naechste Schreibvorgang
+// jede zwischenzeitliche Zusage wie ein bewusstes Loeschen - und entfernt sie.
+const klubRow = (namen) => ({ _v:14, events:[{ id:"e1", cid:"c1", tid:"t1",
+  votes:Object.fromEntries(namen.map(n=>[n,{val:"yes",ts:"2026-11-24T10:00:00.000Z"}])) }] });
+
+test("Fremde Zusage ueberlebt einen Schreibvorgang des alten Standes", async () => {
+  vorbereiten();
+  antwort = { ok:true, status:200 };
+  // Die Cloud kennt A und B, dieses Geraet nur A.
+  cloudRows = {
+    "vereinsapp_v14__global": { _v:14, clubs:[{id:"c1",name:"Test"}] },
+    "vereinsapp_v14__club_c1": klubRow(["A Kind","B Kind"]),
+  };
+  // Der Hintergrund-Sync liest - die App uebernimmt den Stand NICHT.
+  await sb.getClub("c1");
+  // Jetzt schreibt das Geraet seinen alten Stand (nur A, dazu eine Eintragung).
+  const lokal = { _v:14, clubs:[{id:"c1",name:"Test"}],
+    events:[{ id:"e1", cid:"c1", tid:"t1", votes:{
+      "A Kind":{val:"yes",ts:"2026-11-24T10:00:00.000Z"},
+      "C Kind":{val:"yes",ts:"2026-11-24T11:00:00.000Z"} } }] };
+  await sb.set(lokal, "c1");
+  const geschriebeneVotes = Object.keys(
+    (zuletztGeschrieben["vereinsapp_v14__club_c1"]?.events?.[0]?.votes) || {});
+  assert.ok(geschriebeneVotes.includes("B Kind"),
+    "Die Zusage des anderen Geraets darf nicht verschwinden, sondern muss im Schreibvorgang erhalten bleiben: "+geschriebeneVotes.join(", "));
+  assert.ok(geschriebeneVotes.includes("A Kind"));
+  assert.ok(geschriebeneVotes.includes("C Kind"), "die eigene Eintragung bleibt");
+});
+
+test("Nach dem Uebernehmen des Standes wirkt ein Entfernen weiterhin", async () => {
+  vorbereiten();
+  antwort = { ok:true, status:200 };
+  cloudRows = {
+    "vereinsapp_v14__global": { _v:14, clubs:[{id:"c1",name:"Test"}] },
+    "vereinsapp_v14__club_c1": klubRow(["A Kind","B Kind"]),
+  };
+  const frisch = await sb.getClub("c1");
+  sb.commitRead();                     // die App zeigt diesen Stand jetzt an
+  // Der Trainer entfernt B bewusst.
+  const ohneB = { ...frisch, events:[{ ...frisch.events[0],
+    votes:{ "A Kind":{val:"yes",ts:"2026-11-24T10:00:00.000Z"} } }] };
+  await sb.set(ohneB, "c1");
+  const geschriebeneVotes = Object.keys(
+    (zuletztGeschrieben["vereinsapp_v14__club_c1"]?.events?.[0]?.votes) || {});
+  assert.deepEqual(geschriebeneVotes, ["A Kind"], "bewusstes Entfernen muss ankommen");
 });
