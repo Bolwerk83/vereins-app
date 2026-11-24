@@ -388,6 +388,13 @@ export const sb = {
       });
       if (!r.ok) {
         let txt=""; try{ txt=await r.text(); }catch{}
+        // Die Cloud hat den Schreibversuch abgelehnt (abgelaufener Zugang,
+        // Rechte, Serverfehler). Die Aenderung darf deswegen NICHT verloren
+        // gehen: Sie wird lokal gesichert und als nachzutragen markiert, der
+        // 10-Sekunden-Sync schreibt sie erneut. Vorher endete dieser Zweig
+        // ohne alles - die frische Zusage stand noch auf dem Bildschirm, war
+        // aber nirgends gespeichert und beim naechsten Laden spurlos weg.
+        sb._markPending(d);
         sb._lastWrite = { ok:false, status:r.status, error:(txt||"").slice(0,400), at:Date.now() };
         return sb._lastWrite;
       }

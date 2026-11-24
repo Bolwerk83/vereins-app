@@ -13318,13 +13318,19 @@ function ChatTab({data,cid,myTids,session,save,fire,cl,teamOnly=false}) {
     // daran anhaengen. Da beim Speichern das ganze Chat-Dokument geschrieben
     // wird, wuerden sonst parallele Nachrichten anderer Geraete verloren gehen;
     // so bleiben sie im Normalfall (Nachrichten im Sekundenabstand) erhalten.
-    let baseChats = chats;
-    try { const fresh = await sb.getClub(cid); if(fresh && fresh._v) baseChats = fresh.chats||[]; } catch {}
+    // WICHTIG: Der frische Cloud-Stand wird die neue Grundlage fuer den
+    // GANZEN Speichervorgang - nicht nur fuer die Chats. sb.getClub setzt den
+    // Vergleichsstand fuer den 3-Wege-Merge neu; wuerde danach der alte
+    // Bildschirm-Stand geschrieben, saehe jede Zusage, die seit dem letzten
+    // Laden eingegangen ist, wie ein bewusstes Loeschen aus - und waere weg.
+    let basis = data;
+    try { const fresh = await sb.getClub(cid); if(fresh && fresh._v) basis = fresh; } catch {}
+    const baseChats = basis.chats||[];
     const exists = baseChats.find(c=>c.id===selScope);
     const next = exists
       ? baseChats.map(c=>c.id===selScope?{...c,messages:[...(c.messages||[]),msg]}:c)
       : [...baseChats,{id:selScope,cid,messages:[msg]}];
-    save({...data,chats:next});
+    save({...basis,chats:next});
     // Push an die anderen Chat-Teilnehmer (Edge Function "notify", Modus chat);
     // Fehler bewusst still - die Nachricht selbst ist bereits gespeichert.
     try {
